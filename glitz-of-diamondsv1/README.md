@@ -36,7 +36,6 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
 ## Structure
-npm version: 11.2.0
-node version: 22.10.0
+npm version: 11.2.0, node version: 22.10.0
 
 
