@@ -26,6 +26,11 @@ export default function Header() {
                         />
                     </Link>
 
+                    {/* Center: Site title */}
+                    <h1 className="absolute left-1/2 transform -translate-x-1/2 text-xl md:text-3xl font-semibold text-white tracking-wide drop-shadow">
+                        Glitz Of Diamonds
+                    </h1>
+
                     {/* Spacer pushes everything else to the right */}
                     <div className="flex-1" />
 
@@ -33,9 +38,9 @@ export default function Header() {
                     <div className="flex items-center gap-6 pr-2 md:pr-8">
                         {/* Desktop nav */}
                         <nav className="hidden md:flex items-center gap-1">
-                            <Link href="#home" className="nav-link">Home</Link>
-                            <Link href="#about" className="nav-link">About Us</Link>
-                            <Link href="#contact" className="nav-link">Contact</Link>
+                            <Link href="/" className="nav-link">Home</Link>
+                            <Link href="/about" className="nav-link">About Us</Link>
+                            <Link href="/contact" className="nav-link">Contact</Link>
                         </nav>
 
                         {/* Login button (desktop) */}

@@ -7,7 +7,7 @@
     /* deep-ruby gradient for header */
     --color-header-grad-start: #7a0d0d;   /* rich wine red */
     --color-header-grad-end:   #d43636;   /* bright ruby fade */
-    --color-accent: #f472b6;              /* soft rose accent (for buttons) */
+    --color-accent: #d43636;              /* soft rose accent (for buttons) */
     --color-text-primary: #f8fafc;
     --color-text-muted: #cbd5e1;
 

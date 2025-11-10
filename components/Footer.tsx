@@ -7,9 +7,9 @@ export default function Footer() {
                 </div>
                 <div className="md:justify-self-center">
                     <nav className="space-x-4">
-                        <a href="#home" className="hover:underline">Home</a>
-                        <a href="#about" className="hover:underline">About Us</a>
-                        <a href="#contact" className="hover:underline">Contact</a>
+                        <a href="/" className="hover:underline">Home</a>
+                        <a href="/about" className="hover:underline">About Us</a>
+                        <a href="/contact" className="hover:underline">Contact</a>
                     </nav>
                 </div>
                 <div className="md:justify-self-end">
