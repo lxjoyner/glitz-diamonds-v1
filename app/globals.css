@@ -80,7 +80,7 @@ header {
 
 /* Darker overlay so text pops like the PDF */
 .hero-overlay {
-  background: linear-gradient(to bottom, rgba(0,0,0,.55), rgba(0,0,0,.7));
+  background: linear-gradient(to bottom, rgba(0,0,0,.08), rgba(0,0,0,.22));
 }
 
 .sparkle-wrapper {
