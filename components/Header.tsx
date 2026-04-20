@@ -1,85 +1,208 @@
 "use client";
+
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+type AdminUser = {
+    id: number;
+    username: string;
+    role: string;
+};
 
 export default function Header() {
     const [open, setOpen] = useState(false);
+    const [loadingAuth, setLoadingAuth] = useState(true);
+    const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
+    const router = useRouter();
+
+    useEffect(() => {
+        async function loadAdminStatus() {
+            try {
+                const res = await fetch("/api/admin/me", {
+                    method: "GET",
+                    cache: "no-store",
+                });
+
+                const data = await res.json();
+
+                if (data?.authenticated) {
+                    setAdminUser(data.user);
+                } else {
+                    setAdminUser(null);
+                }
+            } catch (error) {
+                console.error("Failed to load admin status:", error);
+                setAdminUser(null);
+            } finally {
+                setLoadingAuth(false);
+            }
+        }
+
+        loadAdminStatus();
+    }, []);
+
+    const handleLogout = async () => {
+        try {
+            await fetch("/api/admin/logout", {
+                method: "POST",
+            });
+
+            setAdminUser(null);
+            setOpen(false);
+            router.push("/");
+            router.refresh();
+        } catch (error) {
+            console.error("Logout failed:", error);
+        }
+    };
 
     return (
-        <header className="sticky top-0 z-50">
-            <div className="container mx-auto px-0">
-                {/* TOP ROW */}
-                <div className="flex items-center py-1">
-                    {/* Left: Logo */}
-                    <Link
-                        href="/"
-                        className="flex items-center gap-3 shrink-0"
-                    >
-                        <Image
-                            src="/GlitzOfDiamond_Logo.png"
-                            alt="Glitz Of Diamonds logo"
-                            width={160}
-                            height={40}
-                            className="h-12 w-auto"
-                            priority
-                        />
-                    </Link>
+        <>
+            <header className="sticky top-0 z-50">
+                <div className="w-full px-0">
+                    <div className="grid grid-cols-[auto_auto_1fr] items-center py-2">
+                        {/* Left section: Hamburger + Logo */}
+                        <div className="flex items-center pl-0 ml-0">
+                            <button
+                                aria-label="Toggle navigation"
+                                className="mr-3 p-2 rounded-lg hover:bg-white/10 transition"
+                                onClick={() => setOpen(true)}
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="currentColor"
+                                    className="w-7 h-7"
+                                >
+                                    <path d="M3.75 5.25h16.5v1.5H3.75zM3.75 11.25h16.5v1.5H3.75zM3.75 17.25h16.5v1.5H3.75z" />
+                                </svg>
+                            </button>
 
-                    {/* Center: Site title */}
-                    <h1 className="absolute left-1/2 transform -translate-x-1/2 text-xl md:text-3xl font-semibold text-white tracking-wide drop-shadow">
-                        Glitz Of Diamonds
-                    </h1>
-
-                    {/* Spacer pushes everything else to the right */}
-                    <div className="flex-1" />
-
-                    {/* Right: Nav + Login + Mobile button */}
-                    <div className="flex items-center gap-6 pr-2 md:pr-8">
-                        {/* Desktop nav */}
-                        <nav className="hidden md:flex items-center gap-1">
-                            <Link href="/" className="nav-link">Home</Link>
-                            <Link href="/about" className="nav-link">About Us</Link>
-                            <Link href="/contact" className="nav-link">Contact</Link>
-                        </nav>
-
-                        {/* Login button (desktop) */}
-                        <div className="hidden md:block">
-                            <Link href="#login" className="rounded-lg bg-black text-white px-4 py-2 hover:bg-gray-900 transition">
-                                Login
+                            <Link href="/" className="flex items-center gap-3 shrink-0">
+                                <Image
+                                    src="/GlitzOfDiamond_Logo.png"
+                                    alt="Glitz Of Diamonds logo"
+                                    width={160}
+                                    height={40}
+                                    className="h-12 w-auto"
+                                    priority
+                                />
                             </Link>
                         </div>
 
-                        {/* Mobile menu button */}
-                        <button
-                            aria-label="Toggle navigation"
-                            className="md:hidden p-2 rounded-lg hover:bg-white/10"
-                            onClick={() => setOpen(!open)}
-                        >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="currentColor"
-                                className="w-6 h-6"
-                            >
-                                <path d="M3.75 5.25h16.5v1.5H3.75zM3.75 11.25h16.5v1.5H3.75zM3.75 17.25h16.5v1.5H3.75z" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                {/* Mobile drawer */}
-                {open && (
-                    <div className="md:hidden border-t border-white/10 pb-3">
-                        <div className="flex flex-col gap-2 pt-3">
-                            <Link href="#home" className="nav-link" onClick={() => setOpen(false)}>Home</Link>
-                            <Link href="#about" className="nav-link" onClick={() => setOpen(false)}>About Us</Link>
-                            <Link href="#contact" className="nav-link" onClick={() => setOpen(false)}>Contact</Link>
-                            <Link href="#login" className="btn btn-primary mt-2 w-fit" onClick={() => setOpen(false)}>Login</Link>
+                        {/* Center title */}
+                        <div className="col-span-2 flex justify-center pr-10 md:pr-16">
+                            <h1 className="text-lg md:text-3xl font-semibold text-white tracking-wide drop-shadow text-center whitespace-nowrap">
+                                Glitz Of Diamonds
+                            </h1>
                         </div>
                     </div>
-                )}
+                </div>
+            </header>
+
+            {/* Overlay */}
+            {open && (
+                <div
+                    className="fixed inset-0 z-40 bg-black/50"
+                    onClick={() => setOpen(false)}
+                />
+            )}
+
+            {/* Left slide-out drawer */}
+            <div
+                className={`fixed top-0 left-0 z-50 h-full w-72 max-w-[85vw] transform bg-black/95 border-r border-white/10 shadow-2xl transition-transform duration-300 ${
+                    open ? "translate-x-0" : "-translate-x-full"
+                }`}
+            >
+                <div className="flex items-center justify-between px-4 py-4 border-b border-white/10">
+                    <div className="flex items-center gap-3">
+                        <Image
+                            src="/GlitzOfDiamond_Logo.png"
+                            alt="Glitz Of Diamonds logo"
+                            width={120}
+                            height={32}
+                            className="h-10 w-auto"
+                        />
+                    </div>
+
+                    <button
+                        aria-label="Close navigation"
+                        className="p-2 rounded-lg hover:bg-white/10 transition"
+                        onClick={() => setOpen(false)}
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            className="w-6 h-6"
+                        >
+                            <path d="M6 6l12 12M18 6L6 18" />
+                        </svg>
+                    </button>
+                </div>
+
+                <nav className="flex flex-col gap-2 px-4 py-4">
+                    <Link
+                        href="/"
+                        className="nav-link"
+                        onClick={() => setOpen(false)}
+                    >
+                        Home
+                    </Link>
+
+                    <Link
+                        href="/about"
+                        className="nav-link"
+                        onClick={() => setOpen(false)}
+                    >
+                        About Us
+                    </Link>
+
+                    <Link
+                        href="/contact"
+                        className="nav-link"
+                        onClick={() => setOpen(false)}
+                    >
+                        Contact
+                    </Link>
+
+                    {!loadingAuth && adminUser && (
+                        <Link
+                            href="/admin/messages"
+                            className="nav-link"
+                            onClick={() => setOpen(false)}
+                        >
+                            Dashboard
+                        </Link>
+                    )}
+
+                    <div className="mt-4 border-t border-white/10 pt-4">
+                        {!loadingAuth && !adminUser && (
+                            <Link
+                                href="/admin/login"
+                                className="btn btn-primary w-fit"
+                                onClick={() => setOpen(false)}
+                            >
+                                Login
+                            </Link>
+                        )}
+
+                        {!loadingAuth && adminUser && (
+                            <button
+                                type="button"
+                                onClick={handleLogout}
+                                className="rounded-lg bg-red-800 text-white px-4 py-2 hover:bg-red-600 transition"
+                            >
+                                Logout
+                            </button>
+                        )}
+                    </div>
+                </nav>
             </div>
-        </header>
+        </>
     );
 }
