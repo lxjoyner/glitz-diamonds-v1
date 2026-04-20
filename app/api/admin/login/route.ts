@@ -1,7 +1,21 @@
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
-import { getAdminByUsername } from "@/lib/admin-db";
+import {
+    createPasswordResetToken,
+    getAdminByUsername,
+    getAdminSecurityState,
+    markResetEmailSent,
+} from "@/lib/admin-db";
+import { sendAdminPasswordResetEmail } from "@/lib/mailer";
 import { signAdminToken } from "@/lib/auth";
+
+function getPasswordResetIntervalDays() {
+    return Number(process.env.PASSWORD_RESET_INTERVAL_DAYS || 60);
+}
+
+function getAppBaseUrl() {
+    return process.env.APP_BASE_URL || "http://localhost:3000";
+}
 
 export async function POST(req: Request) {
     try {
@@ -35,6 +49,44 @@ export async function POST(req: Request) {
             return NextResponse.json(
                 { success: false, error: "Invalid username or password." },
                 { status: 401 }
+            );
+        }
+
+        const securityState = await getAdminSecurityState(admin.id);
+        const intervalMs = getPasswordResetIntervalDays() * 24 * 60 * 60 * 1000;
+        const changedAtMs = new Date(securityState.password_changed_at).getTime();
+        const passwordExpired = Date.now() - changedAtMs >= intervalMs;
+
+        if (passwordExpired) {
+            if (!admin.email) {
+                return NextResponse.json(
+                    {
+                        success: false,
+                        error:
+                            "Your password has expired. Configure an admin reset email first at /admin/reset-password.",
+                    },
+                    { status: 403 }
+                );
+            }
+
+            const resetToken = await createPasswordResetToken(admin.id);
+            const resetUrl = `${getAppBaseUrl()}/admin/reset-password?token=${encodeURIComponent(resetToken)}`;
+
+            await sendAdminPasswordResetEmail({
+                toEmail: admin.email,
+                username: admin.username,
+                resetUrl,
+            });
+
+            await markResetEmailSent(admin.id);
+
+            return NextResponse.json(
+                {
+                    success: false,
+                    error:
+                        "Your password has expired. A reset link has been emailed to your admin account.",
+                },
+                { status: 403 }
             );
         }
 
