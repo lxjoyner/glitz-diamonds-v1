@@ -252,6 +252,7 @@ export default function Hero() {
                                             src={item.src}
                                             alt={item.caption}
                                             fill
+                                            unoptimized={item.src.startsWith("/api/gallery/")}
                                             className="object-cover transition duration-300 group-hover:scale-105"
                                         />
 
@@ -351,6 +352,7 @@ export default function Hero() {
                                     src={selectedImage.src}
                                     alt={selectedImage.caption}
                                     fill
+                                    unoptimized={selectedImage.src.startsWith("/api/gallery/")}
                                     className="object-contain bg-black"
                                     quality={100}
                                 />
@@ -391,6 +393,7 @@ export default function Hero() {
                                                     src={item.src}
                                                     alt={item.caption}
                                                     fill
+                                                    unoptimized={item.src.startsWith("/api/gallery/")}
                                                     className="object-cover"
                                                 />
                                             </button>
