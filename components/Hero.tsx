@@ -11,7 +11,7 @@ const sparklePositions = [
     { top: "35%", left: "80%" },
 ];
 
-const galleryImages = [
+const fallbackGalleryImages = [
     {
         src: "/20230728_School_Donation.jpg",
         caption: "School Donation Event",
@@ -45,6 +45,7 @@ export default function Hero() {
 
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
     const [isOpen, setIsOpen] = useState(false);
+    const [galleryImages, setGalleryImages] = useState(fallbackGalleryImages);
 
     const handleScrollRight = () => {
         if (scrollRef.current && firstCardRef.current) {
@@ -87,6 +88,36 @@ export default function Hero() {
         if (selectedIndex === null) return;
         setSelectedIndex((selectedIndex + 1) % galleryImages.length);
     };
+
+
+    useEffect(() => {
+        async function loadGalleryImages() {
+            try {
+                const res = await fetch("/api/gallery", { cache: "no-store" });
+                const data = (await res.json()) as {
+                    success?: boolean;
+                    images?: Array<{ id: number; caption: string; imageUrl: string }>;
+                };
+
+                if (!data.success || !Array.isArray(data.images) || data.images.length === 0) {
+                    setGalleryImages(fallbackGalleryImages);
+                    return;
+                }
+
+                setGalleryImages(
+                    data.images.map((item) => ({
+                        src: item.imageUrl,
+                        caption: item.caption,
+                    }))
+                );
+            } catch (error) {
+                console.error("Failed to load gallery images:", error);
+                setGalleryImages(fallbackGalleryImages);
+            }
+        }
+
+        loadGalleryImages();
+    }, []);
 
     useEffect(() => {
         const intervalMs = 3000;
@@ -136,6 +167,7 @@ export default function Hero() {
             block: "nearest",
         });
     }, [selectedIndex]);
+
 
     const selectedImage =
         selectedIndex !== null ? galleryImages[selectedIndex] : null;
@@ -220,6 +252,7 @@ export default function Hero() {
                                             src={item.src}
                                             alt={item.caption}
                                             fill
+                                            unoptimized={item.src.startsWith("/api/gallery/")}
                                             className="object-cover transition duration-300 group-hover:scale-105"
                                         />
 
@@ -319,6 +352,7 @@ export default function Hero() {
                                     src={selectedImage.src}
                                     alt={selectedImage.caption}
                                     fill
+                                    unoptimized={selectedImage.src.startsWith("/api/gallery/")}
                                     className="object-contain bg-black"
                                     quality={100}
                                 />
@@ -359,6 +393,7 @@ export default function Hero() {
                                                     src={item.src}
                                                     alt={item.caption}
                                                     fill
+                                                    unoptimized={item.src.startsWith("/api/gallery/")}
                                                     className="object-cover"
                                                 />
                                             </button>

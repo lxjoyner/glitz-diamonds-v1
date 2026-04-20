@@ -170,6 +170,14 @@ export default function Header() {
                         Contact
                     </Link>
 
+                    <Link
+                        href="/donate"
+                        className="nav-link"
+                        onClick={() => setOpen(false)}
+                    >
+                        Donate
+                    </Link>
+
                     {!loadingAuth && adminUser && (
                         <Link
                             href="/admin/messages"
