@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
                     details:
                         "Set STRIPE_SECRET_KEY in .env.local at the project root and restart `npm run dev`.",
                 },
+                { error: "Missing STRIPE_SECRET_KEY." },
                 { status: 500 }
             );
         }
