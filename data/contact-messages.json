@@ -1,0 +1,18 @@
+[
+  {
+    "id": "1c82e932-45b2-489e-9668-d7475fda72a1",
+    "createdAt": "2026-04-10T16:16:10.953Z",
+    "name": "Yolanda Diane Joyner",
+    "email": "yoljoyner@gmail.com",
+    "message": "Did you get the response email Ann",
+    "ip": "::1"
+  },
+  {
+    "id": "e1bdee7e-a642-45cf-9163-d3649aaeea24",
+    "createdAt": "2026-04-10T03:42:25.845Z",
+    "name": "Lavasier Joyner",
+    "email": "lavasierjoyner@gmail.com",
+    "message": "Testing the ability to reply with generic responding email.",
+    "ip": "::1"
+  }
+]

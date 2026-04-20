@@ -1,0 +1,37 @@
+[
+  {
+    "id": "fcd4e8ad-60ac-4b1c-995a-428767afecc2",
+    "createdAt": "2026-04-13T12:40:50.458Z",
+    "path": "/"
+  },
+  {
+    "id": "f68a9d8d-32dd-4265-a71f-f982afb71769",
+    "createdAt": "2026-04-10T16:24:16.241Z",
+    "path": "/admin/messages"
+  },
+  {
+    "id": "f59ad101-879e-4338-955e-178618e3c844",
+    "createdAt": "2026-04-10T16:22:48.724Z",
+    "path": "/admin/login"
+  },
+  {
+    "id": "7d0cfb3b-6322-461d-83dc-40d21b80b033",
+    "createdAt": "2026-04-10T16:22:08.368Z",
+    "path": "/messages"
+  },
+  {
+    "id": "e9f59df8-0ef9-4fd4-8722-6fcb6fd4b559",
+    "createdAt": "2026-04-10T04:07:40.566Z",
+    "path": "/contact"
+  },
+  {
+    "id": "5f3ae87b-a8a2-445c-9540-34768b6f801b",
+    "createdAt": "2026-04-10T04:07:38.730Z",
+    "path": "/about"
+  },
+  {
+    "id": "968fa536-485c-43c1-aeda-940b8a0bac7d",
+    "createdAt": "2026-04-10T04:07:21.226Z",
+    "path": "/"
+  }
+]

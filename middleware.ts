@@ -3,11 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 export function middleware(req: NextRequest) {
     const { pathname } = req.nextUrl;
 
-    if (pathname.startsWith("/admin/messages")) {
-        const cookie = req.cookies.get("glitz_admin_auth")?.value;
-        const expected = process.env.ADMIN_SESSION_VALUE || "glitz-admin-auth";
+    if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
+        const token = req.cookies.get("glitz_token")?.value;
 
-        if (cookie !== expected) {
+        if (!token) {
             return NextResponse.redirect(new URL("/admin/login", req.url));
         }
     }
@@ -16,5 +15,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-    matcher: ["/admin/messages/:path*"],
+    matcher: ["/admin/:path*"],
 };

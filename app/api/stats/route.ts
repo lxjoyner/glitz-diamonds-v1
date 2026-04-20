@@ -15,9 +15,11 @@ export async function GET() {
         });
     } catch (error) {
         console.error("Stats API error:", error);
+
         return Response.json(
             {
                 success: false,
+                error: error instanceof Error ? error.message : "Failed to load stats.",
                 visitsToday: 0,
                 contactsToday: 0,
             },
