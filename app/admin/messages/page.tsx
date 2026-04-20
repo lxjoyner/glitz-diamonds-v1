@@ -4,13 +4,20 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type MessageItem = {
-    id: string;
-    createdAt: string;
+    id: number;
+    created_at: string;
     name: string;
     email: string;
     message: string;
-    ip?: string;
+    ip_address?: string | null;
 };
+
+function formatMessageDate(value: string) {
+    const parsedDate = new Date(value);
+    return Number.isNaN(parsedDate.getTime())
+        ? "Unknown date"
+        : parsedDate.toLocaleString();
+}
 
 export default function AdminMessagesPage() {
     const router = useRouter();
@@ -66,7 +73,7 @@ export default function AdminMessagesPage() {
                                         <p className="text-sm text-slate-300">{item.email}</p>
                                     </div>
                                     <p className="text-sm text-slate-400">
-                                        {new Date(item.createdAt).toLocaleString()}
+                                        {formatMessageDate(item.created_at)}
                                     </p>
                                 </div>
 
@@ -76,8 +83,10 @@ export default function AdminMessagesPage() {
                                     </p>
                                 </div>
 
-                                {item.ip && (
-                                    <p className="mt-3 text-xs text-slate-500">IP: {item.ip}</p>
+                                {item.ip_address && (
+                                    <p className="mt-3 text-xs text-slate-500">
+                                        IP: {item.ip_address}
+                                    </p>
                                 )}
                             </div>
                         ))}
