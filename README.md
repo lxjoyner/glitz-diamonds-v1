@@ -64,3 +64,26 @@ PASSWORD_RESET_FROM_EMAIL=no-reply@example.com
 
 ### Admin reset-email setup
 Use `/admin/reset-password` and provide the admin username and email at least once so the system knows where to send rotation/reset emails.
+
+## Stripe donation checkout
+
+A hosted Stripe Checkout flow is now available at `/donate`.
+
+### Required environment variables
+```bash
+STRIPE_SECRET_KEY=sk_live_or_test_key
+NEXT_PUBLIC_SITE_URL=https://your-domain.com
+```
+
+### Optional environment variables
+```bash
+# Optional: use a fixed Stripe Price ID instead of dynamic amount pricing
+STRIPE_DONATION_PRICE_ID=price_12345
+```
+
+### How it works
+- The donation form sends amount + optional donor details to `POST /api/donations/checkout`.
+- The API route creates a Stripe Checkout Session and returns a hosted checkout URL.
+- Donors are redirected to Stripe and then returned to `/donate?status=success` or `/donate?status=cancelled`.
+
+> Note: If you set `STRIPE_DONATION_PRICE_ID`, Stripe will charge that configured price. The selected amount is still captured in metadata as `requestedAmount`.
