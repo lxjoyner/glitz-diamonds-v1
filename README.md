@@ -75,6 +75,25 @@ STRIPE_SECRET_KEY=sk_live_or_test_key
 NEXT_PUBLIC_SITE_URL=https://your-domain.com
 ```
 
+### Where to keep your Stripe secret key
+- **Do not store `STRIPE_SECRET_KEY` in your database.**
+- Keep it in server-side environment variables only (`.env.local` for local dev, hosting provider secret manager in production).
+- Never prefix it with `NEXT_PUBLIC_` and never expose it in client-side code.
+
+### Common local testing issues
+- `Missing STRIPE_SECRET_KEY` usually means one of these:
+  - `.env.local` is not in the **project root** (same level as `package.json`).
+  - Dev server was not restarted after adding/changing env vars.
+  - Typo in the key name (must be exactly `STRIPE_SECRET_KEY`).
+  - Value is wrapped incorrectly or empty (e.g. `STRIPE_SECRET_KEY=""`).
+
+Example local file:
+```bash
+# .env.local (do not commit this file)
+STRIPE_SECRET_KEY=sk_test_xxx
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
 ### Optional environment variables
 ```bash
 # Optional: use a fixed Stripe Price ID instead of dynamic amount pricing
