@@ -39,3 +39,28 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 npm version: 11.2.0, node version: 22.10.0
 
 
+
+## Admin password reset and 60-day email rotation
+
+This project now supports admin password-reset links and automatic enforcement of password rotation.
+
+### What happens
+- Admin users can request a reset link from `/admin/reset-password`.
+- Reset links are single-use, tokenized, and expire in 60 minutes.
+- On login, if the admin password age is 60+ days (configurable), login is blocked and a reset email is sent automatically.
+
+### Required environment variables
+```bash
+APP_BASE_URL=http://localhost:3000
+PASSWORD_RESET_INTERVAL_DAYS=60
+
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-smtp-user
+SMTP_PASS=your-smtp-password
+PASSWORD_RESET_FROM_EMAIL=no-reply@example.com
+```
+
+### Admin reset-email setup
+Use `/admin/reset-password` and provide the admin username and email at least once so the system knows where to send rotation/reset emails.

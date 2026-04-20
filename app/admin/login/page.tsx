@@ -88,6 +88,14 @@ export default function AdminLoginPage() {
                         {loading ? "Signing in..." : "Sign In"}
                     </button>
 
+                    
+
+                    <p className="text-sm">
+                        <a href="/admin/reset-password" className="text-red-300 hover:text-red-200 underline">
+                            Forgot password?
+                        </a>
+                    </p>
+
                     {error && <p className="text-sm text-red-400">{error}</p>}
                 </form>
             </div>

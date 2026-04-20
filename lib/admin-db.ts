@@ -1,20 +1,89 @@
+import crypto from "node:crypto";
 import pool from "@/lib/db";
 
 export type AdminUser = {
     id: number;
     username: string;
+    email: string | null;
     password_hash: string;
     role: string;
     is_active: number;
     created_at: string;
 };
 
+type AdminSecurityState = {
+    password_changed_at: string;
+    reset_required: number;
+    last_reset_email_sent_at: string | null;
+    reset_email: string | null;
+};
+
+export type AdminResetToken = {
+    id: number;
+    admin_id: number;
+    token_hash: string;
+    expires_at: string;
+    used_at: string | null;
+    created_at: string;
+};
+
+let bootstrapped = false;
+
+async function ensureAdminSecurityTables() {
+    if (bootstrapped) {
+        return;
+    }
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS admin_security (
+            admin_id INT PRIMARY KEY,
+            reset_email VARCHAR(255) NULL,
+            password_changed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            reset_required TINYINT(1) NOT NULL DEFAULT 0,
+            last_reset_email_sent_at DATETIME NULL,
+            FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE
+        )
+    `);
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS admin_password_reset_tokens (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            admin_id INT NOT NULL,
+            token_hash VARCHAR(64) NOT NULL,
+            expires_at DATETIME NOT NULL,
+            used_at DATETIME NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_token_hash (token_hash),
+            INDEX idx_admin_expires (admin_id, expires_at),
+            FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE
+        )
+    `);
+
+    bootstrapped = true;
+}
+
+async function ensureAdminSecurityRow(adminId: number) {
+    await ensureAdminSecurityTables();
+
+    await pool.query(
+        `
+        INSERT INTO admin_security (admin_id)
+        VALUES (?)
+        ON DUPLICATE KEY UPDATE admin_id = admin_id
+        `,
+        [adminId]
+    );
+}
+
 export async function getAdminByUsername(username: string): Promise<AdminUser | null> {
+    await ensureAdminSecurityTables();
+
     const [rows] = await pool.query(
         `
-        SELECT id, username, password_hash, role, is_active, created_at
-        FROM admins
-        WHERE username = ?
+        SELECT a.id, a.username, s.reset_email AS email, a.password_hash, a.role, a.is_active, a.created_at
+        FROM admins a
+        LEFT JOIN admin_security s ON s.admin_id = a.id
+        WHERE a.username = ?
         LIMIT 1
         `,
         [username]
@@ -22,4 +91,146 @@ export async function getAdminByUsername(username: string): Promise<AdminUser | 
 
     const result = rows as AdminUser[];
     return result[0] ?? null;
+}
+
+export async function getAdminByEmail(email: string): Promise<AdminUser | null> {
+    await ensureAdminSecurityTables();
+
+    const [rows] = await pool.query(
+        `
+        SELECT a.id, a.username, s.reset_email AS email, a.password_hash, a.role, a.is_active, a.created_at
+        FROM admins a
+        JOIN admin_security s ON s.admin_id = a.id
+        WHERE s.reset_email = ?
+        LIMIT 1
+        `,
+        [email]
+    );
+
+    const result = rows as AdminUser[];
+    return result[0] ?? null;
+}
+
+export async function getAdminSecurityState(adminId: number): Promise<AdminSecurityState> {
+    await ensureAdminSecurityRow(adminId);
+
+    const [rows] = await pool.query(
+        `
+        SELECT reset_email, password_changed_at, reset_required, last_reset_email_sent_at
+        FROM admin_security
+        WHERE admin_id = ?
+        LIMIT 1
+        `,
+        [adminId]
+    );
+
+    const record = (rows as AdminSecurityState[])[0];
+
+    return record;
+}
+
+export async function setAdminResetEmail(adminId: number, email: string) {
+    await ensureAdminSecurityRow(adminId);
+
+    await pool.query(
+        `
+        UPDATE admin_security
+        SET reset_email = ?
+        WHERE admin_id = ?
+        `,
+        [email, adminId]
+    );
+}
+
+export async function markResetEmailSent(adminId: number) {
+    await ensureAdminSecurityRow(adminId);
+
+    await pool.query(
+        `
+        UPDATE admin_security
+        SET last_reset_email_sent_at = NOW(), reset_required = 1
+        WHERE admin_id = ?
+        `,
+        [adminId]
+    );
+}
+
+export async function updateAdminPassword(adminId: number, passwordHash: string) {
+    await ensureAdminSecurityRow(adminId);
+
+    await pool.query(
+        `
+        UPDATE admins
+        SET password_hash = ?
+        WHERE id = ?
+        `,
+        [passwordHash, adminId]
+    );
+
+    await pool.query(
+        `
+        UPDATE admin_security
+        SET password_changed_at = NOW(), reset_required = 0, last_reset_email_sent_at = NULL
+        WHERE admin_id = ?
+        `,
+        [adminId]
+    );
+}
+
+function hashToken(token: string) {
+    return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+export async function createPasswordResetToken(adminId: number, ttlMinutes = 60) {
+    await ensureAdminSecurityRow(adminId);
+
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const tokenHash = hashToken(rawToken);
+
+    await pool.query(
+        `
+        INSERT INTO admin_password_reset_tokens (admin_id, token_hash, expires_at)
+        VALUES (?, ?, DATE_ADD(NOW(), INTERVAL ? MINUTE))
+        `,
+        [adminId, tokenHash, ttlMinutes]
+    );
+
+    return rawToken;
+}
+
+export async function consumePasswordResetToken(rawToken: string): Promise<AdminResetToken | null> {
+    await ensureAdminSecurityTables();
+
+    const tokenHash = hashToken(rawToken);
+
+    const [rows] = await pool.query(
+        `
+        SELECT id, admin_id, token_hash, expires_at, used_at, created_at
+        FROM admin_password_reset_tokens
+        WHERE token_hash = ?
+        LIMIT 1
+        `,
+        [tokenHash]
+    );
+
+    const token = (rows as AdminResetToken[])[0];
+
+    if (!token) {
+        return null;
+    }
+
+    if (token.used_at || new Date(token.expires_at).getTime() < Date.now()) {
+        return null;
+    }
+
+    await pool.query(
+        `
+        UPDATE admin_password_reset_tokens
+        SET used_at = NOW()
+        WHERE id = ?
+        `,
+        [token.id]
+    );
+
+    return token;
 }
