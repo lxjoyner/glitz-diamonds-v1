@@ -199,7 +199,12 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-sm text-slate-300">Password</label>
+                        <label className="mb-1 block text-sm text-slate-300">
+                            Password{" "}
+                            <span className="text-xs text-slate-400">
+                                (Min 12 chars, uppercase, lowercase, number, symbol: !@#$%&*)
+                            </span>
+                        </label>
                         <input
                             type="password"
                             name="password"
