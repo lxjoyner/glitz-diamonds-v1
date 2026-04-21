@@ -55,6 +55,41 @@ type DashboardSettings = {
 
 const DATE_FORMAT_OPTIONS = ["MMM d, yyyy", "MM/dd/yyyy", "yyyy-MM-dd"];
 const TIME_FORMAT_OPTIONS = ["h:mm a", "HH:mm", "h:mm:ss a"];
+const FALLBACK_TIMEZONE_OPTIONS = [
+    "America/Chicago",
+    "America/New_York",
+    "America/Los_Angeles",
+    "America/Denver",
+    "UTC",
+];
+
+function getTimezoneOptions() {
+    const intlWithSupportedValues = Intl as typeof Intl & {
+        supportedValuesOf?: (key: "timeZone") => string[];
+    };
+
+    if (typeof intlWithSupportedValues.supportedValuesOf === "function") {
+        return intlWithSupportedValues.supportedValuesOf("timeZone");
+    }
+
+    return FALLBACK_TIMEZONE_OPTIONS;
+}
+
+function toDisplayName(username: string) {
+    if (!username) return "Unknown User";
+
+    const normalized = username
+        .replace(/[._-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    if (!normalized) return "Unknown User";
+
+    return normalized
+        .split(" ")
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+        .join(" ");
+}
 
 function toIntlOptions(dateFormat: string, timeFormat: string): Intl.DateTimeFormatOptions {
     const dateOptions: Record<string, Intl.DateTimeFormatOptions> = {
@@ -93,6 +128,8 @@ export default function AdminMessagesPage() {
         time_format: "h:mm a",
     });
     const [settingsMessage, setSettingsMessage] = useState("");
+    const timezoneOptions = useMemo(() => getTimezoneOptions(), []);
+    const userDisplayName = useMemo(() => toDisplayName(user?.username || ""), [user?.username]);
 
     const canManageUsers = user?.role === "admin";
     const canManageGallery = user?.role === "admin" || user?.role === "secretary";
@@ -329,24 +366,42 @@ export default function AdminMessagesPage() {
                         <p className="text-sm text-slate-300">Signed in as {user?.username || "..."} ({user?.role || "..."})</p>
                     </div>
 
-                    <button
-                        onClick={handleLogout}
-                        className="rounded-lg bg-red-800 px-4 py-2 text-sm font-medium hover:bg-red-500 transition"
-                    >
-                        Logout
-                    </button>
+                    <div className="relative group">
+                        <button
+                            type="button"
+                            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/40 text-base transition hover:bg-white/10"
+                            aria-label="User menu"
+                        >
+                            👤
+                        </button>
+                        <div className="pointer-events-none absolute right-0 top-12 w-56 rounded-lg border border-white/15 bg-black/90 p-3 opacity-0 shadow-lg transition duration-150 group-hover:pointer-events-auto group-hover:opacity-100">
+                            <p className="text-sm font-medium text-white">{userDisplayName}</p>
+                            <p className="text-xs text-slate-300">{user?.role || "Unknown role"}</p>
+                            <button
+                                onClick={handleLogout}
+                                className="mt-3 w-full rounded-md bg-red-800 px-3 py-2 text-sm font-medium hover:bg-red-500"
+                            >
+                                Logout
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 {canManageUsers && (
                     <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
                         <h2 className="text-2xl font-semibold">Dashboard Date/Time Settings</h2>
                         <div className="mt-4 grid gap-4 md:grid-cols-3">
-                            <input
+                            <select
                                 value={settings.timezone}
                                 onChange={(event) => setSettings((prev) => ({ ...prev, timezone: event.target.value }))}
-                                placeholder="Timezone (e.g. America/Chicago)"
                                 className="rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
-                            />
+                            >
+                                {timezoneOptions.map((timezoneOption) => (
+                                    <option key={timezoneOption} value={timezoneOption}>
+                                        {timezoneOption}
+                                    </option>
+                                ))}
+                            </select>
                             <select
                                 value={settings.date_format}
                                 onChange={(event) => setSettings((prev) => ({ ...prev, date_format: event.target.value }))}
