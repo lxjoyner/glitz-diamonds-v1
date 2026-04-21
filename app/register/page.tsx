@@ -24,12 +24,34 @@ export default function RegisterPage() {
         gender: "",
         birthday: "",
     });
+    const [confirmPassword, setConfirmPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
 
     const onChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = event.target;
+        const { name } = event.target;
+        let { value } = event.target;
+
+        if (name === "zipCode") {
+            value = value.replace(/\D/g, "").slice(0, 5);
+        }
+
+        if (name === "state") {
+            value = value.toUpperCase().slice(0, 2);
+        }
+
+        if (name === "birthday") {
+            const digits = value.replace(/\D/g, "").slice(0, 8);
+            if (digits.length <= 2) {
+                value = digits;
+            } else if (digits.length <= 4) {
+                value = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+            } else {
+                value = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+            }
+        }
+
         setForm((prev) => ({ ...prev, [name]: value }));
     };
 
@@ -40,6 +62,30 @@ export default function RegisterPage() {
         setSuccess("");
 
         try {
+            if (form.middleInitial && form.middleInitial.trim().length < 3) {
+                throw new Error("Middle initials must be at least 3 characters when provided.");
+            }
+
+            if (form.password !== confirmPassword) {
+                throw new Error("Passwords do not match.");
+            }
+
+            const passwordPolicy = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%&*]).{12,}$/;
+            if (!passwordPolicy.test(form.password)) {
+                throw new Error(
+                    "Password must be at least 12 characters and include uppercase, lowercase, number, and one symbol: !@#$%&*."
+                );
+            }
+
+            if (!/^\d{5}$/.test(form.zipCode)) {
+                throw new Error("Zip code must be exactly 5 numbers.");
+            }
+
+            const birthdayDigits = form.birthday.replace(/\D/g, "");
+            if (birthdayDigits.length !== 8) {
+                throw new Error("Birthday must be in MM/DD/YYYY format.");
+            }
+
             const fullName = [form.firstName, form.middleInitial, form.lastName].filter(Boolean).join(" ");
             const address = [form.streetAddress, form.city, form.state, form.zipCode].filter(Boolean).join(", ");
 
@@ -48,6 +94,7 @@ export default function RegisterPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     ...form,
+                    birthday: birthdayDigits,
                     fullName,
                     address,
                 }),
@@ -77,6 +124,7 @@ export default function RegisterPage() {
                 gender: "",
                 birthday: "",
             });
+            setConfirmPassword("");
         } catch (submitError) {
             setError(submitError instanceof Error ? submitError.message : "Registration failed.");
         } finally {
@@ -105,14 +153,14 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-sm text-slate-300">Middle Initial</label>
+                        <label className="mb-1 block text-sm text-slate-300">Middle Initials (Optional)</label>
                         <input
                             name="middleInitial"
                             value={form.middleInitial}
                             onChange={onChange}
-                            maxLength={1}
+                            minLength={3}
                             className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
-                            required
+                            placeholder="At least 3 characters if provided"
                         />
                     </div>
 
@@ -158,6 +206,21 @@ export default function RegisterPage() {
                             minLength={12}
                             value={form.password}
                             onChange={onChange}
+                            pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%&*]).{12,}$"
+                            title="At least 12 characters, with uppercase, lowercase, number, and one symbol: !@#$%&*"
+                            className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm text-slate-300">Confirm Password</label>
+                        <input
+                            type="password"
+                            name="confirmPassword"
+                            minLength={12}
+                            value={confirmPassword}
+                            onChange={(event) => setConfirmPassword(event.target.value)}
                             className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
                             required
                         />
@@ -169,6 +232,7 @@ export default function RegisterPage() {
                             name="streetAddress"
                             value={form.streetAddress}
                             onChange={onChange}
+                            autoComplete="street-address"
                             className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
                             required
                         />
@@ -180,6 +244,7 @@ export default function RegisterPage() {
                             name="city"
                             value={form.city}
                             onChange={onChange}
+                            autoComplete="address-level2"
                             className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
                             required
                         />
@@ -192,6 +257,7 @@ export default function RegisterPage() {
                             value={form.state}
                             onChange={onChange}
                             maxLength={2}
+                            autoComplete="address-level1"
                             className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm uppercase"
                             required
                         />
@@ -206,6 +272,8 @@ export default function RegisterPage() {
                             inputMode="numeric"
                             pattern="[0-9]{5}"
                             maxLength={5}
+                            minLength={5}
+                            autoComplete="postal-code"
                             className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
                             required
                         />
@@ -276,17 +344,30 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-sm text-slate-300">Birthday (MMDDYYYY)</label>
+                        <label className="mb-1 block text-sm text-slate-300">Birthday (MM/DD/YYYY)</label>
                         <input
                             name="birthday"
                             value={form.birthday}
                             onChange={onChange}
                             inputMode="numeric"
-                            pattern="[0-9]{8}"
-                            maxLength={8}
-                            placeholder="MMDDYYYY"
+                            pattern="(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])/(19|20)[0-9]{2}"
+                            maxLength={10}
+                            placeholder="MM/DD/YYYY"
                             className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
                             required
+                        />
+                        <input
+                            type="date"
+                            onChange={(event) => {
+                                const selected = event.target.value;
+                                if (!selected) return;
+                                const [year, month, day] = selected.split("-");
+                                setForm((prev) => ({
+                                    ...prev,
+                                    birthday: `${month}/${day}/${year}`,
+                                }));
+                            }}
+                            className="mt-2 w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
                         />
                     </div>
 

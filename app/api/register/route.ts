@@ -26,6 +26,10 @@ function isValidBirthdayMmDdYyyy(value: string): boolean {
     return day >= 1 && day <= maxDaysInMonth;
 }
 
+function isValidPassword(password: string): boolean {
+    return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%&*]).{12,}$/.test(password);
+}
+
 export async function POST(req: Request) {
     try {
         const {
@@ -49,7 +53,7 @@ export async function POST(req: Request) {
         } = await req.json();
 
         const cleanFirstName = String(firstName || "").trim();
-        const cleanMiddleInitial = String(middleInitial || "").trim().slice(0, 1).toUpperCase();
+        const cleanMiddleInitial = String(middleInitial || "").trim();
         const cleanLastName = String(lastName || "").trim();
         const cleanFullName = String(fullName || "")
             .trim() || [cleanFirstName, cleanMiddleInitial, cleanLastName].filter(Boolean).join(" ");
@@ -86,9 +90,19 @@ export async function POST(req: Request) {
             );
         }
 
-        if (cleanPassword.length < 12) {
+        if (cleanMiddleInitial && cleanMiddleInitial.length < 3) {
             return NextResponse.json(
-                { success: false, error: "Password must be at least 12 characters." },
+                { success: false, error: "Middle initials must be at least 3 characters when provided." },
+                { status: 400 }
+            );
+        }
+
+        if (!isValidPassword(cleanPassword)) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: "Password must be at least 12 characters and include uppercase, lowercase, number, and one symbol: !@#$%&*.",
+                },
                 { status: 400 }
             );
         }
@@ -117,6 +131,13 @@ export async function POST(req: Request) {
         if (!GENDERS.has(cleanGender)) {
             return NextResponse.json(
                 { success: false, error: "Please select Male or Female." },
+                { status: 400 }
+            );
+        }
+
+        if (!/^\d{5}$/.test(cleanZipCode)) {
+            return NextResponse.json(
+                { success: false, error: "Zip code must be exactly 5 numbers." },
                 { status: 400 }
             );
         }
