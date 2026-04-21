@@ -44,6 +44,18 @@ export default function RegisterPage() {
         setForm((prev) => ({ ...prev, [name]: value }));
     };
 
+    const validatePasswordMatch = (value: string) => {
+        const passwordsMatch = form.password === value;
+
+        if (!passwordsMatch) {
+            setError("Passwords do not match.");
+        } else if (error === "Passwords do not match.") {
+            setError("");
+        }
+
+        return passwordsMatch;
+    };
+
     const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setLoading(true);
@@ -53,10 +65,6 @@ export default function RegisterPage() {
         try {
             if (form.middleInitial && form.middleInitial.trim().length < 3) {
                 throw new Error("Middle initials must be at least 3 characters when provided.");
-            }
-
-            if (form.password !== confirmPassword) {
-                throw new Error("Passwords do not match.");
             }
 
             const passwordPolicy = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%&*]).{12,}$/;
@@ -215,7 +223,17 @@ export default function RegisterPage() {
                             name="confirmPassword"
                             minLength={12}
                             value={confirmPassword}
-                            onChange={(event) => setConfirmPassword(event.target.value)}
+                            onChange={(event) => {
+                                const { value } = event.target;
+                                setConfirmPassword(value);
+                                const passwordsMatch = validatePasswordMatch(value);
+                                event.target.setCustomValidity(passwordsMatch ? "" : "Passwords do not match.");
+                            }}
+                            onBlur={(event) => {
+                                const passwordsMatch = validatePasswordMatch(event.target.value);
+                                event.target.setCustomValidity(passwordsMatch ? "" : "Passwords do not match.");
+                                event.target.reportValidity();
+                            }}
                             className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
                             required
                         />
