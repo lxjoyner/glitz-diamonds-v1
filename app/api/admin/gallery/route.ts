@@ -6,7 +6,7 @@ import {
     getAllGalleryImages,
 } from "@/lib/gallery-db";
 
-const MAX_UPLOAD_MB = 16;
+const MAX_UPLOAD_MB = 18;
 const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
