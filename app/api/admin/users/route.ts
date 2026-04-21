@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth";
-import { getAllUsers, setUserRole, UserRole } from "@/lib/user-db";
+import { deleteUserById, getAllUsers, setUserRole, UserRole } from "@/lib/user-db";
 
 const VALID_ROLES = new Set<UserRole | "">(["member", "secretary", "treasurer", ""]);
 
@@ -49,6 +49,31 @@ export async function PATCH(req: NextRequest) {
     }
 
     await setUserRole(parsedId, cleanRole === "" ? null : (cleanRole as UserRole));
+
+    return NextResponse.json({ success: true });
+}
+
+export async function DELETE(req: NextRequest) {
+    const auth = requireAdmin(req);
+    if ("error" in auth) return auth.error;
+
+    const { userId } = await req.json();
+    const parsedId = Number(userId);
+
+    if (!Number.isInteger(parsedId) || parsedId <= 0) {
+        return NextResponse.json(
+            { success: false, error: "Valid user id is required." },
+            { status: 400 }
+        );
+    }
+
+    const deletedCount = await deleteUserById(parsedId);
+    if (deletedCount === 0) {
+        return NextResponse.json(
+            { success: false, error: "User was not found." },
+            { status: 404 }
+        );
+    }
 
     return NextResponse.json({ success: true });
 }

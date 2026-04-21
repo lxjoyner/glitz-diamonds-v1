@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -222,7 +223,15 @@ export default function AdminMessagesPage() {
 
                 {canManageUsers && (
                     <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
-                        <h2 className="text-2xl font-semibold">Member Role Manager</h2>
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <h2 className="text-2xl font-semibold">Member Role Manager</h2>
+                            <Link
+                                href="/admin/membership"
+                                className="rounded-lg border border-white/20 px-3 py-2 text-sm hover:bg-white/10"
+                            >
+                                Open membership page
+                            </Link>
+                        </div>
                         <p className="mt-2 text-sm text-slate-300">Admin can change or remove member roles.</p>
                         <div className="mt-4 space-y-3">
                             {siteUsers.map((siteUser) => (

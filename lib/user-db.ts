@@ -168,3 +168,17 @@ export async function setUserRole(userId: number, role: UserRole | null) {
         [role, userId]
     );
 }
+
+export async function deleteUserById(userId: number) {
+    await ensureUsersTable();
+
+    const [result] = await pool.query(
+        `
+        DELETE FROM users
+        WHERE id = ?
+        `,
+        [userId]
+    );
+
+    return Number((result as { affectedRows?: number }).affectedRows || 0);
+}

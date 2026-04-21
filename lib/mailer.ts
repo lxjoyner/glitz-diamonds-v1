@@ -90,3 +90,25 @@ export async function sendMemberRegistrationNotification(params: {
 
     return { sent: true as const };
 }
+
+export async function sendMemberRegistrationConfirmation(params: {
+    toEmail: string;
+    fullName: string;
+}) {
+    if (!hasSmtpConfig()) {
+        console.warn("SMTP config is incomplete. Skipping member registration confirmation email.");
+        return { sent: false as const, reason: "missing_smtp_config" as const };
+    }
+
+    const transporter = getSmtpTransport();
+
+    await transporter.sendMail({
+        from: getRequiredEnv("PASSWORD_RESET_FROM_EMAIL"),
+        to: params.toEmail,
+        subject: "Your Glitz registration is complete",
+        text: `Hi ${params.fullName},\n\nThank you for registering with Glitz of Diamonds. Your registration has been completed successfully and your member account is now active.\n\nIf you have any questions, please reply to this email.\n\n- Glitz of Diamonds`,
+        html: `<p>Hi ${params.fullName},</p><p>Thank you for registering with <strong>Glitz of Diamonds</strong>. Your registration has been completed successfully and your member account is now active.</p><p>If you have any questions, please reply to this email.</p><p>- Glitz of Diamonds</p>`,
+    });
+
+    return { sent: true as const };
+}

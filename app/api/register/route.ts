@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { createRegisteredUser, getUserByEmail, getUserByUsername } from "@/lib/user-db";
 import { getAdminNotificationEmails } from "@/lib/admin-db";
-import { sendMemberRegistrationNotification } from "@/lib/mailer";
+import { sendMemberRegistrationConfirmation, sendMemberRegistrationNotification } from "@/lib/mailer";
 
 const T_SHIRT_SIZES = new Set(["XS", "SM", "M", "LG", "XL", "XXL", "XXXL", "XXXXL"]);
 const HAT_SIZES = new Set(["S", "M", "L", "XL"]);
@@ -171,6 +171,10 @@ export async function POST(req: Request) {
             hatSize: cleanHatSize,
             gender: cleanGender,
             birthday: cleanBirthday,
+        });
+        await sendMemberRegistrationConfirmation({
+            toEmail: cleanEmail,
+            fullName: cleanFullName,
         });
 
         return NextResponse.json({
