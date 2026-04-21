@@ -66,6 +66,7 @@ export async function sendMemberRegistrationNotification(params: {
     tshirtSize: string;
     favoriteColor: string;
     hatSize: string;
+    gender: string;
     birthday: string;
 }) {
     if (!hasSmtpConfig()) {
@@ -83,8 +84,8 @@ export async function sendMemberRegistrationNotification(params: {
         from: getRequiredEnv("PASSWORD_RESET_FROM_EMAIL"),
         to: params.toEmails.join(", "),
         subject: "New member registration submitted",
-        text: `A new user registered as Member.\n\nName: ${params.fullName}\nUsername: ${params.username}\nEmail: ${params.email}\nAddress: ${params.address}\nT-Shirt Size: ${params.tshirtSize}\nFavorite Color: ${params.favoriteColor}\nHat Size: ${params.hatSize}\nBirthday (MMDDYYYY): ${params.birthday}`,
-        html: `<p>A new user registered as <strong>Member</strong>.</p><ul><li><strong>Name:</strong> ${params.fullName}</li><li><strong>Username:</strong> ${params.username}</li><li><strong>Email:</strong> ${params.email}</li><li><strong>Address:</strong> ${params.address}</li><li><strong>T-Shirt Size:</strong> ${params.tshirtSize}</li><li><strong>Favorite Color:</strong> ${params.favoriteColor}</li><li><strong>Hat Size:</strong> ${params.hatSize}</li><li><strong>Birthday (MMDDYYYY):</strong> ${params.birthday}</li></ul>`,
+        text: `A new user registered as Member.\n\nName: ${params.fullName}\nUsername: ${params.username}\nEmail: ${params.email}\nAddress: ${params.address}\nT-Shirt Size: ${params.tshirtSize}\nFavorite Color: ${params.favoriteColor}\nHat Size: ${params.hatSize}\nGender: ${params.gender}\nBirthday (MMDDYYYY): ${params.birthday}`,
+        html: `<p>A new user registered as <strong>Member</strong>.</p><ul><li><strong>Name:</strong> ${params.fullName}</li><li><strong>Username:</strong> ${params.username}</li><li><strong>Email:</strong> ${params.email}</li><li><strong>Address:</strong> ${params.address}</li><li><strong>T-Shirt Size:</strong> ${params.tshirtSize}</li><li><strong>Favorite Color:</strong> ${params.favoriteColor}</li><li><strong>Hat Size:</strong> ${params.hatSize}</li><li><strong>Gender:</strong> ${params.gender}</li><li><strong>Birthday (MMDDYYYY):</strong> ${params.birthday}</li></ul>`,
     });
 
     return { sent: true as const };

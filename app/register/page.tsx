@@ -2,18 +2,26 @@
 
 import { useState } from "react";
 
-const T_SHIRT_SIZES = ["XS", "SM", "MD", "LG", "XL", "XXL", "XXXL", "XXXXL"] as const;
+const T_SHIRT_SIZES = ["XS", "SM", "M", "LG", "XL", "XXL", "XXXL", "XXXXL"] as const;
+const HAT_SIZES = ["S", "M", "L", "XL"] as const;
+const GENDERS = ["Male", "Female"] as const;
 
 export default function RegisterPage() {
     const [form, setForm] = useState({
-        fullName: "",
+        firstName: "",
+        middleInitial: "",
+        lastName: "",
         username: "",
         email: "",
         password: "",
-        address: "",
-        tshirtSize: "MD",
+        streetAddress: "",
+        city: "",
+        state: "",
+        zipCode: "",
+        tshirtSize: "M",
         favoriteColor: "",
         hatSize: "",
+        gender: "",
         birthday: "",
     });
     const [loading, setLoading] = useState(false);
@@ -32,10 +40,17 @@ export default function RegisterPage() {
         setSuccess("");
 
         try {
+            const fullName = [form.firstName, form.middleInitial, form.lastName].filter(Boolean).join(" ");
+            const address = [form.streetAddress, form.city, form.state, form.zipCode].filter(Boolean).join(", ");
+
             const response = await fetch("/api/register", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(form),
+                body: JSON.stringify({
+                    ...form,
+                    fullName,
+                    address,
+                }),
             });
 
             const data = await response.json();
@@ -46,14 +61,20 @@ export default function RegisterPage() {
 
             setSuccess(data?.message || "Registered successfully.");
             setForm({
-                fullName: "",
+                firstName: "",
+                middleInitial: "",
+                lastName: "",
                 username: "",
                 email: "",
                 password: "",
-                address: "",
-                tshirtSize: "MD",
+                streetAddress: "",
+                city: "",
+                state: "",
+                zipCode: "",
+                tshirtSize: "M",
                 favoriteColor: "",
                 hatSize: "",
+                gender: "",
                 birthday: "",
             });
         } catch (submitError) {
@@ -73,10 +94,33 @@ export default function RegisterPage() {
 
                 <form onSubmit={onSubmit} className="mt-6 space-y-4">
                     <div>
-                        <label className="mb-1 block text-sm text-slate-300">Full Name</label>
+                        <label className="mb-1 block text-sm text-slate-300">First Name</label>
                         <input
-                            name="fullName"
-                            value={form.fullName}
+                            name="firstName"
+                            value={form.firstName}
+                            onChange={onChange}
+                            className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm text-slate-300">Middle Initial</label>
+                        <input
+                            name="middleInitial"
+                            value={form.middleInitial}
+                            onChange={onChange}
+                            maxLength={1}
+                            className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm text-slate-300">Last Name</label>
+                        <input
+                            name="lastName"
+                            value={form.lastName}
                             onChange={onChange}
                             className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
                             required
@@ -120,12 +164,48 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-sm text-slate-300">Address</label>
-                        <textarea
-                            name="address"
-                            value={form.address}
+                        <label className="mb-1 block text-sm text-slate-300">Street Address</label>
+                        <input
+                            name="streetAddress"
+                            value={form.streetAddress}
                             onChange={onChange}
-                            rows={3}
+                            className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm text-slate-300">City</label>
+                        <input
+                            name="city"
+                            value={form.city}
+                            onChange={onChange}
+                            className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm text-slate-300">State</label>
+                        <input
+                            name="state"
+                            value={form.state}
+                            onChange={onChange}
+                            maxLength={2}
+                            className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm uppercase"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm text-slate-300">Zip Code</label>
+                        <input
+                            name="zipCode"
+                            value={form.zipCode}
+                            onChange={onChange}
+                            inputMode="numeric"
+                            pattern="[0-9]{5}"
+                            maxLength={5}
                             className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
                             required
                         />
@@ -161,13 +241,38 @@ export default function RegisterPage() {
 
                     <div>
                         <label className="mb-1 block text-sm text-slate-300">Hat Size</label>
-                        <input
+                        <select
                             name="hatSize"
                             value={form.hatSize}
                             onChange={onChange}
                             className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
                             required
-                        />
+                        >
+                            <option value="">Select hat size</option>
+                            {HAT_SIZES.map((size) => (
+                                <option key={size} value={size}>
+                                    {size}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm text-slate-300">Gender</label>
+                        <select
+                            name="gender"
+                            value={form.gender}
+                            onChange={onChange}
+                            className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
+                            required
+                        >
+                            <option value="">Select gender</option>
+                            {GENDERS.map((gender) => (
+                                <option key={gender} value={gender}>
+                                    {gender}
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
                     <div>
