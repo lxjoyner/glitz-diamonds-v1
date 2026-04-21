@@ -9,7 +9,20 @@ type AdminUser = {
     id: number;
     username: string;
     role: string;
+    fullName?: string | null;
 };
+
+function getDisplayName(user: AdminUser | null) {
+    if (!user) return "";
+
+    const fullName = user.fullName?.trim();
+    if (!fullName) return user.username;
+
+    const parts = fullName.split(/\s+/).filter(Boolean);
+    if (parts.length === 1) return parts[0];
+
+    return `${parts[0]} ${parts[parts.length - 1]}`;
+}
 
 export default function Header() {
     const [open, setOpen] = useState(false);
@@ -17,6 +30,7 @@ export default function Header() {
     const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
     const router = useRouter();
     const pathname = usePathname();
+    const displayName = getDisplayName(adminUser);
 
     useEffect(() => {
         async function loadAdminStatus() {
@@ -63,7 +77,7 @@ export default function Header() {
         <>
             <header className="sticky top-0 z-50">
                 <div className="w-full px-0">
-                    <div className="grid grid-cols-[auto_auto_1fr] items-center py-2">
+                    <div className="grid grid-cols-[auto_1fr_auto] items-center py-2">
                         {/* Left section: Hamburger + Logo */}
                         <div className="flex items-center pl-0 ml-0">
                             <button
@@ -94,10 +108,23 @@ export default function Header() {
                         </div>
 
                         {/* Center title */}
-                        <div className="col-span-2 flex justify-center pr-10 md:pr-16">
+                        <div className="flex justify-center px-2">
                             <h1 className="text-lg md:text-3xl font-semibold text-white tracking-wide drop-shadow text-center whitespace-nowrap">
                                 Glitz Of Diamonds
                             </h1>
+                        </div>
+
+                        <div className="flex items-center justify-end pr-3 min-w-[6rem]">
+                            {!loadingAuth && adminUser && (
+                                <Link
+                                    href="/admin/messages"
+                                    className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/30 px-3 py-1.5 text-sm text-white hover:bg-white/10 transition"
+                                    aria-label="Open dashboard"
+                                >
+                                    <span className="text-base leading-none" aria-hidden="true">👤</span>
+                                    <span className="max-w-[10rem] truncate">{displayName}</span>
+                                </Link>
+                            )}
                         </div>
                     </div>
                 </div>
