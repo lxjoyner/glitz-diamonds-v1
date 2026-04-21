@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth";
-import { deleteUserById, getAllUsers, setUserRole, UserRole } from "@/lib/user-db";
+import { removeAdminByUsername, upsertAdminUser } from "@/lib/admin-db";
+import { deleteUserById, getAllUsers, getUserForAdminSync, setUserRole, UserRole } from "@/lib/user-db";
 
-const VALID_ROLES = new Set<UserRole | "">(["member", "secretary", "treasurer", ""]);
+const VALID_ROLES = new Set<UserRole | "">(["member", "secretary", "treasurer", "admin", ""]);
 
 function requireAdmin(req: NextRequest) {
     const token = req.cookies.get("glitz_token")?.value;
@@ -49,6 +50,21 @@ export async function PATCH(req: NextRequest) {
     }
 
     await setUserRole(parsedId, cleanRole === "" ? null : (cleanRole as UserRole));
+
+    const updatedUser = await getUserForAdminSync(parsedId);
+    if (!updatedUser) {
+        return NextResponse.json({ success: false, error: "User was not found." }, { status: 404 });
+    }
+
+    if (cleanRole === "admin") {
+        await upsertAdminUser({
+            username: updatedUser.username,
+            passwordHash: updatedUser.password_hash,
+            isActive: updatedUser.is_active,
+        });
+    } else {
+        await removeAdminByUsername(updatedUser.username);
+    }
 
     return NextResponse.json({ success: true });
 }

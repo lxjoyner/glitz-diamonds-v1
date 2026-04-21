@@ -247,6 +247,7 @@ export default function AdminMessagesPage() {
                                     >
                                         <option value="">No role</option>
                                         <option value="member">Member</option>
+                                        <option value="admin">Admin</option>
                                         <option value="secretary">Secretary</option>
                                         <option value="treasurer">Treasurer</option>
                                     </select>
