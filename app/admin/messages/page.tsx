@@ -172,7 +172,7 @@ export default function AdminMessagesPage() {
                                 className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-red-900/80 file:px-3 file:py-1.5 file:text-white"
                                 required
                             />
-                            <p className="mt-1 text-xs text-slate-400">Max size: 5MB</p>
+                            <p className="mt-1 text-xs text-slate-400">Max size: 18MB</p>
                         </div>
 
                         <button
