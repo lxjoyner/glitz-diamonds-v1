@@ -21,7 +21,9 @@ export async function GET(
 
         const etag = `"gallery-${image.id}-${new Date(image.updated_at).getTime()}"`;
 
-        return new NextResponse(image.image_data, {
+        const imageBytes = new Uint8Array(image.image_data);
+
+        return new NextResponse(imageBytes, {
             status: 200,
             headers: {
                 "Content-Type": image.mime_type,
