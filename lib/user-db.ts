@@ -12,6 +12,7 @@ export type SiteUser = {
     tshirt_size: string;
     favorite_color: string;
     hat_size: string;
+    gender: string;
     birthday: string;
     role: UserRole | null;
     is_active: number;
@@ -35,6 +36,7 @@ export async function ensureUsersTable() {
             tshirt_size VARCHAR(8) NOT NULL DEFAULT 'MD',
             favorite_color VARCHAR(64) NOT NULL DEFAULT '',
             hat_size VARCHAR(32) NOT NULL DEFAULT '',
+            gender VARCHAR(16) NOT NULL DEFAULT '',
             birthday CHAR(8) NOT NULL DEFAULT '',
             role VARCHAR(32) NULL DEFAULT 'member',
             is_active TINYINT(1) NOT NULL DEFAULT 1,
@@ -49,6 +51,7 @@ export async function ensureUsersTable() {
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS tshirt_size VARCHAR(8) NOT NULL DEFAULT 'MD'`);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS favorite_color VARCHAR(64) NOT NULL DEFAULT ''`);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS hat_size VARCHAR(32) NOT NULL DEFAULT ''`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(16) NOT NULL DEFAULT ''`);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday CHAR(8) NOT NULL DEFAULT ''`);
 
     bootstrapped = true;
@@ -63,6 +66,7 @@ export async function createRegisteredUser(params: {
     tshirtSize: string;
     favoriteColor: string;
     hatSize: string;
+    gender: string;
     birthday: string;
 }) {
     await ensureUsersTable();
@@ -70,9 +74,9 @@ export async function createRegisteredUser(params: {
     const [result] = await pool.query(
         `
         INSERT INTO users (
-            username, email, full_name, password_hash, address, tshirt_size, favorite_color, hat_size, birthday, role, is_active
+            username, email, full_name, password_hash, address, tshirt_size, favorite_color, hat_size, gender, birthday, role, is_active
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'member', 1)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'member', 1)
         `,
         [
             params.username,
@@ -83,6 +87,7 @@ export async function createRegisteredUser(params: {
             params.tshirtSize,
             params.favoriteColor,
             params.hatSize,
+            params.gender,
             params.birthday,
         ]
     );
@@ -96,7 +101,7 @@ export async function getUserByUsername(username: string): Promise<SiteUser | nu
     const [rows] = await pool.query(
         `
         SELECT
-            id, username, email, full_name, password_hash, address, tshirt_size, favorite_color, hat_size, birthday,
+            id, username, email, full_name, password_hash, address, tshirt_size, favorite_color, hat_size, gender, birthday,
             role, is_active, created_at, updated_at
         FROM users
         WHERE username = ?
@@ -114,7 +119,7 @@ export async function getUserByEmail(email: string): Promise<SiteUser | null> {
     const [rows] = await pool.query(
         `
         SELECT
-            id, username, email, full_name, password_hash, address, tshirt_size, favorite_color, hat_size, birthday,
+            id, username, email, full_name, password_hash, address, tshirt_size, favorite_color, hat_size, gender, birthday,
             role, is_active, created_at, updated_at
         FROM users
         WHERE email = ?
