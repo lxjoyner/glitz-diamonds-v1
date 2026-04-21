@@ -2,18 +2,25 @@
 
 import { useState } from "react";
 
+const T_SHIRT_SIZES = ["XS", "SM", "MD", "LG", "XL", "XXL", "XXXL", "XXXXL"] as const;
+
 export default function RegisterPage() {
     const [form, setForm] = useState({
         fullName: "",
         username: "",
         email: "",
         password: "",
+        address: "",
+        tshirtSize: "MD",
+        favoriteColor: "",
+        hatSize: "",
+        birthday: "",
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
 
-    const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const onChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = event.target;
         setForm((prev) => ({ ...prev, [name]: value }));
     };
@@ -38,7 +45,17 @@ export default function RegisterPage() {
             }
 
             setSuccess(data?.message || "Registered successfully.");
-            setForm({ fullName: "", username: "", email: "", password: "" });
+            setForm({
+                fullName: "",
+                username: "",
+                email: "",
+                password: "",
+                address: "",
+                tshirtSize: "MD",
+                favoriteColor: "",
+                hatSize: "",
+                birthday: "",
+            });
         } catch (submitError) {
             setError(submitError instanceof Error ? submitError.message : "Registration failed.");
         } finally {
@@ -97,6 +114,72 @@ export default function RegisterPage() {
                             minLength={12}
                             value={form.password}
                             onChange={onChange}
+                            className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm text-slate-300">Address</label>
+                        <textarea
+                            name="address"
+                            value={form.address}
+                            onChange={onChange}
+                            rows={3}
+                            className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm text-slate-300">T-Shirt Size</label>
+                        <select
+                            name="tshirtSize"
+                            value={form.tshirtSize}
+                            onChange={onChange}
+                            className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
+                            required
+                        >
+                            {T_SHIRT_SIZES.map((size) => (
+                                <option key={size} value={size}>
+                                    {size}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm text-slate-300">Favorite Color</label>
+                        <input
+                            name="favoriteColor"
+                            value={form.favoriteColor}
+                            onChange={onChange}
+                            className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm text-slate-300">Hat Size</label>
+                        <input
+                            name="hatSize"
+                            value={form.hatSize}
+                            onChange={onChange}
+                            className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm text-slate-300">Birthday (MMDDYYYY)</label>
+                        <input
+                            name="birthday"
+                            value={form.birthday}
+                            onChange={onChange}
+                            inputMode="numeric"
+                            pattern="[0-9]{8}"
+                            maxLength={8}
+                            placeholder="MMDDYYYY"
                             className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
                             required
                         />
