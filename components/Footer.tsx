@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function Footer() {
@@ -58,9 +59,10 @@ export default function Footer() {
                 {/* Center navigation */}
                 <div className="md:justify-self-center">
                     <nav className="space-x-4">
-                        <a href="/" className="hover:underline">Home</a>
-                        <a href="/about" className="hover:underline">About Us</a>
-                        <a href="/contact" className="hover:underline">Contact</a>
+                        <Link href="/" className="hover:underline">Home</Link>
+                        <Link href="/about" className="hover:underline">About Us</Link>
+                        <Link href="/contact" className="hover:underline">Contact</Link>
+                        <Link href="/donate" className="hover:underline">Donate</Link>
                     </nav>
                 </div>
 
