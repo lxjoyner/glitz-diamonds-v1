@@ -64,3 +64,45 @@ PASSWORD_RESET_FROM_EMAIL=no-reply@example.com
 
 ### Admin reset-email setup
 Use `/admin/reset-password` and provide the admin username and email at least once so the system knows where to send rotation/reset emails.
+
+## Stripe donation checkout
+
+A hosted Stripe Checkout flow is now available at `/donate`.
+
+### Required environment variables
+```bash
+STRIPE_SECRET_KEY=sk_live_or_test_key
+NEXT_PUBLIC_SITE_URL=https://your-domain.com
+```
+
+### Where to keep your Stripe secret key
+- **Do not store `STRIPE_SECRET_KEY` in your database.**
+- Keep it in server-side environment variables only (`.env.local` for local dev, hosting provider secret manager in production).
+- Never prefix it with `NEXT_PUBLIC_` and never expose it in client-side code.
+
+### Common local testing issues
+- `Missing STRIPE_SECRET_KEY` usually means one of these:
+  - `.env.local` is not in the **project root** (same level as `package.json`).
+  - Dev server was not restarted after adding/changing env vars.
+  - Typo in the key name (must be exactly `STRIPE_SECRET_KEY`).
+  - Value is wrapped incorrectly or empty (e.g. `STRIPE_SECRET_KEY=""`).
+
+Example local file:
+```bash
+# .env.local (do not commit this file)
+STRIPE_SECRET_KEY=sk_test_xxx
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+### Optional environment variables
+```bash
+# Optional: use a fixed Stripe Price ID instead of dynamic amount pricing
+STRIPE_DONATION_PRICE_ID=price_12345
+```
+
+### How it works
+- The donation form sends amount + optional donor details to `POST /api/donations/checkout`.
+- The API route creates a Stripe Checkout Session and returns a hosted checkout URL.
+- Donors are redirected to Stripe and then returned to `/donate?status=success` or `/donate?status=cancelled`.
+
+> Note: If you set `STRIPE_DONATION_PRICE_ID`, Stripe will charge that configured price. The selected amount is still captured in metadata as `requestedAmount`.
