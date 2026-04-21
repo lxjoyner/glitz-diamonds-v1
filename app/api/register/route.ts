@@ -4,20 +4,51 @@ import { createRegisteredUser, getUserByEmail, getUserByUsername } from "@/lib/u
 import { getAdminNotificationEmails } from "@/lib/admin-db";
 import { sendMemberRegistrationNotification } from "@/lib/mailer";
 
+const T_SHIRT_SIZES = new Set(["XS", "SM", "MD", "LG", "XL", "XXL", "XXXL", "XXXXL"]);
+
 function isValidEmail(email: string): boolean {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+function isValidBirthdayMmDdYyyy(value: string): boolean {
+    if (!/^\d{8}$/.test(value)) return false;
+
+    const month = Number(value.slice(0, 2));
+    const day = Number(value.slice(2, 4));
+    const year = Number(value.slice(4, 8));
+
+    if (month < 1 || month > 12) return false;
+    if (year < 1900 || year > 2100) return false;
+
+    const maxDaysInMonth = new Date(year, month, 0).getDate();
+    return day >= 1 && day <= maxDaysInMonth;
+}
+
 export async function POST(req: Request) {
     try {
-        const { fullName, username, email, password } = await req.json();
+        const { fullName, username, email, password, address, tshirtSize, favoriteColor, hatSize, birthday } = await req.json();
 
         const cleanFullName = String(fullName || "").trim();
         const cleanUsername = String(username || "").trim().toLowerCase();
         const cleanEmail = String(email || "").trim().toLowerCase();
         const cleanPassword = String(password || "");
+        const cleanAddress = String(address || "").trim();
+        const cleanTshirtSize = String(tshirtSize || "").trim().toUpperCase();
+        const cleanFavoriteColor = String(favoriteColor || "").trim();
+        const cleanHatSize = String(hatSize || "").trim();
+        const cleanBirthday = String(birthday || "").trim();
 
-        if (!cleanFullName || !cleanUsername || !cleanEmail || !cleanPassword) {
+        if (
+            !cleanFullName ||
+            !cleanUsername ||
+            !cleanEmail ||
+            !cleanPassword ||
+            !cleanAddress ||
+            !cleanTshirtSize ||
+            !cleanFavoriteColor ||
+            !cleanHatSize ||
+            !cleanBirthday
+        ) {
             return NextResponse.json(
                 { success: false, error: "All registration fields are required." },
                 { status: 400 }
@@ -34,6 +65,20 @@ export async function POST(req: Request) {
         if (!isValidEmail(cleanEmail)) {
             return NextResponse.json(
                 { success: false, error: "Please provide a valid email address." },
+                { status: 400 }
+            );
+        }
+
+        if (!T_SHIRT_SIZES.has(cleanTshirtSize)) {
+            return NextResponse.json(
+                { success: false, error: "Please select a valid T-shirt size." },
+                { status: 400 }
+            );
+        }
+
+        if (!isValidBirthdayMmDdYyyy(cleanBirthday)) {
+            return NextResponse.json(
+                { success: false, error: "Birthday must be in MMDDYYYY format and a valid date." },
                 { status: 400 }
             );
         }
@@ -61,6 +106,11 @@ export async function POST(req: Request) {
             username: cleanUsername,
             email: cleanEmail,
             passwordHash,
+            address: cleanAddress,
+            tshirtSize: cleanTshirtSize,
+            favoriteColor: cleanFavoriteColor,
+            hatSize: cleanHatSize,
+            birthday: cleanBirthday,
         });
 
         const adminEmails = await getAdminNotificationEmails();
@@ -69,6 +119,11 @@ export async function POST(req: Request) {
             fullName: cleanFullName,
             username: cleanUsername,
             email: cleanEmail,
+            address: cleanAddress,
+            tshirtSize: cleanTshirtSize,
+            favoriteColor: cleanFavoriteColor,
+            hatSize: cleanHatSize,
+            birthday: cleanBirthday,
         });
 
         return NextResponse.json({
