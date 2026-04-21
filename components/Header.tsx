@@ -178,6 +178,14 @@ export default function Header() {
                         Donate
                     </Link>
 
+                    <Link
+                        href="/register"
+                        className="nav-link"
+                        onClick={() => setOpen(false)}
+                    >
+                        Register
+                    </Link>
+
                     {!loadingAuth && adminUser && (
                         <Link
                             href="/admin/messages"

@@ -129,7 +129,7 @@ export default function AdminLoginPage() {
     return (
         <main className="min-h-screen bg-black text-white flex items-center justify-center px-4">
             <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6">
-                <h1 className="text-2xl font-semibold mb-4">Admin Access</h1>
+                <h1 className="text-2xl font-semibold mb-4">User Access Portal</h1>
 
                 <div className="mb-5 grid grid-cols-2 rounded-lg border border-white/15 p-1">
                     <button
@@ -196,7 +196,7 @@ export default function AdminLoginPage() {
 
                         <p className="text-sm">
                             <Link href="/admin/reset-password" className="text-red-300 hover:text-red-200 underline">
-                                Forgot password?
+                                Forgot admin password?
                             </Link>
                         </p>
                     </form>
@@ -261,6 +261,13 @@ export default function AdminLoginPage() {
                         </button>
                     </form>
                 )}
+
+                <div className="mt-5 rounded-lg border border-white/10 bg-black/30 p-3 text-xs text-slate-300 space-y-1">
+                    <p className="font-semibold text-slate-200">Role titles:</p>
+                    <p>Member: register and change password.</p>
+                    <p>Secretary: manage gallery and view contact messages.</p>
+                    <p>Treasurer: view donations.</p>
+                </div>
 
                 {success && <p className="mt-4 text-sm text-emerald-400">{success}</p>}
                 {error && <p className="mt-4 text-sm text-red-400">{error}</p>}

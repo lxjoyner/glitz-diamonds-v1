@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createDonationRecord } from "@/lib/donation-db";
 
 const MIN_AMOUNT_CENTS = 100;
 const MAX_AMOUNT_CENTS = 100000;
@@ -117,6 +118,16 @@ export async function POST(request: NextRequest) {
                 },
                 { status: 502 }
             );
+        }
+
+        if (stripeData.id) {
+            await createDonationRecord({
+                donorName: body.donorName?.trim(),
+                donorEmail: body.donorEmail?.trim(),
+                message: body.message?.trim().slice(0, 250),
+                amountCents: unitAmount,
+                stripeSessionId: stripeData.id,
+            });
         }
 
         return NextResponse.json({ checkoutUrl: stripeData.url, sessionId: stripeData.id });

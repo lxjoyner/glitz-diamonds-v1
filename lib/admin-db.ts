@@ -234,3 +234,18 @@ export async function consumePasswordResetToken(rawToken: string): Promise<Admin
 
     return token;
 }
+
+export async function getAdminNotificationEmails(): Promise<string[]> {
+    await ensureAdminSecurityTables();
+
+    const [rows] = await pool.query(
+        `
+        SELECT DISTINCT s.reset_email AS email
+        FROM admins a
+        JOIN admin_security s ON s.admin_id = a.id
+        WHERE a.is_active = 1 AND s.reset_email IS NOT NULL AND s.reset_email <> ''
+        `
+    );
+
+    return (rows as Array<{ email: string }>).map((item) => item.email);
+}

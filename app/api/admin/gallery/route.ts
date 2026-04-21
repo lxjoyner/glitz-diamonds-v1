@@ -20,7 +20,7 @@ function requireAdmin(req: NextRequest) {
     try {
         const payload = verifyAdminToken(token);
 
-        if (payload.role !== "admin") {
+        if (payload.role !== "admin" && payload.role !== "secretary") {
             return { error: NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 }) };
         }
 
