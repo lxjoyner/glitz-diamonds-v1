@@ -1,6 +1,6 @@
 import pool from "@/lib/db";
 
-export type UserRole = "member" | "secretary" | "treasurer";
+export type UserRole = "member" | "secretary" | "treasurer" | "admin";
 
 export type SiteUser = {
     id: number;
@@ -181,4 +181,20 @@ export async function deleteUserById(userId: number) {
     );
 
     return Number((result as { affectedRows?: number }).affectedRows || 0);
+}
+
+export async function getUserForAdminSync(userId: number): Promise<Pick<SiteUser, "id" | "username" | "password_hash" | "is_active"> | null> {
+    await ensureUsersTable();
+
+    const [rows] = await pool.query(
+        `
+        SELECT id, username, password_hash, is_active
+        FROM users
+        WHERE id = ?
+        LIMIT 1
+        `,
+        [userId]
+    );
+
+    return ((rows as Array<Pick<SiteUser, "id" | "username" | "password_hash" | "is_active">>)[0]) ?? null;
 }
