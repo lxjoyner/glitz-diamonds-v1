@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     try {
         const payload = verifyAdminToken(token);
 
-        if (payload.role !== "admin") {
+        if (payload.role !== "admin" && payload.role !== "secretary") {
             return NextResponse.json(
                 { success: false, error: "Forbidden" },
                 { status: 403 }
