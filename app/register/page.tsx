@@ -41,17 +41,6 @@ export default function RegisterPage() {
             value = value.toUpperCase().slice(0, 2);
         }
 
-        if (name === "birthday") {
-            const digits = value.replace(/\D/g, "").slice(0, 8);
-            if (digits.length <= 2) {
-                value = digits;
-            } else if (digits.length <= 4) {
-                value = `${digits.slice(0, 2)}/${digits.slice(2)}`;
-            } else {
-                value = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
-            }
-        }
-
         setForm((prev) => ({ ...prev, [name]: value }));
     };
 
@@ -81,10 +70,11 @@ export default function RegisterPage() {
                 throw new Error("Zip code must be exactly 5 numbers.");
             }
 
-            const birthdayDigits = form.birthday.replace(/\D/g, "");
-            if (birthdayDigits.length !== 8) {
-                throw new Error("Birthday must be in MM/DD/YYYY format.");
+            const birthdayMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(form.birthday);
+            if (!birthdayMatch) {
+                throw new Error("Birthday is required.");
             }
+            const birthdayDigits = `${birthdayMatch[2]}${birthdayMatch[3]}${birthdayMatch[1]}`;
 
             const fullName = [form.firstName, form.middleInitial, form.lastName].filter(Boolean).join(" ");
             const address = [form.streetAddress, form.city, form.state, form.zipCode].filter(Boolean).join(", ");
@@ -349,30 +339,14 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-sm text-slate-300">Birthday (MM/DD/YYYY)</label>
+                        <label className="mb-1 block text-sm text-slate-300">Birthday</label>
                         <input
+                            type="date"
                             name="birthday"
                             value={form.birthday}
                             onChange={onChange}
-                            inputMode="numeric"
-                            pattern="(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])/(19|20)[0-9]{2}"
-                            maxLength={10}
-                            placeholder="MM/DD/YYYY"
                             className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
                             required
-                        />
-                        <input
-                            type="date"
-                            onChange={(event) => {
-                                const selected = event.target.value;
-                                if (!selected) return;
-                                const [year, month, day] = selected.split("-");
-                                setForm((prev) => ({
-                                    ...prev,
-                                    birthday: `${month}/${day}/${year}`,
-                                }));
-                            }}
-                            className="mt-2 w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
                         />
                     </div>
 

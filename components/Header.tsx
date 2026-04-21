@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 type AdminUser = {
     id: number;
@@ -16,6 +16,7 @@ export default function Header() {
     const [loadingAuth, setLoadingAuth] = useState(true);
     const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
     const router = useRouter();
+    const pathname = usePathname();
 
     useEffect(() => {
         async function loadAdminStatus() {
@@ -41,7 +42,7 @@ export default function Header() {
         }
 
         loadAdminStatus();
-    }, []);
+    }, [pathname, open]);
 
     const handleLogout = async () => {
         try {

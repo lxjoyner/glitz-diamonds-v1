@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type AuthUser = {
     id: string;
@@ -43,12 +43,36 @@ type DonationRecord = {
     donor_email: string | null;
     message: string | null;
     amount_cents: number;
+    payment_status?: string;
     created_at: string;
 };
 
-function formatDate(value: string) {
-    const parsedDate = new Date(value);
-    return Number.isNaN(parsedDate.getTime()) ? "Unknown date" : parsedDate.toLocaleString();
+type DashboardSettings = {
+    timezone: string;
+    date_format: string;
+    time_format: string;
+};
+
+const DATE_FORMAT_OPTIONS = ["MMM d, yyyy", "MM/dd/yyyy", "yyyy-MM-dd"];
+const TIME_FORMAT_OPTIONS = ["h:mm a", "HH:mm", "h:mm:ss a"];
+
+function toIntlOptions(dateFormat: string, timeFormat: string): Intl.DateTimeFormatOptions {
+    const dateOptions: Record<string, Intl.DateTimeFormatOptions> = {
+        "MMM d, yyyy": { month: "short", day: "numeric", year: "numeric" },
+        "MM/dd/yyyy": { month: "2-digit", day: "2-digit", year: "numeric" },
+        "yyyy-MM-dd": { year: "numeric", month: "2-digit", day: "2-digit" },
+    };
+
+    const timeOptions: Record<string, Intl.DateTimeFormatOptions> = {
+        "h:mm a": { hour: "numeric", minute: "2-digit", hour12: true },
+        "HH:mm": { hour: "2-digit", minute: "2-digit", hour12: false },
+        "h:mm:ss a": { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true },
+    };
+
+    return {
+        ...(dateOptions[dateFormat] || dateOptions["MMM d, yyyy"]),
+        ...(timeOptions[timeFormat] || timeOptions["h:mm a"]),
+    };
 }
 
 export default function AdminMessagesPage() {
@@ -63,21 +87,53 @@ export default function AdminMessagesPage() {
     const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [galleryError, setGalleryError] = useState("");
     const [gallerySuccess, setGallerySuccess] = useState("");
+    const [settings, setSettings] = useState<DashboardSettings>({
+        timezone: "America/Chicago",
+        date_format: "MMM d, yyyy",
+        time_format: "h:mm a",
+    });
+    const [settingsMessage, setSettingsMessage] = useState("");
 
     const canManageUsers = user?.role === "admin";
     const canManageGallery = user?.role === "admin" || user?.role === "secretary";
     const canViewMessages = user?.role === "admin" || user?.role === "secretary";
     const canViewDonations = user?.role === "admin" || user?.role === "treasurer";
 
-    const loadMe = async () => {
+    const formatter = useMemo(
+        () =>
+            new Intl.DateTimeFormat(
+                "en-US",
+                {
+                    ...toIntlOptions(settings.date_format, settings.time_format),
+                    timeZone: settings.timezone,
+                }
+            ),
+        [settings.date_format, settings.time_format, settings.timezone]
+    );
+
+    function formatDate(value: string) {
+        const parsedDate = new Date(value);
+        return Number.isNaN(parsedDate.getTime()) ? "Unknown date" : formatter.format(parsedDate);
+    }
+
+    const loadMe = useCallback(async () => {
         const meRes = await fetch("/api/admin/me", { cache: "no-store" });
         const meData = await meRes.json();
         if (meData?.authenticated) {
             setUser(meData.user);
         }
-    };
+    }, []);
 
-    const loadGallery = async () => {
+    const loadSettings = useCallback(async () => {
+        if (!canManageUsers) return;
+        const res = await fetch("/api/admin/settings", { cache: "no-store" });
+        const data = await res.json();
+        if (data?.success && data.settings) {
+            setSettings(data.settings);
+        }
+    }, [canManageUsers]);
+
+    const loadGallery = useCallback(async () => {
         if (!canManageGallery) return;
         const galleryRes = await fetch("/api/admin/gallery", { cache: "no-store" });
         const galleryData = await galleryRes.json();
@@ -85,28 +141,28 @@ export default function AdminMessagesPage() {
         if (galleryData?.success) {
             setGalleryItems(galleryData.images || []);
         }
-    };
+    }, [canManageGallery]);
 
-    const loadMessages = async () => {
+    const loadMessages = useCallback(async () => {
         if (!canViewMessages) return;
-        const res = await fetch("/api/admin/messages");
+        const res = await fetch("/api/admin/messages", { cache: "no-store" });
         const data = await res.json();
         if (data?.success) setMessages(data.messages || []);
-    };
+    }, [canViewMessages]);
 
-    const loadUsers = async () => {
+    const loadUsers = useCallback(async () => {
         if (!canManageUsers) return;
         const res = await fetch("/api/admin/users", { cache: "no-store" });
         const data = await res.json();
         if (data?.success) setSiteUsers(data.users || []);
-    };
+    }, [canManageUsers]);
 
-    const loadDonations = async () => {
+    const loadDonations = useCallback(async () => {
         if (!canViewDonations) return;
         const res = await fetch("/api/admin/donations", { cache: "no-store" });
         const data = await res.json();
         if (data?.success) setDonations(data.donations || []);
-    };
+    }, [canViewDonations]);
 
     useEffect(() => {
         async function init() {
@@ -114,20 +170,80 @@ export default function AdminMessagesPage() {
         }
 
         init();
-    }, []);
+    }, [loadMe]);
 
     useEffect(() => {
         if (!user) return;
+        loadSettings();
         loadMessages();
         loadGallery();
         loadUsers();
         loadDonations();
-    }, [user?.role]);
+    }, [user, loadSettings, loadMessages, loadGallery, loadUsers, loadDonations]);
 
     const handleLogout = async () => {
         await fetch("/api/admin/logout", { method: "POST" });
         router.push("/admin/login");
         router.refresh();
+    };
+
+    const handleSaveSettings = async () => {
+        setSettingsMessage("");
+        const response = await fetch("/api/admin/settings", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                timezone: settings.timezone,
+                dateFormat: settings.date_format,
+                timeFormat: settings.time_format,
+            }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            setSettingsMessage(data?.error || "Failed to save settings.");
+            return;
+        }
+
+        setSettings(data.settings);
+        setSettingsMessage("Settings saved.");
+    };
+
+    const handleSyncStripeDonations = async () => {
+        const response = await fetch("/api/admin/donations", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mode: "stripe", limit: 50 }),
+        });
+        const data = await response.json();
+        if (data?.success) {
+            setDonations(data.donations || []);
+        }
+    };
+
+    const handleAddManualDonation = async () => {
+        const amount = window.prompt("Donation amount in dollars (example 25.00):");
+        if (!amount) return;
+        const donorName = window.prompt("Donor name (optional):") || "";
+        const donorEmail = window.prompt("Donor email (optional):") || "";
+        const message = window.prompt("Message (optional):") || "";
+
+        const response = await fetch("/api/admin/donations", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                mode: "manual",
+                amountCents: Math.round(Number(amount) * 100),
+                donorName,
+                donorEmail,
+                message,
+            }),
+        });
+
+        const data = await response.json();
+        if (data?.success) {
+            setDonations(data.donations || []);
+        }
     };
 
     const handleUploadGalleryImage = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -223,6 +339,39 @@ export default function AdminMessagesPage() {
 
                 {canManageUsers && (
                     <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
+                        <h2 className="text-2xl font-semibold">Dashboard Date/Time Settings</h2>
+                        <div className="mt-4 grid gap-4 md:grid-cols-3">
+                            <input
+                                value={settings.timezone}
+                                onChange={(event) => setSettings((prev) => ({ ...prev, timezone: event.target.value }))}
+                                placeholder="Timezone (e.g. America/Chicago)"
+                                className="rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
+                            />
+                            <select
+                                value={settings.date_format}
+                                onChange={(event) => setSettings((prev) => ({ ...prev, date_format: event.target.value }))}
+                                className="rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
+                            >
+                                {DATE_FORMAT_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+                            </select>
+                            <select
+                                value={settings.time_format}
+                                onChange={(event) => setSettings((prev) => ({ ...prev, time_format: event.target.value }))}
+                                className="rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
+                            >
+                                {TIME_FORMAT_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+                            </select>
+                        </div>
+                        <div className="mt-3 flex items-center gap-3">
+                            <button onClick={handleSaveSettings} className="rounded-lg bg-red-800 px-4 py-2 text-sm hover:bg-red-500">Save settings</button>
+                            <p className="text-xs text-slate-300">Preview: {formatDate(new Date().toISOString())}</p>
+                        </div>
+                        {settingsMessage && <p className="mt-2 text-sm text-slate-300">{settingsMessage}</p>}
+                    </section>
+                )}
+
+                {canManageUsers && (
+                    <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
                         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <h2 className="text-2xl font-semibold">Member Role Manager</h2>
                             <Link
@@ -306,13 +455,19 @@ export default function AdminMessagesPage() {
 
                 {canViewDonations && (
                     <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
-                        <h2 className="text-2xl font-semibold">Donations</h2>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <h2 className="text-2xl font-semibold">Donations</h2>
+                            <div className="flex gap-2">
+                                <button onClick={handleSyncStripeDonations} className="rounded-lg border border-white/20 px-3 py-2 text-xs hover:bg-white/10">Sync Stripe</button>
+                                <button onClick={handleAddManualDonation} className="rounded-lg border border-white/20 px-3 py-2 text-xs hover:bg-white/10">Add manual</button>
+                            </div>
+                        </div>
                         <div className="mt-4 space-y-3">
                             {donations.map((record) => (
                                 <div key={record.id} className="rounded-lg border border-white/10 p-3">
                                     <p className="font-medium">${(record.amount_cents / 100).toFixed(2)} - {record.donor_name || "Anonymous"}</p>
                                     <p className="text-sm text-slate-300">{record.donor_email || "No email"}</p>
-                                    <p className="text-xs text-slate-400">{formatDate(record.created_at)}</p>
+                                    <p className="text-xs text-slate-400">{formatDate(record.created_at)} ({record.payment_status || "pending"})</p>
                                 </div>
                             ))}
                             {donations.length === 0 && <p className="text-sm text-slate-400">No donations recorded yet.</p>}
