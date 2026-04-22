@@ -198,3 +198,19 @@ export async function getUserForAdminSync(userId: number): Promise<Pick<SiteUser
 
     return ((rows as Array<Pick<SiteUser, "id" | "username" | "password_hash" | "is_active">>)[0]) ?? null;
 }
+
+export async function getActiveUsersForPollEmails(): Promise<Array<Pick<SiteUser, "id" | "email" | "full_name" | "role">>> {
+    await ensureUsersTable();
+    const [rows] = await pool.query(
+        `
+        SELECT id, email, full_name, role
+        FROM users
+        WHERE is_active = 1
+          AND email <> ''
+          AND role IN ('member', 'secretary', 'treasurer', 'admin')
+        ORDER BY full_name ASC
+        `
+    );
+
+    return rows as Array<Pick<SiteUser, "id" | "email" | "full_name" | "role">>;
+}
