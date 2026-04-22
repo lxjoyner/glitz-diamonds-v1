@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { getChicagoDateKey } from "@/lib/timezone";
 
 export type VisitLogItem = {
     id: string;
@@ -33,6 +34,6 @@ export function writeVisitLog(item: VisitLogItem) {
 }
 
 export function getTodayVisitCount() {
-    const today = new Date().toISOString().slice(0, 10);
-    return readVisitLogs().filter((item) => item.createdAt.startsWith(today)).length;
+    const today = getChicagoDateKey();
+    return readVisitLogs().filter((item) => getChicagoDateKey(item.createdAt) === today).length;
 }

@@ -1,4 +1,5 @@
 import pool from "@/lib/db";
+import { getChicagoDateKey } from "@/lib/timezone";
 
 export async function insertPageVisit(input: {
     pagePath: string;
@@ -21,13 +22,13 @@ export async function insertPageVisit(input: {
 }
 
 export async function getTodayVisitCount(): Promise<number> {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getChicagoDateKey();
 
     const [rows] = await pool.query(
         `
         SELECT COUNT(*) AS count
         FROM page_visits
-        WHERE DATE(created_at) = ?
+        WHERE DATE(CONVERT_TZ(created_at, "+00:00", "America/Chicago")) = ?
         `,
         [today]
     );

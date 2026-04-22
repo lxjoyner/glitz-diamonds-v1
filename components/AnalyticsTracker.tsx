@@ -2,12 +2,13 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { getChicagoDateKey } from "@/lib/timezone";
 
 export default function AnalyticsTracker() {
     const pathname = usePathname();
 
     useEffect(() => {
-        const key = `visit-tracked-${pathname}-${new Date().toISOString().slice(0, 10)}`;
+        const key = `visit-tracked-${pathname}-${getChicagoDateKey()}`;
 
         if (sessionStorage.getItem(key)) {
             return;
