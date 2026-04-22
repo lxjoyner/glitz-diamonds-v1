@@ -19,14 +19,14 @@ const REQUIRED_SMTP_ENV_KEYS = [
     "PASSWORD_RESET_FROM_EMAIL",
 ] as const;
 
-function getMissingSmtpConfigKeys(): string[] {
+export function getMissingSmtpConfigKeys(): string[] {
     return REQUIRED_SMTP_ENV_KEYS.filter((key) => {
         const value = process.env[key];
         return !value || !value.trim();
     });
 }
 
-function hasSmtpConfig(): boolean {
+export function hasSmtpConfig(): boolean {
     return getMissingSmtpConfigKeys().length === 0;
 }
 

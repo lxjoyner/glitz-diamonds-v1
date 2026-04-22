@@ -1,6 +1,6 @@
 import path from "path";
 import { writeEmailLog } from "@/lib/email-log";
-import { getSmtpTransport } from "@/lib/mailer";
+import { getMissingSmtpConfigKeys, getSmtpTransport, hasSmtpConfig } from "@/lib/mailer";
 
 function escapeHtml(value: string): string {
     return value
@@ -31,6 +31,20 @@ export async function sendPollInvitationEmail(params: {
     }
 
     const subject = `New Poll: ${params.ideaTitle}`;
+
+    if (!hasSmtpConfig()) {
+        const missingSmtpKeys = getMissingSmtpConfigKeys();
+        console.warn(`SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping poll invitation email dispatch.`);
+        writeEmailLog({
+            channel: "poll-email",
+            status: "skipped",
+            to: params.toEmail,
+            subject,
+            reason: "missing_smtp_config",
+            details: { missingEnv: missingSmtpKeys },
+        });
+        return { sent: false as const, reason: "missing_smtp_config" as const };
+    }
 
     writeEmailLog({
         channel: "poll-email",
