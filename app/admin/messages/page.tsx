@@ -77,7 +77,7 @@ const FALLBACK_TIMEZONE_OPTIONS = [
  *
  * Set this to false if plain MySQL DATETIME values are stored as local/server time.
  */
-const MYSQL_DATETIME_IS_UTC = false;
+const MYSQL_DATETIME_IS_UTC = true;
 
 function getTimezoneOptions() {
     const intlWithSupportedValues = Intl as typeof Intl & {
