@@ -429,12 +429,20 @@ export default function AdminMessagesPage() {
                     <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
                         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <h2 className="text-2xl font-semibold">Member Role Manager</h2>
-                            <Link
-                                href="/admin/membership"
-                                className="rounded-lg border border-white/20 px-3 py-2 text-sm hover:bg-white/10"
-                            >
-                                Open membership page
-                            </Link>
+                            <div className="flex flex-wrap gap-2">
+                                <Link
+                                    href="/admin/membership"
+                                    className="rounded-lg border border-white/20 px-3 py-2 text-sm hover:bg-white/10"
+                                >
+                                    Open membership page
+                                </Link>
+                                <Link
+                                    href="/admin/ideas-activities"
+                                    className="rounded-lg border border-fuchsia-300/40 px-3 py-2 text-sm text-fuchsia-100 hover:bg-fuchsia-500/20"
+                                >
+                                    Ideas & Activities
+                                </Link>
+                            </div>
                         </div>
                         <p className="mt-2 text-sm text-slate-300">Admin can change or remove member roles.</p>
                         <div className="mt-4 space-y-3">
