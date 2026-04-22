@@ -30,7 +30,7 @@ function hasSmtpConfig(): boolean {
     return getMissingSmtpConfigKeys().length === 0;
 }
 
-function getSmtpTransport() {
+export function getSmtpTransport() {
     return nodemailer.createTransport({
         host: getRequiredEnv("SMTP_HOST"),
         port: Number(getRequiredEnv("SMTP_PORT")),

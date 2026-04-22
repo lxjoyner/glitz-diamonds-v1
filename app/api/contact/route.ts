@@ -1,7 +1,7 @@
-import nodemailer from "nodemailer";
 import path from "path";
 import { insertContactMessage } from "@/lib/contact-db";
 import { writeEmailLog } from "@/lib/email-log";
+import { getSmtpTransport } from "@/lib/mailer";
 
 function escapeHtml(value: string): string {
     return value
@@ -50,20 +50,17 @@ export async function POST(req: Request) {
             );
         }
 
-        const transporter = nodemailer.createTransport({
-            host: "smtp.hostinger.com",
-            port: 465,
-            secure: true,
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS,
-            },
-        });
+        const transporter = getSmtpTransport();
+        const fromEmail = process.env.PASSWORD_RESET_FROM_EMAIL || process.env.SMTP_USER || process.env.EMAIL_USER;
+
+        if (!fromEmail) {
+            throw new Error("Missing environment variable: PASSWORD_RESET_FROM_EMAIL or SMTP_USER");
+        }
 
         writeEmailLog({
             channel: "contact-admin-notification",
             status: "attempt",
-            to: process.env.CONTACT_TO_EMAIL || process.env.EMAIL_USER,
+            to: process.env.CONTACT_TO_EMAIL || fromEmail,
             subject: `New Contact Form Message from ${cleanName}`,
         });
 
@@ -84,8 +81,8 @@ export async function POST(req: Request) {
         ];
 
         await transporter.sendMail({
-            from: `"Glitz Of Diamonds Contact Form" <${process.env.EMAIL_USER}>`,
-            to: process.env.CONTACT_TO_EMAIL || process.env.EMAIL_USER,
+            from: `"Glitz Of Diamonds Contact Form" <${fromEmail}>`,
+            to: process.env.CONTACT_TO_EMAIL || fromEmail,
             replyTo: `"${cleanName}" <${cleanEmail}>`,
             subject: `New Contact Form Message from ${cleanName}`,
             attachments: logoAttachment,
@@ -152,7 +149,7 @@ export async function POST(req: Request) {
         writeEmailLog({
             channel: "contact-admin-notification",
             status: "success",
-            to: process.env.CONTACT_TO_EMAIL || process.env.EMAIL_USER,
+            to: process.env.CONTACT_TO_EMAIL || fromEmail,
             subject: `New Contact Form Message from ${cleanName}`,
         });
 
@@ -164,7 +161,7 @@ export async function POST(req: Request) {
         });
 
         await transporter.sendMail({
-            from: `"Glitz Of Diamonds" <${process.env.EMAIL_USER}>`,
+            from: `"Glitz Of Diamonds" <${fromEmail}>`,
             to: cleanEmail,
             subject: "We received your message",
             attachments: logoAttachment,
