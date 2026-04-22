@@ -1,6 +1,6 @@
 import path from "path";
 import { writeEmailLog } from "@/lib/email-log";
-import { getMissingSmtpConfigKeys, getSmtpTransport, hasSmtpConfig } from "@/lib/mailer";
+import { getFromEmailAddress, getMissingSmtpConfigKeys, getSmtpTransport, hasSmtpConfig } from "@/lib/mailer";
 
 function escapeHtml(value: string): string {
     return value
@@ -18,9 +18,11 @@ export async function sendPollInvitationEmail(params: {
     question: string;
     options: Array<{ label: string; voteUrl: string }>;
 }) {
-    const fromEmail = process.env.PASSWORD_RESET_FROM_EMAIL || process.env.SMTP_USER || process.env.EMAIL_USER;
+    let fromEmail: string;
 
-    if (!fromEmail) {
+    try {
+        fromEmail = getFromEmailAddress();
+    } catch {
         writeEmailLog({
             channel: "poll-email",
             status: "skipped",

@@ -1,7 +1,7 @@
 import path from "path";
 import { insertContactMessage } from "@/lib/contact-db";
 import { writeEmailLog } from "@/lib/email-log";
-import { getSmtpTransport } from "@/lib/mailer";
+import { getFromEmailAddress, getSmtpTransport } from "@/lib/mailer";
 
 function escapeHtml(value: string): string {
     return value
@@ -51,16 +51,12 @@ export async function POST(req: Request) {
         }
 
         const transporter = getSmtpTransport();
-        const fromEmail = process.env.PASSWORD_RESET_FROM_EMAIL || process.env.SMTP_USER || process.env.EMAIL_USER;
-
-        if (!fromEmail) {
-            throw new Error("Missing environment variable: PASSWORD_RESET_FROM_EMAIL or SMTP_USER");
-        }
+        const fromEmail = getFromEmailAddress();
 
         writeEmailLog({
             channel: "contact-admin-notification",
             status: "attempt",
-            to: process.env.CONTACT_TO_EMAIL || fromEmail,
+            to: process.env.CONTACT_TO_EMAIL || process.env.CONTACT_TO_WEMAIL || fromEmail,
             subject: `New Contact Form Message from ${cleanName}`,
         });
 
@@ -82,7 +78,7 @@ export async function POST(req: Request) {
 
         await transporter.sendMail({
             from: `"Glitz Of Diamonds Contact Form" <${fromEmail}>`,
-            to: process.env.CONTACT_TO_EMAIL || fromEmail,
+            to: process.env.CONTACT_TO_EMAIL || process.env.CONTACT_TO_WEMAIL || fromEmail,
             replyTo: `"${cleanName}" <${cleanEmail}>`,
             subject: `New Contact Form Message from ${cleanName}`,
             attachments: logoAttachment,
@@ -149,7 +145,7 @@ export async function POST(req: Request) {
         writeEmailLog({
             channel: "contact-admin-notification",
             status: "success",
-            to: process.env.CONTACT_TO_EMAIL || fromEmail,
+            to: process.env.CONTACT_TO_EMAIL || process.env.CONTACT_TO_WEMAIL || fromEmail,
             subject: `New Contact Form Message from ${cleanName}`,
         });
 

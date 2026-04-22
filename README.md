@@ -60,6 +60,11 @@ SMTP_SECURE=false
 SMTP_USER=your-smtp-user
 SMTP_PASS=your-smtp-password
 PASSWORD_RESET_FROM_EMAIL=no-reply@example.com
+
+# Optional Hostinger aliases also supported by the app:
+# EMAIL_USERW=women@glitzofdiamonds.com
+# EMAIL_PASSW=your-hostinger-password
+# CONTACT_TO_WEMAIL=women@glitzofdiamonds.com
 ```
 
 ### Admin reset-email setup
