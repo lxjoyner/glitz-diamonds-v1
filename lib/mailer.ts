@@ -11,14 +11,23 @@ function getRequiredEnv(name: string): string {
     return value;
 }
 
+const REQUIRED_SMTP_ENV_KEYS = [
+    "SMTP_HOST",
+    "SMTP_PORT",
+    "SMTP_USER",
+    "SMTP_PASS",
+    "PASSWORD_RESET_FROM_EMAIL",
+] as const;
+
+function getMissingSmtpConfigKeys(): string[] {
+    return REQUIRED_SMTP_ENV_KEYS.filter((key) => {
+        const value = process.env[key];
+        return !value || !value.trim();
+    });
+}
+
 function hasSmtpConfig(): boolean {
-    return Boolean(
-        process.env.SMTP_HOST &&
-            process.env.SMTP_PORT &&
-            process.env.SMTP_USER &&
-            process.env.SMTP_PASS &&
-            process.env.PASSWORD_RESET_FROM_EMAIL
-    );
+    return getMissingSmtpConfigKeys().length === 0;
 }
 
 function getSmtpTransport() {
@@ -39,14 +48,16 @@ export async function sendAdminPasswordResetEmail(params: {
     resetUrl: string;
 }) {
     if (!hasSmtpConfig()) {
+        const missingSmtpKeys = getMissingSmtpConfigKeys();
         console.warn(
-            "SMTP config is incomplete. Skipping admin password-reset email dispatch."
+            `SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping admin password-reset email dispatch.`
         );
         writeEmailLog({
             channel: "admin-password-reset",
             status: "skipped",
             to: params.toEmail,
             reason: "missing_smtp_config",
+            details: { missingEnv: missingSmtpKeys },
         });
         return { sent: false as const, reason: "missing_smtp_config" as const };
     }
@@ -103,12 +114,14 @@ export async function sendMemberRegistrationNotification(params: {
     birthday: string;
 }) {
     if (!hasSmtpConfig()) {
-        console.warn("SMTP config is incomplete. Skipping member registration email dispatch.");
+        const missingSmtpKeys = getMissingSmtpConfigKeys();
+        console.warn(`SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping member registration email dispatch.`);
         writeEmailLog({
             channel: "member-registration-notification",
             status: "skipped",
             to: params.toEmails,
             reason: "missing_smtp_config",
+            details: { missingEnv: missingSmtpKeys },
         });
         return { sent: false as const, reason: "missing_smtp_config" as const };
     }
@@ -168,12 +181,14 @@ export async function sendMemberRegistrationConfirmation(params: {
     fullName: string;
 }) {
     if (!hasSmtpConfig()) {
-        console.warn("SMTP config is incomplete. Skipping member registration confirmation email.");
+        const missingSmtpKeys = getMissingSmtpConfigKeys();
+        console.warn(`SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping member registration confirmation email.`);
         writeEmailLog({
             channel: "member-registration-confirmation",
             status: "skipped",
             to: params.toEmail,
             reason: "missing_smtp_config",
+            details: { missingEnv: missingSmtpKeys },
         });
         return { sent: false as const, reason: "missing_smtp_config" as const };
     }
@@ -226,12 +241,14 @@ export async function sendPollEmail(params: {
     options: Array<{ label: string; voteUrl: string }>;
 }) {
     if (!hasSmtpConfig()) {
-        console.warn("SMTP config is incomplete. Skipping poll email dispatch.");
+        const missingSmtpKeys = getMissingSmtpConfigKeys();
+        console.warn(`SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping poll email dispatch.`);
         writeEmailLog({
             channel: "poll-email",
             status: "skipped",
             to: params.toEmail,
             reason: "missing_smtp_config",
+            details: { missingEnv: missingSmtpKeys },
         });
         return { sent: false as const, reason: "missing_smtp_config" as const };
     }
@@ -247,9 +264,9 @@ export async function sendPollEmail(params: {
 
     try {
         const transporter = getSmtpTransport();
-    const htmlOptions = params.options
-        .map((opt) => `<li style="margin: 8px 0;"><a href="${opt.voteUrl}">${opt.label}</a></li>`)
-        .join("");
+        const htmlOptions = params.options
+            .map((opt) => `<li style="margin: 8px 0;"><a href="${opt.voteUrl}">${opt.label}</a></li>`)
+            .join("");
 
         await transporter.sendMail({
             from: getRequiredEnv("PASSWORD_RESET_FROM_EMAIL"),
