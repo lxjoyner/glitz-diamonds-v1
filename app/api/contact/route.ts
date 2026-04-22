@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import path from "path";
 import { insertContactMessage } from "@/lib/contact-db";
+import { writeEmailLog } from "@/lib/email-log";
 
 function escapeHtml(value: string): string {
     return value
@@ -57,6 +58,13 @@ export async function POST(req: Request) {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS,
             },
+        });
+
+        writeEmailLog({
+            channel: "contact-admin-notification",
+            status: "attempt",
+            to: process.env.CONTACT_TO_EMAIL || process.env.EMAIL_USER,
+            subject: `New Contact Form Message from ${cleanName}`,
         });
 
         await transporter.verify();
@@ -141,6 +149,20 @@ export async function POST(req: Request) {
 `,
         });
 
+        writeEmailLog({
+            channel: "contact-admin-notification",
+            status: "success",
+            to: process.env.CONTACT_TO_EMAIL || process.env.EMAIL_USER,
+            subject: `New Contact Form Message from ${cleanName}`,
+        });
+
+        writeEmailLog({
+            channel: "contact-user-confirmation",
+            status: "attempt",
+            to: cleanEmail,
+            subject: "We received your message",
+        });
+
         await transporter.sendMail({
             from: `"Glitz Of Diamonds" <${process.env.EMAIL_USER}>`,
             to: cleanEmail,
@@ -208,6 +230,13 @@ export async function POST(req: Request) {
 `,
         });
 
+        writeEmailLog({
+            channel: "contact-user-confirmation",
+            status: "success",
+            to: cleanEmail,
+            subject: "We received your message",
+        });
+
         const forwardedFor = req.headers.get("x-forwarded-for");
         const ip = forwardedFor?.split(",")[0]?.trim() || undefined;
 
@@ -221,6 +250,11 @@ export async function POST(req: Request) {
 
         return Response.json({ success: true });
     } catch (error) {
+        writeEmailLog({
+            channel: "contact-email-dispatch",
+            status: "error",
+            reason: error instanceof Error ? error.message : "unknown_error",
+        });
         console.error("Contact API error:", error);
 
         return Response.json(
