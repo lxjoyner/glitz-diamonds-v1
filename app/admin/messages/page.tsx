@@ -206,13 +206,13 @@ export default function AdminMessagesPage() {
     }, []);
 
     const loadSettings = useCallback(async () => {
-        if (!canManageUsers) return;
+        if (!user) return;
         const res = await fetch("/api/admin/settings", { cache: "no-store" });
         const data = await res.json();
         if (data?.success && data.settings) {
             setSettings(data.settings);
         }
-    }, [canManageUsers]);
+    }, [user]);
 
     const loadGallery = useCallback(async () => {
         if (!canManageGallery) return;
