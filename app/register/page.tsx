@@ -1,12 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 const T_SHIRT_SIZES = ["XS", "SM", "M", "LG", "XL", "XXL", "XXXL", "XXXXL"] as const;
 const HAT_SIZES = ["S", "M", "L", "XL"] as const;
 const GENDERS = ["Male", "Female"] as const;
 
+type InviteData = {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+};
+
 export default function RegisterPage() {
+    const searchParams = useSearchParams();
+    const inviteToken = useMemo(() => searchParams.get("invite") || "", [searchParams]);
+
+    const [inviteLoading, setInviteLoading] = useState(true);
+    const [inviteError, setInviteError] = useState("");
+    const [inviteData, setInviteData] = useState<InviteData | null>(null);
+
     const [form, setForm] = useState({
         firstName: "",
         middleInitial: "",
@@ -28,6 +43,48 @@ export default function RegisterPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+
+    useEffect(() => {
+        async function validateInvite() {
+            if (!inviteToken) {
+                setInviteError("This registration page requires a valid invite link.");
+                setInviteLoading(false);
+                return;
+            }
+
+            setInviteLoading(true);
+            setInviteError("");
+
+            try {
+                const res = await fetch(`/api/register/invite/validate?invite=${encodeURIComponent(inviteToken)}`, {
+                    cache: "no-store",
+                });
+                const data = await res.json();
+
+                if (!res.ok || !data?.success) {
+                    throw new Error(data?.error || "Invite link is invalid or expired.");
+                }
+
+                setInviteData(data.invite);
+                setForm((prev) => ({
+                    ...prev,
+                    firstName: data.invite.firstName,
+                    lastName: data.invite.lastName,
+                    email: data.invite.email,
+                }));
+            } catch (inviteValidationError) {
+                setInviteError(
+                    inviteValidationError instanceof Error
+                        ? inviteValidationError.message
+                        : "Invite link is invalid or expired."
+                );
+            } finally {
+                setInviteLoading(false);
+            }
+        }
+
+        validateInvite();
+    }, [inviteToken]);
 
     const onChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name } = event.target;
@@ -63,6 +120,10 @@ export default function RegisterPage() {
         setSuccess("");
 
         try {
+            if (!inviteToken) {
+                throw new Error("A valid invite token is required.");
+            }
+
             if (form.middleInitial && form.middleInitial.trim().length < 3) {
                 throw new Error("Middle initials must be at least 3 characters when provided.");
             }
@@ -95,6 +156,7 @@ export default function RegisterPage() {
                     birthday: birthdayDigits,
                     fullName,
                     address,
+                    inviteToken,
                 }),
             });
 
@@ -105,12 +167,10 @@ export default function RegisterPage() {
             }
 
             setSuccess(data?.message || "Registered successfully.");
-            setForm({
-                firstName: "",
+            setForm((prev) => ({
+                ...prev,
                 middleInitial: "",
-                lastName: "",
                 username: "",
-                email: "",
                 password: "",
                 streetAddress: "",
                 city: "",
@@ -121,7 +181,7 @@ export default function RegisterPage() {
                 hatSize: "",
                 gender: "",
                 birthday: "",
-            });
+            }));
             setConfirmPassword("");
         } catch (submitError) {
             setError(submitError instanceof Error ? submitError.message : "Registration failed.");
@@ -130,12 +190,33 @@ export default function RegisterPage() {
         }
     };
 
+    if (inviteLoading) {
+        return (
+            <main className="min-h-screen bg-black text-white px-4 py-12">
+                <div className="mx-auto max-w-xl rounded-2xl border border-white/10 bg-white/5 p-6">
+                    <p className="text-sm text-slate-300">Validating your invite link...</p>
+                </div>
+            </main>
+        );
+    }
+
+    if (inviteError || !inviteData) {
+        return (
+            <main className="min-h-screen bg-black text-white px-4 py-12">
+                <div className="mx-auto max-w-xl rounded-2xl border border-red-500/30 bg-red-500/10 p-6">
+                    <h1 className="text-2xl font-semibold">Registration Invite Required</h1>
+                    <p className="mt-3 text-sm text-red-100">{inviteError || "Invite link is missing."}</p>
+                </div>
+            </main>
+        );
+    }
+
     return (
         <main className="min-h-screen bg-black text-white px-4 py-12">
             <div className="mx-auto max-w-xl rounded-2xl border border-white/10 bg-white/5 p-6">
                 <h1 className="text-3xl font-semibold">Member Registration</h1>
                 <p className="mt-2 text-sm text-slate-300">
-                    Register as a Member to access member features and change your password.
+                    You were invited to register as a member. Complete the required details below.
                 </p>
 
                 <form onSubmit={onSubmit} className="mt-6 space-y-4">
@@ -144,8 +225,8 @@ export default function RegisterPage() {
                         <input
                             name="firstName"
                             value={form.firstName}
-                            onChange={onChange}
-                            className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
+                            readOnly
+                            className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm opacity-80"
                             required
                         />
                     </div>
@@ -167,8 +248,8 @@ export default function RegisterPage() {
                         <input
                             name="lastName"
                             value={form.lastName}
-                            onChange={onChange}
-                            className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
+                            readOnly
+                            className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm opacity-80"
                             required
                         />
                     </div>
@@ -190,18 +271,15 @@ export default function RegisterPage() {
                             type="email"
                             name="email"
                             value={form.email}
-                            onChange={onChange}
-                            className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
+                            readOnly
+                            className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm opacity-80"
                             required
                         />
                     </div>
 
                     <div>
                         <label className="mb-1 block text-sm text-slate-300">
-                            Password{" "}
-                            <span className="text-xs text-slate-400">
-                                (Min 12 chars, uppercase, lowercase, number, symbol: !@#$%&*)
-                            </span>
+                            Password <span className="text-xs text-slate-400">(Min 12 chars, uppercase, lowercase, number, symbol: !@#$%&*)</span>
                         </label>
                         <input
                             type="password"
@@ -263,33 +341,34 @@ export default function RegisterPage() {
                         />
                     </div>
 
-                    <div>
-                        <label className="mb-1 block text-sm text-slate-300">State</label>
-                        <input
-                            name="state"
-                            value={form.state}
-                            onChange={onChange}
-                            maxLength={2}
-                            autoComplete="address-level1"
-                            className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm uppercase"
-                            required
-                        />
-                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="mb-1 block text-sm text-slate-300">State (2 letters)</label>
+                            <input
+                                name="state"
+                                value={form.state}
+                                onChange={onChange}
+                                maxLength={2}
+                                autoComplete="address-level1"
+                                className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm uppercase"
+                                required
+                            />
+                        </div>
 
-                    <div>
-                        <label className="mb-1 block text-sm text-slate-300">Zip Code</label>
-                        <input
-                            name="zipCode"
-                            value={form.zipCode}
-                            onChange={onChange}
-                            inputMode="numeric"
-                            pattern="[0-9]{5}"
-                            maxLength={5}
-                            minLength={5}
-                            autoComplete="postal-code"
-                            className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
-                            required
-                        />
+                        <div>
+                            <label className="mb-1 block text-sm text-slate-300">Zip Code</label>
+                            <input
+                                name="zipCode"
+                                inputMode="numeric"
+                                pattern="\d{5}"
+                                maxLength={5}
+                                value={form.zipCode}
+                                onChange={onChange}
+                                autoComplete="postal-code"
+                                className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
+                                required
+                            />
+                        </div>
                     </div>
 
                     <div>
@@ -329,7 +408,7 @@ export default function RegisterPage() {
                             className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
                             required
                         >
-                            <option value="">Select hat size</option>
+                            <option value="">Select size</option>
                             {HAT_SIZES.map((size) => (
                                 <option key={size} value={size}>
                                     {size}
@@ -348,9 +427,9 @@ export default function RegisterPage() {
                             required
                         >
                             <option value="">Select gender</option>
-                            {GENDERS.map((gender) => (
-                                <option key={gender} value={gender}>
-                                    {gender}
+                            {GENDERS.map((genderOption) => (
+                                <option key={genderOption} value={genderOption}>
+                                    {genderOption}
                                 </option>
                             ))}
                         </select>
@@ -368,17 +447,17 @@ export default function RegisterPage() {
                         />
                     </div>
 
+                    {error && <p className="text-sm text-red-400">{error}</p>}
+                    {success && <p className="text-sm text-green-400">{success}</p>}
+
                     <button
                         type="submit"
                         disabled={loading}
-                        className="rounded-lg bg-red-800 px-4 py-2 text-sm font-medium hover:bg-red-600 disabled:opacity-60"
+                        className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold hover:bg-emerald-500 disabled:opacity-60"
                     >
-                        {loading ? "Registering..." : "Register"}
+                        {loading ? "Submitting..." : "Register"}
                     </button>
                 </form>
-
-                {success && <p className="mt-4 text-sm text-emerald-400">{success}</p>}
-                {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
             </div>
         </main>
     );

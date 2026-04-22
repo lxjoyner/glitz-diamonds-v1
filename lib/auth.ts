@@ -6,6 +6,15 @@ export type AdminJwtPayload = JwtPayload & {
     role: string;
 };
 
+export type MemberInviteJwtPayload = JwtPayload & {
+    purpose: "member_registration_invite";
+    invitedBy: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+};
+
 function getJwtSecret(): Secret {
     const secret = process.env.JWT_SECRET;
 
@@ -46,4 +55,46 @@ export function verifyAdminToken(token: string): AdminJwtPayload {
     }
 
     return decoded as AdminJwtPayload;
+}
+
+export function signMemberInviteToken(payload: {
+    invitedBy: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+}): string {
+    return jwt.sign(
+        {
+            purpose: "member_registration_invite",
+            invitedBy: payload.invitedBy,
+            firstName: payload.firstName,
+            lastName: payload.lastName,
+            email: payload.email,
+            phoneNumber: payload.phoneNumber,
+        },
+        getJwtSecret(),
+        { expiresIn: "7d" }
+    );
+}
+
+export function verifyMemberInviteToken(token: string): MemberInviteJwtPayload {
+    const decoded = jwt.verify(token, getJwtSecret());
+
+    if (typeof decoded === "string") {
+        throw new Error("Invalid invite token payload");
+    }
+
+    if (
+        decoded.purpose !== "member_registration_invite" ||
+        typeof decoded.invitedBy !== "string" ||
+        typeof decoded.firstName !== "string" ||
+        typeof decoded.lastName !== "string" ||
+        typeof decoded.email !== "string" ||
+        typeof decoded.phoneNumber !== "string"
+    ) {
+        throw new Error("Invalid invite token structure");
+    }
+
+    return decoded as MemberInviteJwtPayload;
 }

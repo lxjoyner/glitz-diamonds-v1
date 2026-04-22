@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createRegisteredUser, getUserByEmail, getUserByUsername } from "@/lib/user-db";
 import { getAdminNotificationEmails } from "@/lib/admin-db";
 import { sendMemberRegistrationConfirmation, sendMemberRegistrationNotification } from "@/lib/mailer";
+import { verifyMemberInviteToken } from "@/lib/auth";
 
 const T_SHIRT_SIZES = new Set(["XS", "SM", "M", "LG", "XL", "XXL", "XXXL", "XXXXL"]);
 const HAT_SIZES = new Set(["S", "M", "L", "XL"]);
@@ -50,6 +51,7 @@ export async function POST(req: Request) {
             hatSize,
             gender,
             birthday,
+            inviteToken,
         } = await req.json();
 
         const cleanFirstName = String(firstName || "").trim();
@@ -71,6 +73,25 @@ export async function POST(req: Request) {
         const cleanHatSize = String(hatSize || "").trim().toUpperCase();
         const cleanGender = String(gender || "").trim();
         const cleanBirthday = String(birthday || "").trim();
+        const cleanInviteToken = String(inviteToken || "").trim();
+
+        if (!cleanInviteToken) {
+            return NextResponse.json(
+                { success: false, error: "A valid member invite link is required." },
+                { status: 403 }
+            );
+        }
+
+        let invitePayload;
+
+        try {
+            invitePayload = verifyMemberInviteToken(cleanInviteToken);
+        } catch {
+            return NextResponse.json(
+                { success: false, error: "Invite link is invalid or expired." },
+                { status: 403 }
+            );
+        }
 
         if (
             !cleanFullName ||
@@ -86,6 +107,27 @@ export async function POST(req: Request) {
         ) {
             return NextResponse.json(
                 { success: false, error: "All registration fields are required." },
+                { status: 400 }
+            );
+        }
+
+        if (cleanFirstName.toLowerCase() !== invitePayload.firstName.trim().toLowerCase()) {
+            return NextResponse.json(
+                { success: false, error: "First name must match the invited member." },
+                { status: 400 }
+            );
+        }
+
+        if (cleanLastName.toLowerCase() !== invitePayload.lastName.trim().toLowerCase()) {
+            return NextResponse.json(
+                { success: false, error: "Last name must match the invited member." },
+                { status: 400 }
+            );
+        }
+
+        if (cleanEmail !== invitePayload.email.trim().toLowerCase()) {
+            return NextResponse.json(
+                { success: false, error: "Email address must match the invite link." },
                 { status: 400 }
             );
         }
