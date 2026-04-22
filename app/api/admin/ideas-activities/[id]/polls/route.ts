@@ -9,7 +9,7 @@ import {
     upsertPollEmailToken,
 } from "@/lib/ideas-activities-db";
 import { getActiveUsersForPollEmails } from "@/lib/user-db";
-import { sendPollEmail } from "@/lib/mailer";
+import { sendPollInvitationEmail } from "@/lib/poll-mailer";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const token = req.cookies.get("glitz_token")?.value;
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
                 voteUrl: `${appBaseUrl}/api/polls/respond?token=${encodeURIComponent(plainToken)}&optionId=${opt.id}`,
             }));
 
-            const result = await sendPollEmail({
+            const result = await sendPollInvitationEmail({
                 toEmail: member.email,
                 recipientName: member.full_name || member.email,
                 ideaTitle: idea?.title || `Idea #${id}`,
