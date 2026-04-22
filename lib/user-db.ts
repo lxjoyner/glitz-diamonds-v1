@@ -131,6 +131,24 @@ export async function getUserByEmail(email: string): Promise<SiteUser | null> {
     return (rows as SiteUser[])[0] ?? null;
 }
 
+export async function getUserById(userId: number): Promise<SiteUser | null> {
+    await ensureUsersTable();
+
+    const [rows] = await pool.query(
+        `
+        SELECT
+            id, username, email, full_name, password_hash, address, tshirt_size, favorite_color, hat_size, gender, birthday,
+            role, is_active, created_at, updated_at
+        FROM users
+        WHERE id = ?
+        LIMIT 1
+        `,
+        [userId]
+    );
+
+    return (rows as SiteUser[])[0] ?? null;
+}
+
 export async function updateUserPassword(userId: number, passwordHash: string) {
     await ensureUsersTable();
 

@@ -157,3 +157,86 @@ export async function sendPollInvitationEmail(params: {
         throw error;
     }
 }
+
+export async function sendPollResponseNotificationEmail(params: {
+    toEmail: string;
+    respondentName: string;
+    respondentEmail: string;
+    ideaTitle: string;
+    question: string;
+    selectedOption: string;
+}) {
+    let fromEmail: string;
+
+    try {
+        fromEmail = getFromEmailAddress();
+    } catch {
+        writeEmailLog({
+            channel: "poll-response-email",
+            status: "skipped",
+            to: params.toEmail,
+            reason: "missing_from_email",
+        });
+        return { sent: false as const, reason: "missing_from_email" as const };
+    }
+
+    const subject = `Poll Response Received: ${params.ideaTitle}`;
+
+    if (!hasSmtpConfig()) {
+        const missingSmtpKeys = getMissingSmtpConfigKeys();
+        writeEmailLog({
+            channel: "poll-response-email",
+            status: "skipped",
+            to: params.toEmail,
+            subject,
+            reason: "missing_smtp_config",
+            details: { missingEnv: missingSmtpKeys },
+        });
+        return { sent: false as const, reason: "missing_smtp_config" as const };
+    }
+
+    writeEmailLog({
+        channel: "poll-response-email",
+        status: "attempt",
+        to: params.toEmail,
+        subject,
+    });
+
+    try {
+        const transporter = getSmtpTransport();
+        await transporter.sendMail({
+            from: `"Glitz Of Diamonds Polls" <${fromEmail}>`,
+            to: params.toEmail,
+            subject,
+            text: `A new poll response was submitted.\n\nMember: ${params.respondentName}\nEmail: ${params.respondentEmail}\nActivity: ${params.ideaTitle}\nQuestion: ${params.question}\nSelected Option: ${params.selectedOption}\n`,
+            html: `
+                <div style="font-family:Arial,sans-serif;color:#0f172a;">
+                    <h2>Poll response received</h2>
+                    <p><strong>Member:</strong> ${escapeHtml(params.respondentName)}</p>
+                    <p><strong>Email:</strong> ${escapeHtml(params.respondentEmail)}</p>
+                    <p><strong>Activity:</strong> ${escapeHtml(params.ideaTitle)}</p>
+                    <p><strong>Question:</strong> ${escapeHtml(params.question)}</p>
+                    <p><strong>Selected Option:</strong> ${escapeHtml(params.selectedOption)}</p>
+                </div>
+            `,
+        });
+
+        writeEmailLog({
+            channel: "poll-response-email",
+            status: "success",
+            to: params.toEmail,
+            subject,
+        });
+
+        return { sent: true as const };
+    } catch (error) {
+        writeEmailLog({
+            channel: "poll-response-email",
+            status: "error",
+            to: params.toEmail,
+            subject,
+            reason: error instanceof Error ? error.message : "unknown_error",
+        });
+        throw error;
+    }
+}

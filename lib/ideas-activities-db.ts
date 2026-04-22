@@ -303,8 +303,8 @@ export async function voteInPoll(pollId: number, optionId: number, userId: numbe
 
 export async function getPollWithOptionsForValidation(pollId: number) {
     await ensureIdeasActivitiesTables();
-    const [pollRows] = await pool.query(`SELECT id, question FROM idea_polls WHERE id = ? LIMIT 1`, [pollId]);
-    const poll = (pollRows as Array<{ id: number; question: string }>)[0];
+    const [pollRows] = await pool.query(`SELECT id, idea_id, question FROM idea_polls WHERE id = ? LIMIT 1`, [pollId]);
+    const poll = (pollRows as Array<{ id: number; idea_id: number; question: string }>)[0];
 
     if (!poll) return null;
 
