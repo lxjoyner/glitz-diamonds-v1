@@ -1,0 +1,352 @@
+[
+  {
+    "id": "92568a29-6cbe-48b9-a15b-a8454b92678c",
+    "createdAt": "2026-04-22T04:31:44.445Z",
+    "channel": "poll-email",
+    "status": "skipped",
+    "to": "yoljoyner@gmail.com",
+    "subject": "New Poll: Testing the ability",
+    "reason": "missing_smtp_config",
+    "details": {
+      "missingEnv": [
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "SMTP_USER",
+        "SMTP_PASS",
+        "PASSWORD_RESET_FROM_EMAIL"
+      ]
+    }
+  },
+  {
+    "id": "6cb6eed9-8eb9-41a2-8357-131eb089f886",
+    "createdAt": "2026-04-22T04:31:44.391Z",
+    "channel": "poll-email",
+    "status": "skipped",
+    "to": "lavasier@hotmail.com",
+    "subject": "New Poll: Testing the ability",
+    "reason": "missing_smtp_config",
+    "details": {
+      "missingEnv": [
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "SMTP_USER",
+        "SMTP_PASS",
+        "PASSWORD_RESET_FROM_EMAIL"
+      ]
+    }
+  },
+  {
+    "id": "47ce4c7d-ecf4-47da-8240-09d596dbbadd",
+    "createdAt": "2026-04-22T04:31:44.338Z",
+    "channel": "poll-email",
+    "status": "skipped",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Testing the ability",
+    "reason": "missing_smtp_config",
+    "details": {
+      "missingEnv": [
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "SMTP_USER",
+        "SMTP_PASS",
+        "PASSWORD_RESET_FROM_EMAIL"
+      ]
+    }
+  },
+  {
+    "id": "49e69288-845a-4e1f-8b89-b0f9a78ab7ed",
+    "createdAt": "2026-04-22T04:13:38.203Z",
+    "channel": "poll-email",
+    "status": "error",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test",
+    "reason": "Missing environment variable: SMTP_HOST"
+  },
+  {
+    "id": "71d1a21d-3d2b-43ca-85a9-e504a5bbfcaf",
+    "createdAt": "2026-04-22T04:13:38.150Z",
+    "channel": "poll-email",
+    "status": "attempt",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test"
+  },
+  {
+    "id": "7c239e2a-a4a0-4694-b01d-9fe6a39211b8",
+    "createdAt": "2026-04-22T04:13:37.905Z",
+    "channel": "poll-email",
+    "status": "error",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test",
+    "reason": "Missing environment variable: SMTP_HOST"
+  },
+  {
+    "id": "44437860-f6a0-49e4-ba00-d508560d5909",
+    "createdAt": "2026-04-22T04:13:37.852Z",
+    "channel": "poll-email",
+    "status": "attempt",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test"
+  },
+  {
+    "id": "6532ff44-8161-4f52-99b0-bcfc89b3f66e",
+    "createdAt": "2026-04-22T04:13:37.531Z",
+    "channel": "poll-email",
+    "status": "error",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test",
+    "reason": "Missing environment variable: SMTP_HOST"
+  },
+  {
+    "id": "d37cafaa-7b00-4277-ade2-0dbea9139a69",
+    "createdAt": "2026-04-22T04:13:37.478Z",
+    "channel": "poll-email",
+    "status": "attempt",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test"
+  },
+  {
+    "id": "a10db629-94e9-4786-9026-f7ca36b27066",
+    "createdAt": "2026-04-22T04:13:37.317Z",
+    "channel": "poll-email",
+    "status": "error",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test",
+    "reason": "Missing environment variable: SMTP_HOST"
+  },
+  {
+    "id": "5cf615b6-b6a4-4a90-9776-4514ef55add0",
+    "createdAt": "2026-04-22T04:13:37.264Z",
+    "channel": "poll-email",
+    "status": "attempt",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test"
+  },
+  {
+    "id": "3fd830a2-820f-4bb0-b7a0-45148dd6e802",
+    "createdAt": "2026-04-22T04:13:37.109Z",
+    "channel": "poll-email",
+    "status": "error",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test",
+    "reason": "Missing environment variable: SMTP_HOST"
+  },
+  {
+    "id": "d99a163b-9944-4321-8a75-6799d40ab0bc",
+    "createdAt": "2026-04-22T04:13:37.055Z",
+    "channel": "poll-email",
+    "status": "attempt",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test"
+  },
+  {
+    "id": "612600e0-148e-4bf3-9baa-4d4f3cc823f1",
+    "createdAt": "2026-04-22T04:13:36.868Z",
+    "channel": "poll-email",
+    "status": "error",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test",
+    "reason": "Missing environment variable: SMTP_HOST"
+  },
+  {
+    "id": "6b45ee9f-c833-4d15-93e5-e74e82f6374d",
+    "createdAt": "2026-04-22T04:13:36.817Z",
+    "channel": "poll-email",
+    "status": "attempt",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test"
+  },
+  {
+    "id": "c6e9787c-0038-4e00-a568-19e712991927",
+    "createdAt": "2026-04-22T04:13:36.675Z",
+    "channel": "poll-email",
+    "status": "error",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test",
+    "reason": "Missing environment variable: SMTP_HOST"
+  },
+  {
+    "id": "8808f1c7-f5df-4292-ad45-bf8884a254c6",
+    "createdAt": "2026-04-22T04:13:36.631Z",
+    "channel": "poll-email",
+    "status": "attempt",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test"
+  },
+  {
+    "id": "5de36d77-a1a9-4b56-8a58-03e374ca78b0",
+    "createdAt": "2026-04-22T04:13:36.129Z",
+    "channel": "poll-email",
+    "status": "error",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test",
+    "reason": "Missing environment variable: SMTP_HOST"
+  },
+  {
+    "id": "90141b24-a61b-4a91-bbf0-8d557f275d33",
+    "createdAt": "2026-04-22T04:13:36.089Z",
+    "channel": "poll-email",
+    "status": "attempt",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test"
+  },
+  {
+    "id": "05c6c2fa-d03a-4756-a4e9-0932ddbb0d18",
+    "createdAt": "2026-04-22T04:13:06.225Z",
+    "channel": "poll-email",
+    "status": "error",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test",
+    "reason": "Missing environment variable: SMTP_HOST"
+  },
+  {
+    "id": "5316c307-58ac-4fe7-aaf9-9f956a837714",
+    "createdAt": "2026-04-22T04:13:06.186Z",
+    "channel": "poll-email",
+    "status": "attempt",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test"
+  },
+  {
+    "id": "f3534a9b-ffb5-48e0-b41a-fa4f4bbbabdc",
+    "createdAt": "2026-04-22T04:12:37.448Z",
+    "channel": "poll-email",
+    "status": "error",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test",
+    "reason": "Missing environment variable: SMTP_HOST"
+  },
+  {
+    "id": "61aadd13-78f2-4c9b-8366-abcbfb18c449",
+    "createdAt": "2026-04-22T04:12:37.402Z",
+    "channel": "poll-email",
+    "status": "attempt",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test"
+  },
+  {
+    "id": "e2e1ec35-0c6f-4a61-995b-5d97d5647cfa",
+    "createdAt": "2026-04-22T03:55:46.884Z",
+    "channel": "poll-email",
+    "status": "skipped",
+    "to": "yoljoyner@gmail.com",
+    "reason": "missing_smtp_config",
+    "details": {
+      "missingEnv": [
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "SMTP_USER",
+        "SMTP_PASS",
+        "PASSWORD_RESET_FROM_EMAIL"
+      ]
+    }
+  },
+  {
+    "id": "ff9fec15-6301-4072-bd1a-a4c0f8a6ea6b",
+    "createdAt": "2026-04-22T03:55:46.829Z",
+    "channel": "poll-email",
+    "status": "skipped",
+    "to": "lavasier@hotmail.com",
+    "reason": "missing_smtp_config",
+    "details": {
+      "missingEnv": [
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "SMTP_USER",
+        "SMTP_PASS",
+        "PASSWORD_RESET_FROM_EMAIL"
+      ]
+    }
+  },
+  {
+    "id": "ba9b004c-0187-4494-a58e-827b49fbe3db",
+    "createdAt": "2026-04-22T03:55:46.774Z",
+    "channel": "poll-email",
+    "status": "skipped",
+    "to": "lavasierjoyner@gmail.com",
+    "reason": "missing_smtp_config",
+    "details": {
+      "missingEnv": [
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "SMTP_USER",
+        "SMTP_PASS",
+        "PASSWORD_RESET_FROM_EMAIL"
+      ]
+    }
+  },
+  {
+    "id": "f803265a-9ee3-4efe-be3d-868b788a0aab",
+    "createdAt": "2026-04-22T03:40:00.274Z",
+    "channel": "poll-email",
+    "status": "skipped",
+    "to": "yoljoyner@gmail.com",
+    "reason": "missing_smtp_config",
+    "details": {
+      "missingEnv": [
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "SMTP_USER",
+        "SMTP_PASS",
+        "PASSWORD_RESET_FROM_EMAIL"
+      ]
+    }
+  },
+  {
+    "id": "445c2856-9963-40c0-9175-1420c9f12d53",
+    "createdAt": "2026-04-22T03:40:00.214Z",
+    "channel": "poll-email",
+    "status": "skipped",
+    "to": "lavasier@hotmail.com",
+    "reason": "missing_smtp_config",
+    "details": {
+      "missingEnv": [
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "SMTP_USER",
+        "SMTP_PASS",
+        "PASSWORD_RESET_FROM_EMAIL"
+      ]
+    }
+  },
+  {
+    "id": "a51b1de6-c15d-4a6a-b0fc-c6f0f3eecb66",
+    "createdAt": "2026-04-22T03:40:00.152Z",
+    "channel": "poll-email",
+    "status": "skipped",
+    "to": "lavasierjoyner@gmail.com",
+    "reason": "missing_smtp_config",
+    "details": {
+      "missingEnv": [
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "SMTP_USER",
+        "SMTP_PASS",
+        "PASSWORD_RESET_FROM_EMAIL"
+      ]
+    }
+  },
+  {
+    "id": "45063072-73b4-4c10-9a0d-6bbd370a6ba7",
+    "createdAt": "2026-04-22T03:27:56.045Z",
+    "channel": "poll-email",
+    "status": "skipped",
+    "to": "yoljoyner@gmail.com",
+    "reason": "missing_smtp_config"
+  },
+  {
+    "id": "6673dd0e-8f13-45ac-a39d-d01b15e6f031",
+    "createdAt": "2026-04-22T03:27:55.946Z",
+    "channel": "poll-email",
+    "status": "skipped",
+    "to": "lavasier@hotmail.com",
+    "reason": "missing_smtp_config"
+  },
+  {
+    "id": "d38c7909-81ef-47d6-8a47-d39f5be908a3",
+    "createdAt": "2026-04-22T03:27:55.870Z",
+    "channel": "poll-email",
+    "status": "skipped",
+    "to": "lavasierjoyner@gmail.com",
+    "reason": "missing_smtp_config"
+  }
+]
