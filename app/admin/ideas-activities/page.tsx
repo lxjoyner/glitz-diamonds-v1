@@ -126,6 +126,15 @@ export default function IdeasActivitiesPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    useEffect(() => {
+        const pollRefreshInterval = window.setInterval(() => {
+            loadData();
+        }, 15000);
+
+        return () => window.clearInterval(pollRefreshInterval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const submitIdea = async (mode: "submitted" | "draft") => {
         setStatusMessage("");
 

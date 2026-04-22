@@ -65,7 +65,23 @@ PASSWORD_RESET_FROM_EMAIL=no-reply@example.com
 # EMAIL_USERW=women@glitzofdiamonds.com
 # EMAIL_PASSW=your-hostinger-password
 # CONTACT_TO_WEMAIL=women@glitzofdiamonds.com
+# POLL_RESPONSE_TO_EMAIL=women@glitzofdiamonds.com
 ```
+
+### Local network testing (same Wi‑Fi)
+If you want poll links and other emailed URLs to work from phones/devices on the same Wi‑Fi, set:
+
+```bash
+APP_BASE_URL=http://192.168.68.70:3000
+```
+
+Then start dev with host binding so other devices can reach your machine:
+
+```bash
+npm run dev -- --hostname 0.0.0.0 --port 3000
+```
+
+The poll response API already stores votes in the database. If `POLL_RESPONSE_TO_EMAIL` (or fallback `CONTACT_TO_WEMAIL`) is set, each submitted email vote also sends a notification to that inbox.
 
 ### Admin reset-email setup
 Use `/admin/reset-password` and provide the admin username and email at least once so the system knows where to send rotation/reset emails.

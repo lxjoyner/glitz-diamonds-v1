@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import {
     getPollEmailTokenByHash,
+    getIdeaById,
     getPollWithOptionsForValidation,
     markPollEmailTokenUsed,
     voteInPoll,
 } from "@/lib/ideas-activities-db";
+import { getUserById } from "@/lib/user-db";
+import { sendPollResponseNotificationEmail } from "@/lib/poll-mailer";
 
 function htmlResponse(status: number, body: string) {
     return new NextResponse(`<!doctype html><html><body style="font-family: Arial, sans-serif; background: #160d23; color: #fff; padding: 24px;"><div style="max-width: 640px; margin: 0 auto; background: #2b193d; border-radius: 12px; padding: 24px;">${body}</div></body></html>`, {
@@ -50,6 +53,26 @@ export async function GET(req: NextRequest) {
 
         await voteInPoll(tokenRow.poll_id, optionId, tokenRow.user_id);
         await markPollEmailTokenUsed(tokenRow.id);
+
+        const pollResponseInbox = (process.env.POLL_RESPONSE_TO_EMAIL || process.env.CONTACT_TO_WEMAIL || "women@glitzofdiamonds.com").trim();
+        if (pollResponseInbox) {
+            const respondent = await getUserById(tokenRow.user_id);
+            const idea = await getIdeaById(poll.idea_id);
+            const ideaTitle = idea?.title || process.env.POLL_RESPONSE_IDEA_TITLE_FALLBACK || "Ideas & Activities Poll";
+
+            try {
+                await sendPollResponseNotificationEmail({
+                    toEmail: pollResponseInbox,
+                    respondentName: respondent?.full_name || respondent?.email || `User #${tokenRow.user_id}`,
+                    respondentEmail: respondent?.email || `user-${tokenRow.user_id}@unknown.local`,
+                    ideaTitle,
+                    question: poll.question,
+                    selectedOption: selectedOption.option_label,
+                });
+            } catch (mailError) {
+                console.error("Poll vote recorded, but failed to send poll response notification email", mailError);
+            }
+        }
 
         return htmlResponse(200, `<h1>Thank you for voting</h1><p>Your vote has been counted for: <strong>${selectedOption.option_label}</strong>.</p><p>You can close this page now.</p>`);
     } catch (error) {
