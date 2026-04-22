@@ -206,8 +206,9 @@ export async function getActiveUsersForPollEmails(): Promise<Array<Pick<SiteUser
         SELECT id, email, full_name, role
         FROM users
         WHERE is_active = 1
-          AND email <> ''
-          AND role IN ('member', 'secretary', 'treasurer', 'admin')
+          AND email IS NOT NULL
+          AND TRIM(email) <> ''
+          AND COALESCE(LOWER(role), 'member') IN ('member', 'secretary', 'treasurer', 'admin')
         ORDER BY full_name ASC
         `
     );
