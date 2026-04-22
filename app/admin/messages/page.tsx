@@ -53,6 +53,14 @@ type DashboardSettings = {
     time_format: string;
 };
 
+type RawDashboardSettings = {
+    timezone?: string;
+    date_format?: string;
+    time_format?: string;
+    dateFormat?: string;
+    timeFormat?: string;
+};
+
 const DATE_FORMAT_OPTIONS = ["MMM d, yyyy", "MM/dd/yyyy", "yyyy-MM-dd"];
 const TIME_FORMAT_OPTIONS = ["h:mm a", "HH:mm", "h:mm:ss a"];
 const FALLBACK_TIMEZONE_OPTIONS = [
@@ -62,6 +70,14 @@ const FALLBACK_TIMEZONE_OPTIONS = [
     "America/Denver",
     "UTC",
 ];
+
+/**
+ * Set this to true if plain MySQL DATETIME values in your DB are stored as UTC.
+ * Example stored value: 2026-04-22 18:30:00  (meant to represent UTC time)
+ *
+ * Set this to false if plain MySQL DATETIME values are stored as local/server time.
+ */
+const MYSQL_DATETIME_IS_UTC = false;
 
 function getTimezoneOptions() {
     const intlWithSupportedValues = Intl as typeof Intl & {
@@ -110,43 +126,70 @@ function toIntlOptions(dateFormat: string, timeFormat: string): Intl.DateTimeFor
     };
 }
 
+function normalizeSettings(raw?: RawDashboardSettings): DashboardSettings {
+    return {
+        timezone: raw?.timezone || "America/Chicago",
+        date_format: raw?.date_format || raw?.dateFormat || "MMM d, yyyy",
+        time_format: raw?.time_format || raw?.timeFormat || "h:mm a",
+    };
+}
+
 function parseStoredDate(value: string): Date | null {
     if (!value) return null;
 
-    const mysqlLikeMatch = value.match(
+    const trimmed = value.trim();
+
+    /**
+     * Matches:
+     * 2026-04-22 14:30:00
+     * 2026-04-22T14:30:00
+     * 2026-04-22 14:30:00.123456
+     * 2026-04-22T14:30:00Z
+     * 2026-04-22T14:30:00-05:00
+     */
+    const mysqlLikeMatch = trimmed.match(
         /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,6}))?(?:\s*(Z|[+-]\d{2}:\d{2}))?$/
     );
 
     if (mysqlLikeMatch) {
         const [, year, month, day, hour, minute, second, fractional = "0", timezoneOffset] =
             mysqlLikeMatch;
-        const normalizedMillis = fractional.slice(0, 3).padEnd(3, "0");
-        const baseUtcTimestamp = Date.UTC(
-                Number(year),
-                Number(month) - 1,
-                Number(day),
-                Number(hour),
-                Number(minute),
-                Number(second),
-                Number(normalizedMillis)
-        );
-        let adjustedTimestamp = baseUtcTimestamp;
 
-        if (timezoneOffset && timezoneOffset !== "Z") {
-            const offsetMatch = timezoneOffset.match(/^([+-])(\d{2}):(\d{2})$/);
-            if (offsetMatch) {
-                const [, sign, offsetHours, offsetMinutes] = offsetMatch;
-                const totalOffsetMinutes = Number(offsetHours) * 60 + Number(offsetMinutes);
-                const offsetInMs = totalOffsetMinutes * 60 * 1000;
-                adjustedTimestamp = sign === "+" ? baseUtcTimestamp - offsetInMs : baseUtcTimestamp + offsetInMs;
-            }
+        const millis = fractional.slice(0, 3).padEnd(3, "0");
+
+        // If the value already includes Z or an explicit offset, trust it.
+        if (timezoneOffset) {
+            const isoValue =
+                timezoneOffset === "Z"
+                    ? `${year}-${month}-${day}T${hour}:${minute}:${second}.${millis}Z`
+                    : `${year}-${month}-${day}T${hour}:${minute}:${second}.${millis}${timezoneOffset}`;
+
+            const parsedWithOffset = new Date(isoValue);
+            return Number.isNaN(parsedWithOffset.getTime()) ? null : parsedWithOffset;
         }
 
-        const asUtc = new Date(adjustedTimestamp);
-        return Number.isNaN(asUtc.getTime()) ? null : asUtc;
+        // Plain MySQL DATETIME with no timezone information.
+        if (MYSQL_DATETIME_IS_UTC) {
+            const parsedAsUtc = new Date(
+                `${year}-${month}-${day}T${hour}:${minute}:${second}.${millis}Z`
+            );
+            return Number.isNaN(parsedAsUtc.getTime()) ? null : parsedAsUtc;
+        }
+
+        const parsedAsLocal = new Date(
+            Number(year),
+            Number(month) - 1,
+            Number(day),
+            Number(hour),
+            Number(minute),
+            Number(second),
+            Number(millis)
+        );
+
+        return Number.isNaN(parsedAsLocal.getTime()) ? null : parsedAsLocal;
     }
 
-    const parsed = new Date(value);
+    const parsed = new Date(trimmed);
     if (!Number.isNaN(parsed.getTime())) {
         return parsed;
     }
@@ -166,11 +209,13 @@ export default function AdminMessagesPage() {
     const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [galleryError, setGalleryError] = useState("");
     const [gallerySuccess, setGallerySuccess] = useState("");
-    const [settings, setSettings] = useState<DashboardSettings>({
-        timezone: "America/Chicago",
-        date_format: "MMM d, yyyy",
-        time_format: "h:mm a",
-    });
+    const [settings, setSettings] = useState<DashboardSettings>(
+        normalizeSettings({
+            timezone: "America/Chicago",
+            date_format: "MMM d, yyyy",
+            time_format: "h:mm a",
+        })
+    );
     const [settingsMessage, setSettingsMessage] = useState("");
     const timezoneOptions = useMemo(() => getTimezoneOptions(), []);
     const userDisplayName = useMemo(() => toDisplayName(user?.username || ""), [user?.username]);
@@ -182,13 +227,10 @@ export default function AdminMessagesPage() {
 
     const formatter = useMemo(
         () =>
-            new Intl.DateTimeFormat(
-                "en-US",
-                {
-                    ...toIntlOptions(settings.date_format, settings.time_format),
-                    timeZone: settings.timezone,
-                }
-            ),
+            new Intl.DateTimeFormat("en-US", {
+                ...toIntlOptions(settings.date_format, settings.time_format),
+                timeZone: settings.timezone || "America/Chicago",
+            }),
         [settings.date_format, settings.time_format, settings.timezone]
     );
 
@@ -207,10 +249,12 @@ export default function AdminMessagesPage() {
 
     const loadSettings = useCallback(async () => {
         if (!user) return;
+
         const res = await fetch("/api/admin/settings", { cache: "no-store" });
         const data = await res.json();
+
         if (data?.success && data.settings) {
-            setSettings(data.settings);
+            setSettings(normalizeSettings(data.settings));
         }
     }, [user]);
 
@@ -270,6 +314,7 @@ export default function AdminMessagesPage() {
 
     const handleSaveSettings = async () => {
         setSettingsMessage("");
+
         const response = await fetch("/api/admin/settings", {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
@@ -281,12 +326,13 @@ export default function AdminMessagesPage() {
         });
 
         const data = await response.json();
+
         if (!response.ok) {
             setSettingsMessage(data?.error || "Failed to save settings.");
             return;
         }
 
-        setSettings(data.settings);
+        setSettings(normalizeSettings(data.settings));
         setSettingsMessage("Settings saved.");
     };
 
@@ -407,7 +453,9 @@ export default function AdminMessagesPage() {
                 <div className="mb-6 flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-semibold">Role Dashboard</h1>
-                        <p className="text-sm text-slate-300">Signed in as {user?.username || "..."} ({user?.role || "..."})</p>
+                        <p className="text-sm text-slate-300">
+                            Signed in as {user?.username || "..."} ({user?.role || "..."})
+                        </p>
                     </div>
 
                     <div className="relative group">
@@ -437,7 +485,9 @@ export default function AdminMessagesPage() {
                         <div className="mt-4 grid gap-4 md:grid-cols-3">
                             <select
                                 value={settings.timezone}
-                                onChange={(event) => setSettings((prev) => ({ ...prev, timezone: event.target.value }))}
+                                onChange={(event) =>
+                                    setSettings((prev) => ({ ...prev, timezone: event.target.value }))
+                                }
                                 className="rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
                             >
                                 {timezoneOptions.map((timezoneOption) => (
@@ -446,26 +496,51 @@ export default function AdminMessagesPage() {
                                     </option>
                                 ))}
                             </select>
+
                             <select
                                 value={settings.date_format}
-                                onChange={(event) => setSettings((prev) => ({ ...prev, date_format: event.target.value }))}
+                                onChange={(event) =>
+                                    setSettings((prev) => ({ ...prev, date_format: event.target.value }))
+                                }
                                 className="rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
                             >
-                                {DATE_FORMAT_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+                                {DATE_FORMAT_OPTIONS.map((option) => (
+                                    <option key={option} value={option}>
+                                        {option}
+                                    </option>
+                                ))}
                             </select>
+
                             <select
                                 value={settings.time_format}
-                                onChange={(event) => setSettings((prev) => ({ ...prev, time_format: event.target.value }))}
+                                onChange={(event) =>
+                                    setSettings((prev) => ({ ...prev, time_format: event.target.value }))
+                                }
                                 className="rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
                             >
-                                {TIME_FORMAT_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+                                {TIME_FORMAT_OPTIONS.map((option) => (
+                                    <option key={option} value={option}>
+                                        {option}
+                                    </option>
+                                ))}
                             </select>
                         </div>
+
                         <div className="mt-3 flex items-center gap-3">
-                            <button onClick={handleSaveSettings} className="rounded-lg bg-red-800 px-4 py-2 text-sm hover:bg-red-500">Save settings</button>
-                            <p className="text-xs text-slate-300">Preview: {formatDate(new Date().toISOString())}</p>
+                            <button
+                                onClick={handleSaveSettings}
+                                className="rounded-lg bg-red-800 px-4 py-2 text-sm hover:bg-red-500"
+                            >
+                                Save settings
+                            </button>
+                            <p className="text-xs text-slate-300">
+                                Preview: {formatDate(new Date().toISOString())}
+                            </p>
                         </div>
-                        {settingsMessage && <p className="mt-2 text-sm text-slate-300">{settingsMessage}</p>}
+
+                        {settingsMessage && (
+                            <p className="mt-2 text-sm text-slate-300">{settingsMessage}</p>
+                        )}
                     </section>
                 )}
 
@@ -488,14 +563,24 @@ export default function AdminMessagesPage() {
                                 </Link>
                             </div>
                         </div>
-                        <p className="mt-2 text-sm text-slate-300">Admin can change or remove member roles.</p>
+
+                        <p className="mt-2 text-sm text-slate-300">
+                            Admin can change or remove member roles.
+                        </p>
+
                         <div className="mt-4 space-y-3">
                             {siteUsers.map((siteUser) => (
-                                <div key={siteUser.id} className="rounded-lg border border-white/10 p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                <div
+                                    key={siteUser.id}
+                                    className="rounded-lg border border-white/10 p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+                                >
                                     <div>
-                                        <p className="font-medium">{siteUser.full_name} ({siteUser.username})</p>
+                                        <p className="font-medium">
+                                            {siteUser.full_name} ({siteUser.username})
+                                        </p>
                                         <p className="text-sm text-slate-300">{siteUser.email}</p>
                                     </div>
+
                                     <select
                                         className="rounded bg-black border border-white/20 px-3 py-2 text-sm"
                                         value={siteUser.role || ""}
@@ -516,22 +601,67 @@ export default function AdminMessagesPage() {
                 {canManageGallery && (
                     <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
                         <h2 className="text-2xl font-semibold">Gallery Manager</h2>
-                        <form onSubmit={handleUploadGalleryImage} className="mt-5 grid gap-4 md:grid-cols-[2fr_1fr_auto] md:items-end">
-                            <input type="text" value={galleryCaption} onChange={(event) => setGalleryCaption(event.target.value)} className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm" placeholder="Caption" maxLength={255} required />
-                            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={(event) => setGalleryFile(event.target.files?.[0] ?? null)} className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm" required />
-                            <button type="submit" disabled={isUploadingImage} className="rounded-lg bg-red-800 px-4 py-2 text-sm font-medium hover:bg-red-500 transition disabled:opacity-60">{isUploadingImage ? "Uploading..." : "Upload"}</button>
+
+                        <form
+                            onSubmit={handleUploadGalleryImage}
+                            className="mt-5 grid gap-4 md:grid-cols-[2fr_1fr_auto] md:items-end"
+                        >
+                            <input
+                                type="text"
+                                value={galleryCaption}
+                                onChange={(event) => setGalleryCaption(event.target.value)}
+                                className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
+                                placeholder="Caption"
+                                maxLength={255}
+                                required
+                            />
+                            <input
+                                type="file"
+                                accept="image/png,image/jpeg,image/webp,image/gif"
+                                onChange={(event) => setGalleryFile(event.target.files?.[0] ?? null)}
+                                className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
+                                required
+                            />
+                            <button
+                                type="submit"
+                                disabled={isUploadingImage}
+                                className="rounded-lg bg-red-800 px-4 py-2 text-sm font-medium hover:bg-red-500 transition disabled:opacity-60"
+                            >
+                                {isUploadingImage ? "Uploading..." : "Upload"}
+                            </button>
                         </form>
-                        {gallerySuccess && <p className="mt-3 text-sm text-emerald-400">{gallerySuccess}</p>}
-                        {galleryError && <p className="mt-3 text-sm text-red-400">{galleryError}</p>}
+
+                        {gallerySuccess && (
+                            <p className="mt-3 text-sm text-emerald-400">{gallerySuccess}</p>
+                        )}
+                        {galleryError && (
+                            <p className="mt-3 text-sm text-red-400">{galleryError}</p>
+                        )}
 
                         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                             {galleryItems.map((item) => (
-                                <div key={item.id} className="rounded-xl border border-white/10 bg-black/30 p-3">
+                                <div
+                                    key={item.id}
+                                    className="rounded-xl border border-white/10 bg-black/30 p-3"
+                                >
                                     <div className="relative h-40 overflow-hidden rounded-lg border border-white/10">
-                                        <Image src={item.imageUrl} alt={item.caption} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" unoptimized />
+                                        <Image
+                                            src={item.imageUrl}
+                                            alt={item.caption}
+                                            fill
+                                            sizes="(max-width: 768px) 100vw, 33vw"
+                                            className="object-cover"
+                                            unoptimized
+                                        />
                                     </div>
                                     <p className="mt-3 text-sm font-medium">{item.caption}</p>
-                                    <button type="button" onClick={() => handleDeleteGalleryImage(item.id)} className="mt-3 rounded-md border border-red-400/40 bg-red-900/30 px-3 py-1.5 text-xs text-red-100 hover:bg-red-900/50">Delete</button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleDeleteGalleryImage(item.id)}
+                                        className="mt-3 rounded-md border border-red-400/40 bg-red-900/30 px-3 py-1.5 text-xs text-red-100 hover:bg-red-900/50"
+                                    >
+                                        Delete
+                                    </button>
                                 </div>
                             ))}
                         </div>
@@ -543,16 +673,23 @@ export default function AdminMessagesPage() {
                         <h2 className="mb-4 text-2xl font-semibold">Contact Messages</h2>
                         <div className="space-y-4">
                             {messages.map((item) => (
-                                <div key={item.id} className="rounded-2xl border border-white/10 bg-white/5 p-5">
+                                <div
+                                    key={item.id}
+                                    className="rounded-2xl border border-white/10 bg-white/5 p-5"
+                                >
                                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                                         <div>
                                             <p className="text-lg font-medium">{item.name}</p>
                                             <p className="text-sm text-slate-300">{item.email}</p>
                                         </div>
-                                        <p className="text-sm text-slate-400">{formatDate(item.created_at)}</p>
+                                        <p className="text-sm text-slate-400">
+                                            {formatDate(item.created_at)}
+                                        </p>
                                     </div>
                                     <div className="mt-4 rounded-xl bg-black/40 border border-white/10 p-4">
-                                        <p className="whitespace-pre-wrap text-slate-200">{item.message}</p>
+                                        <p className="whitespace-pre-wrap text-slate-200">
+                                            {item.message}
+                                        </p>
                                     </div>
                                 </div>
                             ))}
@@ -565,19 +702,43 @@ export default function AdminMessagesPage() {
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <h2 className="text-2xl font-semibold">Donations</h2>
                             <div className="flex gap-2">
-                                <button onClick={handleSyncStripeDonations} className="rounded-lg border border-white/20 px-3 py-2 text-xs hover:bg-white/10">Sync Stripe</button>
-                                <button onClick={handleAddManualDonation} className="rounded-lg border border-white/20 px-3 py-2 text-xs hover:bg-white/10">Add manual</button>
+                                <button
+                                    onClick={handleSyncStripeDonations}
+                                    className="rounded-lg border border-white/20 px-3 py-2 text-xs hover:bg-white/10"
+                                >
+                                    Sync Stripe
+                                </button>
+                                <button
+                                    onClick={handleAddManualDonation}
+                                    className="rounded-lg border border-white/20 px-3 py-2 text-xs hover:bg-white/10"
+                                >
+                                    Add manual
+                                </button>
                             </div>
                         </div>
+
                         <div className="mt-4 space-y-3">
                             {donations.map((record) => (
-                                <div key={record.id} className="rounded-lg border border-white/10 p-3">
-                                    <p className="font-medium">${(record.amount_cents / 100).toFixed(2)} - {record.donor_name || "Anonymous"}</p>
-                                    <p className="text-sm text-slate-300">{record.donor_email || "No email"}</p>
-                                    <p className="text-xs text-slate-400">{formatDate(record.created_at)} ({record.payment_status || "pending"})</p>
+                                <div
+                                    key={record.id}
+                                    className="rounded-lg border border-white/10 p-3"
+                                >
+                                    <p className="font-medium">
+                                        ${(record.amount_cents / 100).toFixed(2)} -{" "}
+                                        {record.donor_name || "Anonymous"}
+                                    </p>
+                                    <p className="text-sm text-slate-300">
+                                        {record.donor_email || "No email"}
+                                    </p>
+                                    <p className="text-xs text-slate-400">
+                                        {formatDate(record.created_at)} (
+                                        {record.payment_status || "pending"})
+                                    </p>
                                 </div>
                             ))}
-                            {donations.length === 0 && <p className="text-sm text-slate-400">No donations recorded yet.</p>}
+                            {donations.length === 0 && (
+                                <p className="text-sm text-slate-400">No donations recorded yet.</p>
+                            )}
                         </div>
                     </section>
                 )}

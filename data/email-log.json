@@ -1,5 +1,501 @@
 [
   {
+    "id": "9d90ed6f-9cdf-4299-bfe4-d8418a6d7b5a",
+    "createdAt": "2026-04-22T23:18:42.837Z",
+    "channel": "contact-user-confirmation",
+    "status": "success",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "We received your message"
+  },
+  {
+    "id": "619e6169-82bb-48b2-9d35-440dc522dfca",
+    "createdAt": "2026-04-22T23:18:38.400Z",
+    "channel": "contact-user-confirmation",
+    "status": "attempt",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "We received your message"
+  },
+  {
+    "id": "476994df-bf0b-4882-a31b-9e15148458fe",
+    "createdAt": "2026-04-22T23:18:38.355Z",
+    "channel": "contact-admin-notification",
+    "status": "success",
+    "to": "contact@glitzofdiamonds.com",
+    "subject": "New Contact Form Message from Karen Stone"
+  },
+  {
+    "id": "633e3477-85a5-4e65-a5f7-87802222675d",
+    "createdAt": "2026-04-22T23:18:35.475Z",
+    "channel": "contact-admin-notification",
+    "status": "attempt",
+    "to": "contact@glitzofdiamonds.com",
+    "subject": "New Contact Form Message from Karen Stone"
+  },
+  {
+    "id": "1741491c-fd32-480b-b3ff-31244c782066",
+    "createdAt": "2026-04-22T23:14:34.237Z",
+    "channel": "contact-user-confirmation",
+    "status": "success",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "We received your message"
+  },
+  {
+    "id": "5837372f-8629-4b52-b1da-76ca6590a8de",
+    "createdAt": "2026-04-22T23:14:32.040Z",
+    "channel": "contact-user-confirmation",
+    "status": "attempt",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "We received your message"
+  },
+  {
+    "id": "42738514-4ae0-4bc4-aa79-27e45d000c56",
+    "createdAt": "2026-04-22T23:14:32.016Z",
+    "channel": "contact-admin-notification",
+    "status": "success",
+    "to": "contact@glitzofdiamonds.com",
+    "subject": "New Contact Form Message from Fred Thomas"
+  },
+  {
+    "id": "ed811a95-15dc-45af-adcf-010ca9ad1a4f",
+    "createdAt": "2026-04-22T23:14:29.522Z",
+    "channel": "contact-admin-notification",
+    "status": "attempt",
+    "to": "contact@glitzofdiamonds.com",
+    "subject": "New Contact Form Message from Fred Thomas"
+  },
+  {
+    "id": "390a0163-2cfb-46f6-b6ed-c5a33ff3f4a6",
+    "createdAt": "2026-04-22T23:12:20.213Z",
+    "channel": "contact-user-confirmation",
+    "status": "success",
+    "to": "lavasier@hotmail.com",
+    "subject": "We received your message"
+  },
+  {
+    "id": "37a6411a-131c-4cbe-a72e-77f4925331d4",
+    "createdAt": "2026-04-22T23:12:18.692Z",
+    "channel": "contact-user-confirmation",
+    "status": "attempt",
+    "to": "lavasier@hotmail.com",
+    "subject": "We received your message"
+  },
+  {
+    "id": "f53011c0-444c-42a1-8272-14e315a5d84c",
+    "createdAt": "2026-04-22T23:12:18.683Z",
+    "channel": "contact-admin-notification",
+    "status": "success",
+    "to": "contact@glitzofdiamonds.com",
+    "subject": "New Contact Form Message from James Brown"
+  },
+  {
+    "id": "b4ad695f-e2b8-4fa6-98bf-7ad3361e31ca",
+    "createdAt": "2026-04-22T23:12:16.281Z",
+    "channel": "contact-admin-notification",
+    "status": "attempt",
+    "to": "contact@glitzofdiamonds.com",
+    "subject": "New Contact Form Message from James Brown"
+  },
+  {
+    "id": "ad3a9a9a-4c64-4f5e-8484-88a9ce3f1479",
+    "createdAt": "2026-04-22T22:44:39.167Z",
+    "channel": "contact-user-confirmation",
+    "status": "success",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "We received your message"
+  },
+  {
+    "id": "a90b529e-e668-47bf-a9df-dac1ff057f9b",
+    "createdAt": "2026-04-22T22:44:37.528Z",
+    "channel": "contact-user-confirmation",
+    "status": "attempt",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "We received your message"
+  },
+  {
+    "id": "28bb36cf-eb59-475a-83c1-1e8785546c34",
+    "createdAt": "2026-04-22T22:44:37.518Z",
+    "channel": "contact-admin-notification",
+    "status": "success",
+    "to": "contact@glitzofdiamonds.com",
+    "subject": "New Contact Form Message from Bobbie Blueband"
+  },
+  {
+    "id": "d4e8136c-8b18-4f1b-8de2-a64e4bc54a32",
+    "createdAt": "2026-04-22T22:44:35.047Z",
+    "channel": "contact-admin-notification",
+    "status": "attempt",
+    "to": "contact@glitzofdiamonds.com",
+    "subject": "New Contact Form Message from Bobbie Blueband"
+  },
+  {
+    "id": "2cb0b24e-7b29-49ea-9312-dd01bb246ab7",
+    "createdAt": "2026-04-22T22:10:52.549Z",
+    "channel": "poll-response-email",
+    "status": "success",
+    "to": "women@glitzofdiamonds.com",
+    "subject": "Poll Response Received: Make 2nd Test"
+  },
+  {
+    "id": "acaf6fbf-935c-4d0b-bba4-31f07973a950",
+    "createdAt": "2026-04-22T22:10:51.238Z",
+    "channel": "poll-response-email",
+    "status": "attempt",
+    "to": "women@glitzofdiamonds.com",
+    "subject": "Poll Response Received: Make 2nd Test"
+  },
+  {
+    "id": "c00053b7-6443-4361-84c2-f058f6dc8e0a",
+    "createdAt": "2026-04-22T22:09:50.679Z",
+    "channel": "poll-response-email",
+    "status": "success",
+    "to": "women@glitzofdiamonds.com",
+    "subject": "Poll Response Received: Make 2nd Test"
+  },
+  {
+    "id": "7f84ba63-5248-47f0-bc89-f73bb78913a6",
+    "createdAt": "2026-04-22T22:09:49.343Z",
+    "channel": "poll-response-email",
+    "status": "attempt",
+    "to": "women@glitzofdiamonds.com",
+    "subject": "Poll Response Received: Make 2nd Test"
+  },
+  {
+    "id": "02cb5b83-6261-4ab4-a3c8-465582467dc1",
+    "createdAt": "2026-04-22T22:08:47.180Z",
+    "channel": "poll-response-email",
+    "status": "success",
+    "to": "women@glitzofdiamonds.com",
+    "subject": "Poll Response Received: Make 2nd Test"
+  },
+  {
+    "id": "e0f1945b-a162-4787-8ddc-eb917cf4f32b",
+    "createdAt": "2026-04-22T22:08:45.835Z",
+    "channel": "poll-response-email",
+    "status": "attempt",
+    "to": "women@glitzofdiamonds.com",
+    "subject": "Poll Response Received: Make 2nd Test"
+  },
+  {
+    "id": "8f9c99e9-e549-4cb0-a3c6-2f6c6a9a99d0",
+    "createdAt": "2026-04-22T22:05:59.610Z",
+    "channel": "poll-email",
+    "status": "success",
+    "to": "yoljoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test"
+  },
+  {
+    "id": "aa259d14-ce9b-4699-a7d6-4c5b15a4330b",
+    "createdAt": "2026-04-22T22:05:58.161Z",
+    "channel": "poll-email",
+    "status": "attempt",
+    "to": "yoljoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test"
+  },
+  {
+    "id": "e6debe46-99d4-4196-847c-d9a752bab931",
+    "createdAt": "2026-04-22T22:05:58.109Z",
+    "channel": "poll-email",
+    "status": "success",
+    "to": "lavasier@hotmail.com",
+    "subject": "New Poll: Make 2nd Test"
+  },
+  {
+    "id": "aefd3b90-c951-424c-8a01-f7251a15627d",
+    "createdAt": "2026-04-22T22:05:56.790Z",
+    "channel": "poll-email",
+    "status": "attempt",
+    "to": "lavasier@hotmail.com",
+    "subject": "New Poll: Make 2nd Test"
+  },
+  {
+    "id": "bd05ca3b-bac7-41f9-9bad-34bbd894e6a0",
+    "createdAt": "2026-04-22T22:05:56.740Z",
+    "channel": "poll-email",
+    "status": "success",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test"
+  },
+  {
+    "id": "cd02a2cd-c0ad-4a0f-87d0-b56f0306e262",
+    "createdAt": "2026-04-22T22:05:55.131Z",
+    "channel": "poll-email",
+    "status": "attempt",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test"
+  },
+  {
+    "id": "ad400b44-ff41-4d4e-a370-5ad69e1721e8",
+    "createdAt": "2026-04-22T20:51:49.029Z",
+    "channel": "contact-user-confirmation",
+    "status": "success",
+    "to": "lavasier@hotmail.com",
+    "subject": "We received your message"
+  },
+  {
+    "id": "ea592340-1baa-40ac-8227-19997e7a20d0",
+    "createdAt": "2026-04-22T20:51:47.580Z",
+    "channel": "contact-user-confirmation",
+    "status": "attempt",
+    "to": "lavasier@hotmail.com",
+    "subject": "We received your message"
+  },
+  {
+    "id": "a1219cfe-3197-4ef9-8754-1bfff665b730",
+    "createdAt": "2026-04-22T20:51:47.571Z",
+    "channel": "contact-admin-notification",
+    "status": "success",
+    "to": "contact@glitzofdiamonds.com",
+    "subject": "New Contact Form Message from Richard Jones"
+  },
+  {
+    "id": "5dd3935d-915b-4068-9f35-e57fe5114ca7",
+    "createdAt": "2026-04-22T20:51:45.087Z",
+    "channel": "contact-admin-notification",
+    "status": "attempt",
+    "to": "contact@glitzofdiamonds.com",
+    "subject": "New Contact Form Message from Richard Jones"
+  },
+  {
+    "id": "e40d8501-9008-4eac-8ca9-2e42f548e8b4",
+    "createdAt": "2026-04-22T19:11:51.403Z",
+    "channel": "contact-user-confirmation",
+    "status": "success",
+    "to": "lavasier@hotmail.com",
+    "subject": "We received your message"
+  },
+  {
+    "id": "8ed114b6-2ca4-4458-b9a9-f3cbeaa5dcdb",
+    "createdAt": "2026-04-22T19:11:48.918Z",
+    "channel": "contact-user-confirmation",
+    "status": "attempt",
+    "to": "lavasier@hotmail.com",
+    "subject": "We received your message"
+  },
+  {
+    "id": "b33d6baa-56e1-4ffd-b632-f0f4d0210df7",
+    "createdAt": "2026-04-22T19:11:48.908Z",
+    "channel": "contact-admin-notification",
+    "status": "success",
+    "to": "contact@glitzofdiamonds.com",
+    "subject": "New Contact Form Message from Tosha Robinson"
+  },
+  {
+    "id": "1ebb3709-eef7-4f14-a0e7-eea30e5efb6d",
+    "createdAt": "2026-04-22T19:11:46.177Z",
+    "channel": "contact-admin-notification",
+    "status": "attempt",
+    "to": "contact@glitzofdiamonds.com",
+    "subject": "New Contact Form Message from Tosha Robinson"
+  },
+  {
+    "id": "d6f3ce74-9186-4bac-a008-5e3fdf631ac8",
+    "createdAt": "2026-04-22T18:26:22.258Z",
+    "channel": "contact-user-confirmation",
+    "status": "success",
+    "to": "lavasier@hotmail.com",
+    "subject": "We received your message"
+  },
+  {
+    "id": "23a2f914-5d76-41f1-8902-5d0405d8e522",
+    "createdAt": "2026-04-22T18:26:20.833Z",
+    "channel": "contact-user-confirmation",
+    "status": "attempt",
+    "to": "lavasier@hotmail.com",
+    "subject": "We received your message"
+  },
+  {
+    "id": "c988283f-6247-4998-8b7c-f7a2f6e203a1",
+    "createdAt": "2026-04-22T18:26:20.805Z",
+    "channel": "contact-admin-notification",
+    "status": "success",
+    "to": "contact@glitzofdiamonds.com",
+    "subject": "New Contact Form Message from Billy Bob"
+  },
+  {
+    "id": "b8aecafc-843e-4a98-a878-3167c84266c0",
+    "createdAt": "2026-04-22T18:26:18.389Z",
+    "channel": "contact-admin-notification",
+    "status": "attempt",
+    "to": "contact@glitzofdiamonds.com",
+    "subject": "New Contact Form Message from Billy Bob"
+  },
+  {
+    "id": "8747f0e3-e016-499a-8c65-7bacb3879f98",
+    "createdAt": "2026-04-22T18:13:46.549Z",
+    "channel": "contact-user-confirmation",
+    "status": "success",
+    "to": "lavasier@hotmail.com",
+    "subject": "We received your message"
+  },
+  {
+    "id": "b50d8d26-e50a-474a-9a64-bfaf27276a75",
+    "createdAt": "2026-04-22T18:13:44.931Z",
+    "channel": "contact-user-confirmation",
+    "status": "attempt",
+    "to": "lavasier@hotmail.com",
+    "subject": "We received your message"
+  },
+  {
+    "id": "0678ec88-51af-4a7e-b65e-147268625172",
+    "createdAt": "2026-04-22T18:13:44.905Z",
+    "channel": "contact-admin-notification",
+    "status": "success",
+    "to": "contact@glitzofdiamonds.com",
+    "subject": "New Contact Form Message from George Sharp"
+  },
+  {
+    "id": "54586d2e-f867-462a-b59d-50af217e7eec",
+    "createdAt": "2026-04-22T18:13:25.301Z",
+    "channel": "contact-admin-notification",
+    "status": "attempt",
+    "to": "contact@glitzofdiamonds.com",
+    "subject": "New Contact Form Message from George Sharp"
+  },
+  {
+    "id": "1f5fb163-c480-4d40-ae9a-74e527a2b631",
+    "createdAt": "2026-04-22T18:08:02.540Z",
+    "channel": "poll-response-email",
+    "status": "success",
+    "to": "women@glitzofdiamonds.com",
+    "subject": "Poll Response Received: Testing the ability"
+  },
+  {
+    "id": "35af1145-d422-4cfc-a605-d761833c2019",
+    "createdAt": "2026-04-22T18:08:00.600Z",
+    "channel": "poll-response-email",
+    "status": "attempt",
+    "to": "women@glitzofdiamonds.com",
+    "subject": "Poll Response Received: Testing the ability"
+  },
+  {
+    "id": "8b2f0af6-182a-4767-a36b-4701bf640c18",
+    "createdAt": "2026-04-22T17:57:18.721Z",
+    "channel": "poll-response-email",
+    "status": "success",
+    "to": "women@glitzofdiamonds.com",
+    "subject": "Poll Response Received: Testing the ability"
+  },
+  {
+    "id": "6f7845f0-22b5-44b4-bbcd-0e335b2db27e",
+    "createdAt": "2026-04-22T17:57:17.283Z",
+    "channel": "poll-response-email",
+    "status": "attempt",
+    "to": "women@glitzofdiamonds.com",
+    "subject": "Poll Response Received: Testing the ability"
+  },
+  {
+    "id": "15d943a4-8b91-49d9-bfe7-576a91ac60d1",
+    "createdAt": "2026-04-22T17:55:17.877Z",
+    "channel": "poll-response-email",
+    "status": "success",
+    "to": "women@glitzofdiamonds.com",
+    "subject": "Poll Response Received: Testing the ability"
+  },
+  {
+    "id": "92eb0ee9-adfe-482f-b7ee-7582aa860fe3",
+    "createdAt": "2026-04-22T17:55:16.122Z",
+    "channel": "poll-response-email",
+    "status": "attempt",
+    "to": "women@glitzofdiamonds.com",
+    "subject": "Poll Response Received: Testing the ability"
+  },
+  {
+    "id": "46f239ee-ddb3-470a-8d22-e0f0c4036f73",
+    "createdAt": "2026-04-22T17:48:29.369Z",
+    "channel": "poll-email",
+    "status": "success",
+    "to": "yoljoyner@gmail.com",
+    "subject": "New Poll: Testing the ability"
+  },
+  {
+    "id": "3b8d18df-85fb-4232-a56c-1db32ae71560",
+    "createdAt": "2026-04-22T17:48:27.887Z",
+    "channel": "poll-email",
+    "status": "attempt",
+    "to": "yoljoyner@gmail.com",
+    "subject": "New Poll: Testing the ability"
+  },
+  {
+    "id": "5eb9a10a-55cc-4856-97fa-22f4e57d0aa0",
+    "createdAt": "2026-04-22T17:48:27.824Z",
+    "channel": "poll-email",
+    "status": "success",
+    "to": "lavasier@hotmail.com",
+    "subject": "New Poll: Testing the ability"
+  },
+  {
+    "id": "dd7c0184-ce01-4177-a087-51593d6f9dce",
+    "createdAt": "2026-04-22T17:48:26.090Z",
+    "channel": "poll-email",
+    "status": "attempt",
+    "to": "lavasier@hotmail.com",
+    "subject": "New Poll: Testing the ability"
+  },
+  {
+    "id": "bb9e5953-1213-40f8-af3f-0c26694c6e4e",
+    "createdAt": "2026-04-22T17:48:26.003Z",
+    "channel": "poll-email",
+    "status": "success",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Testing the ability"
+  },
+  {
+    "id": "ae5184bd-aa85-4645-8acc-85a8357d7fe5",
+    "createdAt": "2026-04-22T17:48:24.125Z",
+    "channel": "poll-email",
+    "status": "attempt",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Testing the ability"
+  },
+  {
+    "id": "b23a73c9-8f90-483b-a228-a2ca73e3af40",
+    "createdAt": "2026-04-22T14:50:30.558Z",
+    "channel": "poll-email",
+    "status": "success",
+    "to": "yoljoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test"
+  },
+  {
+    "id": "b7645b50-391b-4c54-a7a8-269bc0f8227e",
+    "createdAt": "2026-04-22T14:50:26.180Z",
+    "channel": "poll-email",
+    "status": "attempt",
+    "to": "yoljoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test"
+  },
+  {
+    "id": "1edfedbe-0379-4529-bac4-3666424f9bcb",
+    "createdAt": "2026-04-22T14:50:26.118Z",
+    "channel": "poll-email",
+    "status": "success",
+    "to": "lavasier@hotmail.com",
+    "subject": "New Poll: Make 2nd Test"
+  },
+  {
+    "id": "e24c3d72-381d-4932-a723-267e15f948b6",
+    "createdAt": "2026-04-22T14:50:20.975Z",
+    "channel": "poll-email",
+    "status": "attempt",
+    "to": "lavasier@hotmail.com",
+    "subject": "New Poll: Make 2nd Test"
+  },
+  {
+    "id": "05e147f5-a643-4f6d-a0a6-0c8720835251",
+    "createdAt": "2026-04-22T14:50:20.844Z",
+    "channel": "poll-email",
+    "status": "success",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test"
+  },
+  {
+    "id": "4b774470-0ba5-4c7d-ba38-02eec15055b6",
+    "createdAt": "2026-04-22T14:50:16.015Z",
+    "channel": "poll-email",
+    "status": "attempt",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Make 2nd Test"
+  },
+  {
     "id": "92568a29-6cbe-48b9-a15b-a8454b92678c",
     "createdAt": "2026-04-22T04:31:44.445Z",
     "channel": "poll-email",

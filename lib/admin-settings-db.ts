@@ -8,6 +8,12 @@ export type AdminSettings = {
     updated_at: string;
 };
 
+type UpdateAdminSettingsInput = {
+    timezone: string;
+    dateFormat: string;
+    timeFormat: string;
+};
+
 let initialized = false;
 
 async function ensureSettingsTable() {
@@ -24,13 +30,11 @@ async function ensureSettingsTable() {
         )
     `);
 
-    await pool.query(
-        `
+    await pool.query(`
         INSERT INTO admin_settings (id, timezone, date_format, time_format)
         VALUES (1, 'America/Chicago', 'MMM d, yyyy', 'h:mm a')
         ON DUPLICATE KEY UPDATE id = id
-        `
-    );
+    `);
 
     initialized = true;
 }
@@ -39,17 +43,20 @@ export async function getAdminSettings(): Promise<AdminSettings> {
     await ensureSettingsTable();
 
     const [rows] = await pool.query(
-        "SELECT id, timezone, date_format, time_format, updated_at FROM admin_settings WHERE id = 1 LIMIT 1"
+        `
+        SELECT id, timezone, date_format, time_format, updated_at
+        FROM admin_settings
+        WHERE id = 1
+        LIMIT 1
+        `
     );
 
     return (rows as AdminSettings[])[0];
 }
 
-export async function updateAdminSettings(input: {
-    timezone: string;
-    dateFormat: string;
-    timeFormat: string;
-}) {
+export async function updateAdminSettings(
+    input: UpdateAdminSettingsInput
+): Promise<AdminSettings> {
     await ensureSettingsTable();
 
     await pool.query(
