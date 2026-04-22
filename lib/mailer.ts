@@ -1,43 +1,69 @@
 import nodemailer from "nodemailer";
 import { writeEmailLog } from "@/lib/email-log";
 
-function getRequiredEnv(name: string): string {
-    const value = process.env[name];
-
-    if (!value) {
-        throw new Error(`Missing environment variable: ${name}`);
+function firstNonEmptyEnv(keys: string[]): string | undefined {
+    for (const key of keys) {
+        const value = process.env[key];
+        if (value && value.trim()) return value.trim();
     }
 
-    return value;
+    return undefined;
 }
 
-const REQUIRED_SMTP_ENV_KEYS = [
-    "SMTP_HOST",
-    "SMTP_PORT",
-    "SMTP_USER",
-    "SMTP_PASS",
-    "PASSWORD_RESET_FROM_EMAIL",
-] as const;
+function resolveSmtpConfig() {
+    const host = firstNonEmptyEnv(["SMTP_HOST"]) || (firstNonEmptyEnv(["EMAIL_USERW", "EMAIL_PASSW"]) ? "smtp.hostinger.com" : undefined);
+    const port = firstNonEmptyEnv(["SMTP_PORT"]) || (host === "smtp.hostinger.com" ? "465" : undefined);
+    const user = firstNonEmptyEnv(["SMTP_USER", "EMAIL_USERW", "EMAIL_USER"]);
+    const pass = firstNonEmptyEnv(["SMTP_PASS", "EMAIL_PASSW", "EMAIL_PASS"]);
+    const fromEmail = firstNonEmptyEnv(["PASSWORD_RESET_FROM_EMAIL", "CONTACT_TO_WEMAIL", "SMTP_USER", "EMAIL_USERW", "EMAIL_USER"]);
+    const secureEnv = firstNonEmptyEnv(["SMTP_SECURE"]);
+    const secure = secureEnv ? secureEnv.toLowerCase() === "true" : port === "465";
+
+    return { host, port, user, pass, fromEmail, secure };
+}
 
 export function getMissingSmtpConfigKeys(): string[] {
-    return REQUIRED_SMTP_ENV_KEYS.filter((key) => {
-        const value = process.env[key];
-        return !value || !value.trim();
-    });
+    const smtp = resolveSmtpConfig();
+    const missing: string[] = [];
+
+    if (!smtp.host) missing.push("SMTP_HOST");
+    if (!smtp.port) missing.push("SMTP_PORT");
+    if (!smtp.user) missing.push("SMTP_USER");
+    if (!smtp.pass) missing.push("SMTP_PASS");
+    if (!smtp.fromEmail) missing.push("PASSWORD_RESET_FROM_EMAIL");
+
+    return missing;
 }
 
 export function hasSmtpConfig(): boolean {
     return getMissingSmtpConfigKeys().length === 0;
 }
 
+export function getFromEmailAddress(): string {
+    const smtp = resolveSmtpConfig();
+
+    if (!smtp.fromEmail) {
+        throw new Error("Missing environment variable: PASSWORD_RESET_FROM_EMAIL");
+    }
+
+    return smtp.fromEmail;
+}
+
 export function getSmtpTransport() {
+    const smtp = resolveSmtpConfig();
+
+    if (!smtp.host) throw new Error("Missing environment variable: SMTP_HOST");
+    if (!smtp.port) throw new Error("Missing environment variable: SMTP_PORT");
+    if (!smtp.user) throw new Error("Missing environment variable: SMTP_USER");
+    if (!smtp.pass) throw new Error("Missing environment variable: SMTP_PASS");
+
     return nodemailer.createTransport({
-        host: getRequiredEnv("SMTP_HOST"),
-        port: Number(getRequiredEnv("SMTP_PORT")),
-        secure: String(process.env.SMTP_SECURE || "false") === "true",
+        host: smtp.host,
+        port: Number(smtp.port),
+        secure: smtp.secure,
         auth: {
-            user: getRequiredEnv("SMTP_USER"),
-            pass: getRequiredEnv("SMTP_PASS"),
+            user: smtp.user,
+            pass: smtp.pass,
         },
     });
 }
@@ -75,7 +101,7 @@ export async function sendAdminPasswordResetEmail(params: {
         const transporter = getSmtpTransport();
 
         await transporter.sendMail({
-            from: getRequiredEnv("PASSWORD_RESET_FROM_EMAIL"),
+            from: getFromEmailAddress(),
             to: params.toEmail,
             subject,
             text: `Hi ${params.username},\n\nYour admin password has reached the 60-day rotation window. Reset it using this link:\n${params.resetUrl}\n\nIf you did not request this, contact your system administrator immediately.`,
@@ -149,7 +175,7 @@ export async function sendMemberRegistrationNotification(params: {
         const transporter = getSmtpTransport();
 
         await transporter.sendMail({
-            from: getRequiredEnv("PASSWORD_RESET_FROM_EMAIL"),
+            from: getFromEmailAddress(),
             to,
             subject,
             text: `A new user registered as Member.\n\nName: ${params.fullName}\nUsername: ${params.username}\nEmail: ${params.email}\nAddress: ${params.address}\nT-Shirt Size: ${params.tshirtSize}\nFavorite Color: ${params.favoriteColor}\nHat Size: ${params.hatSize}\nGender: ${params.gender}\nBirthday (MMDDYYYY): ${params.birthday}`,
@@ -206,7 +232,7 @@ export async function sendMemberRegistrationConfirmation(params: {
         const transporter = getSmtpTransport();
 
         await transporter.sendMail({
-            from: getRequiredEnv("PASSWORD_RESET_FROM_EMAIL"),
+            from: getFromEmailAddress(),
             to: params.toEmail,
             subject,
             text: `Hi ${params.fullName},\n\nThank you for registering with Glitz of Diamonds. Your registration has been completed successfully and your member account is now active.\n\nIf you have any questions, please reply to this email.\n\n- Glitz of Diamonds`,
