@@ -1,4 +1,5 @@
 import pool from "@/lib/db";
+import { getChicagoDateKey } from "@/lib/timezone";
 
 export type ContactMessage = {
     id: number;
@@ -48,13 +49,13 @@ export async function getAllContactMessages(): Promise<ContactMessage[]> {
 }
 
 export async function getTodayContactCount(): Promise<number> {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getChicagoDateKey();
 
     const [rows] = await pool.query(
         `
         SELECT COUNT(*) AS count
         FROM contact_messages
-        WHERE DATE(created_at) = ?
+        WHERE DATE(CONVERT_TZ(created_at, "+00:00", "America/Chicago")) = ?
           AND is_spam = 0
         `,
         [today]
