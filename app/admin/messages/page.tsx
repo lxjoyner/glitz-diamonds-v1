@@ -114,14 +114,14 @@ function parseStoredDate(value: string): Date | null {
     if (!value) return null;
 
     const mysqlLikeMatch = value.match(
-        /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?$/
+        /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,6}))?(?:\s*(Z|[+-]\d{2}:\d{2}))?$/
     );
 
     if (mysqlLikeMatch) {
-        const [, year, month, day, hour, minute, second, millis = "0"] = mysqlLikeMatch;
-        const normalizedMillis = millis.padEnd(3, "0");
-        const asUtc = new Date(
-            Date.UTC(
+        const [, year, month, day, hour, minute, second, fractional = "0", timezoneOffset] =
+            mysqlLikeMatch;
+        const normalizedMillis = fractional.slice(0, 3).padEnd(3, "0");
+        const baseUtcTimestamp = Date.UTC(
                 Number(year),
                 Number(month) - 1,
                 Number(day),
@@ -129,9 +129,20 @@ function parseStoredDate(value: string): Date | null {
                 Number(minute),
                 Number(second),
                 Number(normalizedMillis)
-            )
         );
+        let adjustedTimestamp = baseUtcTimestamp;
 
+        if (timezoneOffset && timezoneOffset !== "Z") {
+            const offsetMatch = timezoneOffset.match(/^([+-])(\d{2}):(\d{2})$/);
+            if (offsetMatch) {
+                const [, sign, offsetHours, offsetMinutes] = offsetMatch;
+                const totalOffsetMinutes = Number(offsetHours) * 60 + Number(offsetMinutes);
+                const offsetInMs = totalOffsetMinutes * 60 * 1000;
+                adjustedTimestamp = sign === "+" ? baseUtcTimestamp - offsetInMs : baseUtcTimestamp + offsetInMs;
+            }
+        }
+
+        const asUtc = new Date(adjustedTimestamp);
         return Number.isNaN(asUtc.getTime()) ? null : asUtc;
     }
 
