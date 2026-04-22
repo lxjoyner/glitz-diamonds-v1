@@ -72,6 +72,14 @@ export default function IdeasActivitiesPage() {
     });
 
     const [draftFile, setDraftFile] = useState<File | null>(null);
+    const [pollForm, setPollForm] = useState({
+        ideaId: "",
+        question: "",
+        optionA: "",
+        optionB: "",
+        optionC: "",
+        optionD: "",
+    });
 
     const canSchedule = user?.role === "admin" || user?.role === "secretary";
 
@@ -187,14 +195,14 @@ export default function IdeasActivitiesPage() {
         await loadData();
     };
 
-    const createPoll = async (ideaId: number) => {
-        const question = window.prompt("Poll question", "Which should we do this Saturday?");
-        if (!question) return;
-        const optionA = window.prompt("Option 1", "Spa Day");
-        const optionB = window.prompt("Option 2", "Brunch");
-        const optionC = window.prompt("Option 3", "Hiking");
-
-        const options = [optionA, optionB, optionC].map((v) => String(v || "").trim()).filter(Boolean);
+    const createPoll = async () => {
+        const ideaId = Number(pollForm.ideaId || 0);
+        const question = pollForm.question.trim();
+        const options = [pollForm.optionA, pollForm.optionB, pollForm.optionC, pollForm.optionD].map((v) => v.trim()).filter(Boolean);
+        if (!ideaId || !question || options.length < 2) {
+            setStatusMessage("Select an activity, enter a question, and include at least 2 poll options.");
+            return;
+        }
 
         const res = await fetch(`/api/admin/ideas-activities/${ideaId}/polls`, {
             method: "POST",
@@ -208,7 +216,15 @@ export default function IdeasActivitiesPage() {
             return;
         }
 
-        setStatusMessage("Poll created.");
+        setStatusMessage(`Poll created and sent to ${data?.emailsSent ?? 0} of ${data?.recipients ?? 0} active members by email.`);
+        setPollForm({
+            ideaId: "",
+            question: "",
+            optionA: "",
+            optionB: "",
+            optionC: "",
+            optionD: "",
+        });
         await loadData();
     };
 
@@ -218,6 +234,31 @@ export default function IdeasActivitiesPage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ optionId }),
         });
+        await loadData();
+    };
+
+    const deleteIdea = async (ideaId: number) => {
+        if (!window.confirm("Remove this idea and all associated polls/calendar records?")) return;
+        const res = await fetch(`/api/admin/ideas-activities/${ideaId}`, { method: "DELETE" });
+        const data = await res.json();
+        if (!res.ok) {
+            setStatusMessage(data?.error || "Unable to remove idea.");
+            return;
+        }
+
+        setStatusMessage("Idea removed.");
+        await loadData();
+    };
+
+    const removeScheduledEvent = async (eventId: number) => {
+        if (!window.confirm("Remove this calendar item?")) return;
+        const res = await fetch(`/api/admin/ideas-activities/scheduled-events/${eventId}`, { method: "DELETE" });
+        const data = await res.json();
+        if (!res.ok) {
+            setStatusMessage(data?.error || "Unable to remove calendar item.");
+            return;
+        }
+        setStatusMessage("Calendar item removed.");
         await loadData();
     };
 
@@ -277,6 +318,26 @@ export default function IdeasActivitiesPage() {
                         <h3 className="font-semibold text-[#FFDDEE]">Popular this month</h3>
                         <p className="mt-2 text-sm text-slate-200">{smartRecommendation || "You might also like: Outdoor Yoga + Smoothie Meetup"}</p>
                     </div>
+                    <div className="rounded-2xl border border-[#D4AF37]/30 bg-[#4A2C5E]/80 p-5">
+                        <h3 className="font-semibold text-[#FFDDEE]">Create Poll (Email all active members)</h3>
+                        <p className="mt-2 text-xs text-slate-300">Sends to active members, including admins, secretary, and treasurer roles.</p>
+                        <div className="mt-3 grid gap-2">
+                            <select
+                                className="rounded-lg bg-white/10 px-3 py-2"
+                                value={pollForm.ideaId}
+                                onChange={(e) => setPollForm((prev) => ({ ...prev, ideaId: e.target.value }))}
+                            >
+                                <option value="">Select activity/idea</option>
+                                {ideas.map((idea) => <option key={idea.id} value={idea.id}>{idea.title}</option>)}
+                            </select>
+                            <input className="rounded-lg bg-white/10 px-3 py-2" placeholder="Poll question" value={pollForm.question} onChange={(e) => setPollForm((prev) => ({ ...prev, question: e.target.value }))} />
+                            <input className="rounded-lg bg-white/10 px-3 py-2" placeholder="Option 1" value={pollForm.optionA} onChange={(e) => setPollForm((prev) => ({ ...prev, optionA: e.target.value }))} />
+                            <input className="rounded-lg bg-white/10 px-3 py-2" placeholder="Option 2" value={pollForm.optionB} onChange={(e) => setPollForm((prev) => ({ ...prev, optionB: e.target.value }))} />
+                            <input className="rounded-lg bg-white/10 px-3 py-2" placeholder="Option 3 (optional)" value={pollForm.optionC} onChange={(e) => setPollForm((prev) => ({ ...prev, optionC: e.target.value }))} />
+                            <input className="rounded-lg bg-white/10 px-3 py-2" placeholder="Option 4 (optional)" value={pollForm.optionD} onChange={(e) => setPollForm((prev) => ({ ...prev, optionD: e.target.value }))} />
+                            <button className="rounded-lg bg-indigo-700 px-3 py-2 text-sm" onClick={() => createPoll()}>Create Poll + Send Email</button>
+                        </div>
+                    </div>
                 </aside>
             </section>
 
@@ -294,14 +355,18 @@ export default function IdeasActivitiesPage() {
                             <div className="mt-3 flex flex-wrap gap-2">
                                 <button className="rounded-lg bg-purple-700 px-3 py-1.5 text-sm" onClick={() => toggleVote(idea.id)}>👍 Upvote ({idea.vote_count})</button>
                                 <button className="rounded-lg bg-pink-700 px-3 py-1.5 text-sm" onClick={() => toggleFavorite(idea.id)}>❤️ Favorite ({idea.favorite_count})</button>
-                                <button className="rounded-lg bg-indigo-700 px-3 py-1.5 text-sm" onClick={() => createPoll(idea.id)}>Create Poll</button>
                                 {canSchedule && <button className="rounded-lg bg-emerald-700 px-3 py-1.5 text-sm" onClick={() => scheduleIdea(idea)}>Add to Calendar</button>}
+                                {canSchedule && <button className="rounded-lg bg-red-700 px-3 py-1.5 text-sm" onClick={() => deleteIdea(idea.id)}>Remove Idea</button>}
                                 {idea.file_name && <a className="rounded-lg bg-slate-700 px-3 py-1.5 text-sm" href={`/api/admin/ideas-activities/${idea.id}/file`} target="_blank">Open File</a>}
                             </div>
 
                             {(pollsByIdea[idea.id] || []).map((poll) => (
                                 <div key={poll.id} className="mt-4 rounded-lg border border-white/15 bg-black/25 p-3">
                                     <p className="font-medium">📊 {poll.question}</p>
+                                    {(() => {
+                                        const totalVotes = poll.options.reduce((sum, option) => sum + Number(option.vote_count || 0), 0);
+                                        return <p className="mt-1 text-xs text-slate-300">Total votes: {totalVotes}</p>;
+                                    })()}
                                     <div className="mt-2 flex flex-wrap gap-2">
                                         {poll.options.map((option) => (
                                             <button
@@ -312,6 +377,23 @@ export default function IdeasActivitiesPage() {
                                                 {option.option_label} ({option.vote_count})
                                             </button>
                                         ))}
+                                    </div>
+                                    <div className="mt-3 space-y-2">
+                                        {poll.options.map((option) => {
+                                            const totalVotes = poll.options.reduce((sum, item) => sum + Number(item.vote_count || 0), 0);
+                                            const percentage = totalVotes ? Math.round((Number(option.vote_count || 0) / totalVotes) * 100) : 0;
+                                            return (
+                                                <div key={`graph-${option.id}`}>
+                                                    <div className="mb-1 flex items-center justify-between text-xs text-slate-200">
+                                                        <span>{option.option_label}</span>
+                                                        <span>{percentage}%</span>
+                                                    </div>
+                                                    <div className="h-2 overflow-hidden rounded bg-white/20">
+                                                        <div className="h-2 bg-[#D4AF37]" style={{ width: `${percentage}%` }} />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             ))}
@@ -330,6 +412,7 @@ export default function IdeasActivitiesPage() {
                         <div key={event.id} className="rounded-lg border border-white/10 bg-black/25 p-3">
                             <p className="font-semibold">{event.title}</p>
                             <p className="text-sm text-slate-300">{event.start_date.slice(0, 10)} to {event.end_date.slice(0, 10)} • {event.location_text}</p>
+                            {canSchedule && <button className="mt-2 rounded-lg bg-red-700 px-3 py-1 text-xs" onClick={() => removeScheduledEvent(event.id)}>Remove from Calendar</button>}
                         </div>
                     ))}
                     {scheduledEvents.length === 0 && <p className="text-sm text-slate-300">No events scheduled yet.</p>}

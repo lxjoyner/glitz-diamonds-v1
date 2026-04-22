@@ -112,3 +112,31 @@ export async function sendMemberRegistrationConfirmation(params: {
 
     return { sent: true as const };
 }
+
+export async function sendPollEmail(params: {
+    toEmail: string;
+    recipientName: string;
+    ideaTitle: string;
+    question: string;
+    options: Array<{ label: string; voteUrl: string }>;
+}) {
+    if (!hasSmtpConfig()) {
+        console.warn("SMTP config is incomplete. Skipping poll email dispatch.");
+        return { sent: false as const, reason: "missing_smtp_config" as const };
+    }
+
+    const transporter = getSmtpTransport();
+    const htmlOptions = params.options
+        .map((opt) => `<li style="margin: 8px 0;"><a href="${opt.voteUrl}">${opt.label}</a></li>`)
+        .join("");
+
+    await transporter.sendMail({
+        from: getRequiredEnv("PASSWORD_RESET_FROM_EMAIL"),
+        to: params.toEmail,
+        subject: `New Glitz Poll: ${params.ideaTitle}`,
+        text: `Hi ${params.recipientName},\n\nPlease vote on this activity poll.\n\nActivity: ${params.ideaTitle}\nQuestion: ${params.question}\n\n${params.options.map((opt, idx) => `${idx + 1}. ${opt.label}: ${opt.voteUrl}`).join("\n")}\n\nSelecting one link records your vote.`,
+        html: `<p>Hi ${params.recipientName},</p><p>Please vote on this activity poll.</p><p><strong>Activity:</strong> ${params.ideaTitle}<br/><strong>Question:</strong> ${params.question}</p><p>Select an option below to record your vote:</p><ul>${htmlOptions}</ul><p>Each member can vote once from email.</p>`,
+    });
+
+    return { sent: true as const };
+}

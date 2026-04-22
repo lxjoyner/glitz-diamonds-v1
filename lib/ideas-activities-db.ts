@@ -108,6 +108,21 @@ export async function ensureIdeasActivitiesTables() {
     `);
 
     await pool.query(`
+        CREATE TABLE IF NOT EXISTS idea_poll_email_tokens (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            poll_id INT NOT NULL,
+            user_id INT NOT NULL,
+            token_hash VARCHAR(128) NOT NULL,
+            used_at DATETIME NULL,
+            expires_at DATETIME NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_poll_user_email_token (poll_id, user_id),
+            UNIQUE KEY uniq_poll_email_token_hash (token_hash),
+            INDEX idx_poll_email_token_expires (expires_at)
+        )
+    `);
+
+    await pool.query(`
         CREATE TABLE IF NOT EXISTS scheduled_events (
             id INT AUTO_INCREMENT PRIMARY KEY,
             idea_id INT NOT NULL,
@@ -182,6 +197,12 @@ export async function getIdeaFileById(ideaId: number) {
     );
 
     return (rows as Array<{ file_name: string | null; file_mime_type: string | null; file_data: Buffer | null }>)[0] ?? null;
+}
+
+export async function getIdeaById(ideaId: number) {
+    await ensureIdeasActivitiesTables();
+    const [rows] = await pool.query(`SELECT id, title FROM ideas_activities WHERE id = ? LIMIT 1`, [ideaId]);
+    return (rows as Array<{ id: number; title: string }>)[0] ?? null;
 }
 
 export async function getIdeasAndActivities(currentUserId: number) {
@@ -280,6 +301,64 @@ export async function voteInPoll(pollId: number, optionId: number, userId: numbe
     await pool.query(`INSERT INTO idea_poll_votes (poll_id, option_id, user_id) VALUES (?, ?, ?)`, [pollId, optionId, userId]);
 }
 
+export async function getPollWithOptionsForValidation(pollId: number) {
+    await ensureIdeasActivitiesTables();
+    const [pollRows] = await pool.query(`SELECT id, question FROM idea_polls WHERE id = ? LIMIT 1`, [pollId]);
+    const poll = (pollRows as Array<{ id: number; question: string }>)[0];
+
+    if (!poll) return null;
+
+    const [optionRows] = await pool.query(
+        `SELECT id, option_label FROM idea_poll_options WHERE poll_id = ? ORDER BY created_at ASC`,
+        [pollId]
+    );
+
+    return {
+        ...poll,
+        options: optionRows as Array<{ id: number; option_label: string }>,
+    };
+}
+
+export async function upsertPollEmailToken(input: {
+    pollId: number;
+    userId: number;
+    tokenHash: string;
+    expiresAt: string;
+}) {
+    await ensureIdeasActivitiesTables();
+    await pool.query(
+        `
+        INSERT INTO idea_poll_email_tokens (poll_id, user_id, token_hash, expires_at, used_at)
+        VALUES (?, ?, ?, ?, NULL)
+        ON DUPLICATE KEY UPDATE
+            token_hash = VALUES(token_hash),
+            expires_at = VALUES(expires_at),
+            used_at = NULL
+        `,
+        [input.pollId, input.userId, input.tokenHash, input.expiresAt]
+    );
+}
+
+export async function getPollEmailTokenByHash(tokenHash: string) {
+    await ensureIdeasActivitiesTables();
+    const [rows] = await pool.query(
+        `
+        SELECT id, poll_id, user_id, used_at, expires_at
+        FROM idea_poll_email_tokens
+        WHERE token_hash = ?
+        LIMIT 1
+        `,
+        [tokenHash]
+    );
+
+    return (rows as Array<{ id: number; poll_id: number; user_id: number; used_at: string | null; expires_at: string }>)[0] ?? null;
+}
+
+export async function markPollEmailTokenUsed(tokenId: number) {
+    await ensureIdeasActivitiesTables();
+    await pool.query(`UPDATE idea_poll_email_tokens SET used_at = NOW() WHERE id = ?`, [tokenId]);
+}
+
 export async function getIdeaPolls(ideaId: number, userId: number) {
     await ensureIdeasActivitiesTables();
 
@@ -345,4 +424,29 @@ export async function getScheduledEvents() {
         location_text: string;
         created_at: string;
     }>;
+}
+
+export async function deleteIdeaActivityById(ideaId: number) {
+    await ensureIdeasActivitiesTables();
+    await pool.query(`DELETE FROM scheduled_events WHERE idea_id = ?`, [ideaId]);
+    await pool.query(
+        `DELETE v FROM idea_poll_votes v INNER JOIN idea_polls p ON p.id = v.poll_id WHERE p.idea_id = ?`,
+        [ideaId]
+    );
+    await pool.query(
+        `DELETE o FROM idea_poll_options o INNER JOIN idea_polls p ON p.id = o.poll_id WHERE p.idea_id = ?`,
+        [ideaId]
+    );
+    await pool.query(`DELETE FROM idea_poll_email_tokens WHERE poll_id IN (SELECT id FROM idea_polls WHERE idea_id = ?)`, [ideaId]);
+    await pool.query(`DELETE FROM idea_polls WHERE idea_id = ?`, [ideaId]);
+    await pool.query(`DELETE FROM idea_votes WHERE idea_id = ?`, [ideaId]);
+    await pool.query(`DELETE FROM idea_favorites WHERE idea_id = ?`, [ideaId]);
+    const [result] = await pool.query(`DELETE FROM ideas_activities WHERE id = ?`, [ideaId]);
+    return Number((result as { affectedRows?: number }).affectedRows || 0);
+}
+
+export async function deleteScheduledEventById(eventId: number) {
+    await ensureIdeasActivitiesTables();
+    const [result] = await pool.query(`DELETE FROM scheduled_events WHERE id = ?`, [eventId]);
+    return Number((result as { affectedRows?: number }).affectedRows || 0);
 }
