@@ -237,6 +237,19 @@ export default function IdeasActivitiesPage() {
         await loadData();
     };
 
+    const removePoll = async (pollId: number) => {
+        if (!window.confirm("Remove this poll?")) return;
+        const res = await fetch(`/api/admin/ideas-activities/polls/${pollId}`, { method: "DELETE" });
+        const data = await res.json();
+        if (!res.ok) {
+            setStatusMessage(data?.error || "Unable to remove poll.");
+            return;
+        }
+
+        setStatusMessage("Poll removed.");
+        await loadData();
+    };
+
     const deleteIdea = async (ideaId: number) => {
         if (!window.confirm("Remove this idea and all associated polls/calendar records?")) return;
         const res = await fetch(`/api/admin/ideas-activities/${ideaId}`, { method: "DELETE" });
@@ -362,7 +375,10 @@ export default function IdeasActivitiesPage() {
 
                             {(pollsByIdea[idea.id] || []).map((poll) => (
                                 <div key={poll.id} className="mt-4 rounded-lg border border-white/15 bg-black/25 p-3">
-                                    <p className="font-medium">📊 {poll.question}</p>
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <p className="font-medium">📊 {poll.question}</p>
+                                        {canSchedule && <button className="rounded-lg bg-red-700 px-3 py-1 text-xs" onClick={() => removePoll(poll.id)}>Remove Poll</button>}
+                                    </div>
                                     {(() => {
                                         const totalVotes = poll.options.reduce((sum, option) => sum + Number(option.vote_count || 0), 0);
                                         return <p className="mt-1 text-xs text-slate-300">Total votes: {totalVotes}</p>;

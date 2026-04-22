@@ -450,3 +450,12 @@ export async function deleteScheduledEventById(eventId: number) {
     const [result] = await pool.query(`DELETE FROM scheduled_events WHERE id = ?`, [eventId]);
     return Number((result as { affectedRows?: number }).affectedRows || 0);
 }
+
+export async function deletePollById(pollId: number) {
+    await ensureIdeasActivitiesTables();
+    await pool.query(`DELETE FROM idea_poll_votes WHERE poll_id = ?`, [pollId]);
+    await pool.query(`DELETE FROM idea_poll_options WHERE poll_id = ?`, [pollId]);
+    await pool.query(`DELETE FROM idea_poll_email_tokens WHERE poll_id = ?`, [pollId]);
+    const [result] = await pool.query(`DELETE FROM idea_polls WHERE id = ?`, [pollId]);
+    return Number((result as { affectedRows?: number }).affectedRows || 0);
+}
