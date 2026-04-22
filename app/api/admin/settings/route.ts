@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth";
 import { getAdminSettings, updateAdminSettings } from "@/lib/admin-settings-db";
 
-function requireAdmin(req: NextRequest) {
+function requireRole(req: NextRequest, allowedRoles: string[]) {
     const token = req.cookies.get("glitz_token")?.value;
 
     if (!token) {
@@ -12,7 +12,7 @@ function requireAdmin(req: NextRequest) {
     try {
         const payload = verifyAdminToken(token);
 
-        if (payload.role !== "admin") {
+        if (!allowedRoles.includes(payload.role)) {
             return { error: NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 }) };
         }
 
@@ -23,7 +23,7 @@ function requireAdmin(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-    const auth = requireAdmin(req);
+    const auth = requireRole(req, ["admin", "secretary", "treasurer"]);
     if ("error" in auth) return auth.error;
 
     const settings = await getAdminSettings();
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-    const auth = requireAdmin(req);
+    const auth = requireRole(req, ["admin"]);
     if ("error" in auth) return auth.error;
 
     const body = await req.json();
