@@ -110,6 +110,39 @@ function toIntlOptions(dateFormat: string, timeFormat: string): Intl.DateTimeFor
     };
 }
 
+function parseStoredDate(value: string): Date | null {
+    if (!value) return null;
+
+    const mysqlLikeMatch = value.match(
+        /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?$/
+    );
+
+    if (mysqlLikeMatch) {
+        const [, year, month, day, hour, minute, second, millis = "0"] = mysqlLikeMatch;
+        const normalizedMillis = millis.padEnd(3, "0");
+        const asUtc = new Date(
+            Date.UTC(
+                Number(year),
+                Number(month) - 1,
+                Number(day),
+                Number(hour),
+                Number(minute),
+                Number(second),
+                Number(normalizedMillis)
+            )
+        );
+
+        return Number.isNaN(asUtc.getTime()) ? null : asUtc;
+    }
+
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+        return parsed;
+    }
+
+    return null;
+}
+
 export default function AdminMessagesPage() {
     const router = useRouter();
     const [user, setUser] = useState<AuthUser | null>(null);
@@ -149,8 +182,8 @@ export default function AdminMessagesPage() {
     );
 
     function formatDate(value: string) {
-        const parsedDate = new Date(value);
-        return Number.isNaN(parsedDate.getTime()) ? "Unknown date" : formatter.format(parsedDate);
+        const parsedDate = parseStoredDate(value);
+        return parsedDate ? formatter.format(parsedDate) : "Unknown date";
     }
 
     const loadMe = useCallback(async () => {
