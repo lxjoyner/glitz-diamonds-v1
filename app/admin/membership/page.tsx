@@ -157,7 +157,7 @@ export default function MembershipPage() {
                                     <th className="px-3 py-3">Address</th>
                                     <th className="px-3 py-3">T-Shirt Size</th>
                                     <th className="px-3 py-3">Favorite Color</th>
-                                    <th className="px-3 py-3">Hat Size</th>
+                                    <th className="px-3 py-3">Jacket Size</th>
                                     <th className="px-3 py-3">Gender</th>
                                     <th className="px-3 py-3">Birthday</th>
                                     <th className="px-3 py-3">Role</th>
