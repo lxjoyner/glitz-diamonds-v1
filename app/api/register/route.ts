@@ -4,6 +4,7 @@ import { createRegisteredUser, getUserByEmail, getUserByUsername } from "@/lib/u
 import { getAdminNotificationEmails } from "@/lib/admin-db";
 import { sendMemberRegistrationConfirmation, sendMemberRegistrationNotification } from "@/lib/mailer";
 import { verifyMemberInviteToken } from "@/lib/auth";
+import { consumeMemberInviteToken, isMemberInviteTokenConsumed } from "@/lib/member-invite-db";
 
 const T_SHIRT_SIZES = new Set(["XS", "SM", "M", "LG", "XL", "XXL", "XXXL", "XXXXL"]);
 const JACKET_SIZES = new Set(["XS", "S", "M", "L", "XL", "XXL", "XXXL", "XXXXL"]);
@@ -132,6 +133,14 @@ export async function POST(req: Request) {
             );
         }
 
+        const isConsumed = await isMemberInviteTokenConsumed(cleanInviteToken);
+        if (isConsumed) {
+            return NextResponse.json(
+                { success: false, error: "This invite link has already been used." },
+                { status: 410 }
+            );
+        }
+
         if (cleanMiddleInitial && cleanMiddleInitial.length < 3) {
             return NextResponse.json(
                 { success: false, error: "Middle initials must be at least 3 characters when provided." },
@@ -208,6 +217,14 @@ export async function POST(req: Request) {
         }
 
         const passwordHash = await bcrypt.hash(cleanPassword, 12);
+
+        const inviteConsumed = await consumeMemberInviteToken(cleanInviteToken, cleanEmail);
+        if (!inviteConsumed) {
+            return NextResponse.json(
+                { success: false, error: "This invite link has already been used." },
+                { status: 410 }
+            );
+        }
 
         await createRegisteredUser({
             fullName: cleanFullName,

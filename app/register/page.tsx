@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const T_SHIRT_SIZES = ["XS", "SM", "M", "LG", "XL", "XXL", "XXXL", "XXXXL"] as const;
 const JACKET_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "XXXL", "XXXXL"] as const;
@@ -15,6 +15,7 @@ type InviteData = {
 };
 
 export default function RegisterPage() {
+    const router = useRouter();
     const searchParams = useSearchParams();
     const inviteToken = useMemo(() => searchParams.get("invite") || "", [searchParams]);
 
@@ -453,7 +454,7 @@ export default function RegisterPage() {
                     <div className="flex items-center gap-3">
                         <button
                             type="button"
-                            onClick={() => window.history.back()}
+                            onClick={() => router.push("/")}
                             className="rounded-lg border border-white/20 bg-transparent px-4 py-2 text-sm font-semibold hover:bg-white/10"
                         >
                             Cancel
