@@ -14,18 +14,17 @@ function isValidEmail(email: string): boolean {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function isValidBirthdayMmDdYyyy(value: string): boolean {
-    if (!/^\d{8}$/.test(value)) return false;
+function isValidBirthdayMmDd(value: string): boolean {
+    if (!/^\d{4}$/.test(value)) return false;
 
     const month = Number(value.slice(0, 2));
     const day = Number(value.slice(2, 4));
-    const year = Number(value.slice(4, 8));
 
     if (month < 1 || month > 12) return false;
-    if (year < 1900 || year > 2100) return false;
-
-    const maxDaysInMonth = new Date(year, month, 0).getDate();
-    return day >= 1 && day <= maxDaysInMonth;
+    if (day < 1 || day > 31) return false;
+    if ([4, 6, 9, 11].includes(month) && day > 30) return false;
+    if (month === 2 && day > 29) return false;
+    return true;
 }
 
 function isValidPassword(password: string): boolean {
@@ -193,9 +192,9 @@ export async function POST(req: Request) {
             );
         }
 
-        if (!isValidBirthdayMmDdYyyy(cleanBirthday)) {
+        if (!isValidBirthdayMmDd(cleanBirthday)) {
             return NextResponse.json(
-                { success: false, error: "Birthday must be in MMDDYYYY format and a valid date." },
+                { success: false, error: "Birthday must be in MMDD format and a valid date." },
                 { status: 400 }
             );
         }
