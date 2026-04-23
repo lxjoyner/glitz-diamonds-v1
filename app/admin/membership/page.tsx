@@ -14,6 +14,12 @@ type Member = {
     username: string;
     email: string;
     full_name: string;
+    address: string;
+    tshirt_size: string;
+    favorite_color: string;
+    hat_size: string;
+    gender: string;
+    birthday: string;
     role: string | null;
     created_at: string;
 };
@@ -108,7 +114,7 @@ export default function MembershipPage() {
                     <div>
                         <h1 className="text-3xl font-semibold">Membership</h1>
                         <p className="mt-1 text-sm text-slate-300">
-                            View all members, their role, and when they became a member.
+                            Registered Users Details from the registration form.
                         </p>
                     </div>
                     <button
@@ -129,12 +135,18 @@ export default function MembershipPage() {
                     <p className="text-sm text-slate-300">Loading members...</p>
                 ) : (
                     <div className="overflow-x-auto">
-                        <table className="w-full min-w-[760px] border-collapse text-sm">
+                        <table className="w-full min-w-[1280px] border-collapse text-sm">
                             <thead>
                                 <tr className="border-b border-white/15 text-left text-slate-300">
                                     <th className="px-3 py-3">Name</th>
                                     <th className="px-3 py-3">Username</th>
                                     <th className="px-3 py-3">Email</th>
+                                    <th className="px-3 py-3">Address</th>
+                                    <th className="px-3 py-3">T-Shirt Size</th>
+                                    <th className="px-3 py-3">Favorite Color</th>
+                                    <th className="px-3 py-3">Hat Size</th>
+                                    <th className="px-3 py-3">Gender</th>
+                                    <th className="px-3 py-3">Birthday</th>
                                     <th className="px-3 py-3">Role</th>
                                     <th className="px-3 py-3">Member Since</th>
                                     <th className="px-3 py-3">Actions</th>
@@ -146,6 +158,12 @@ export default function MembershipPage() {
                                         <td className="px-3 py-3">{member.full_name}</td>
                                         <td className="px-3 py-3">{member.username}</td>
                                         <td className="px-3 py-3">{member.email}</td>
+                                        <td className="px-3 py-3">{member.address || "—"}</td>
+                                        <td className="px-3 py-3">{member.tshirt_size || "—"}</td>
+                                        <td className="px-3 py-3">{member.favorite_color || "—"}</td>
+                                        <td className="px-3 py-3">{member.hat_size || "—"}</td>
+                                        <td className="px-3 py-3 capitalize">{member.gender || "—"}</td>
+                                        <td className="px-3 py-3">{member.birthday || "—"}</td>
                                         <td className="px-3 py-3 capitalize">{member.role || "none"}</td>
                                         <td className="px-3 py-3">{formatDate(member.created_at)}</td>
                                         <td className="px-3 py-3">
