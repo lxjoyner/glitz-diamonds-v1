@@ -26,6 +26,7 @@ export default function MemberInvitesPage() {
     const [inviteLink, setInviteLink] = useState("");
     const [smsLink, setSmsLink] = useState("");
     const [emailLink, setEmailLink] = useState("");
+    const [copyMessage, setCopyMessage] = useState("");
 
     useEffect(() => {
         async function loadMe() {
@@ -64,6 +65,7 @@ export default function MemberInvitesPage() {
         event.preventDefault();
         setSubmitting(true);
         setError("");
+        setCopyMessage("");
         setInviteLink("");
         setSmsLink("");
         setEmailLink("");
@@ -88,6 +90,37 @@ export default function MemberInvitesPage() {
             setError(submitError instanceof Error ? submitError.message : "Failed to create invite link.");
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const copyInviteLink = async () => {
+        if (!inviteLink) return;
+
+        try {
+            if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(inviteLink);
+            } else if (typeof document !== "undefined") {
+                const textarea = document.createElement("textarea");
+                textarea.value = inviteLink;
+                textarea.setAttribute("readonly", "");
+                textarea.style.position = "fixed";
+                textarea.style.opacity = "0";
+                document.body.appendChild(textarea);
+                textarea.focus();
+                textarea.select();
+                const didCopy = document.execCommand("copy");
+                document.body.removeChild(textarea);
+
+                if (!didCopy) {
+                    throw new Error("Copy command failed.");
+                }
+            } else {
+                throw new Error("Clipboard is not available.");
+            }
+
+            setCopyMessage("Link copied to clipboard.");
+        } catch {
+            setCopyMessage("Could not copy automatically on this device. Please press and hold the link above to copy.");
         }
     };
 
@@ -193,12 +226,11 @@ export default function MemberInvitesPage() {
                         <button
                             type="button"
                             className="rounded-md border border-white/25 px-3 py-1.5 text-xs hover:bg-white/10"
-                            onClick={async () => {
-                                await navigator.clipboard.writeText(inviteLink);
-                            }}
+                            onClick={copyInviteLink}
                         >
                             Copy link
                         </button>
+                        {copyMessage && <p className="text-xs text-slate-200">{copyMessage}</p>}
 
 
                         {emailLink && (
