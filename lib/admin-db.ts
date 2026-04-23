@@ -155,6 +155,29 @@ export async function markResetEmailSent(adminId: number) {
     );
 }
 
+
+export async function setAdminTemporaryPassword(adminId: number, passwordHash: string) {
+    await ensureAdminSecurityRow(adminId);
+
+    await pool.query(
+        `
+        UPDATE admins
+        SET password_hash = ?
+        WHERE id = ?
+        `,
+        [passwordHash, adminId]
+    );
+
+    await pool.query(
+        `
+        UPDATE admin_security
+        SET reset_required = 1, last_reset_email_sent_at = NOW()
+        WHERE admin_id = ?
+        `,
+        [adminId]
+    );
+}
+
 export async function updateAdminPassword(adminId: number, passwordHash: string) {
     await ensureAdminSecurityRow(adminId);
 

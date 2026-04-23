@@ -196,7 +196,7 @@ export default function AdminLoginPage() {
 
                         <p className="text-sm">
                             <Link href="/admin/reset-password" className="text-red-300 hover:text-red-200 underline">
-                                Forgot admin password?
+                                Forgot Password?
                             </Link>
                         </p>
                     </form>
