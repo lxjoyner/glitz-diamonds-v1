@@ -30,6 +30,19 @@ function formatDate(value: string): string {
     return date.toLocaleDateString();
 }
 
+function formatBirthday(value: string): string {
+    const digits = value.replace(/\D/g, "");
+    if (digits.length === 4) {
+        return `${digits.slice(0, 2)}/${digits.slice(2, 4)}`;
+    }
+
+    if (digits.length === 8) {
+        return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
+    }
+
+    return value || "—";
+}
+
 export default function MembershipPage() {
     const router = useRouter();
     const [user, setUser] = useState<AuthUser | null>(null);
@@ -163,7 +176,7 @@ export default function MembershipPage() {
                                         <td className="px-3 py-3">{member.favorite_color || "—"}</td>
                                         <td className="px-3 py-3">{member.hat_size || "—"}</td>
                                         <td className="px-3 py-3 capitalize">{member.gender || "—"}</td>
-                                        <td className="px-3 py-3">{member.birthday || "—"}</td>
+                                        <td className="px-3 py-3">{formatBirthday(member.birthday)}</td>
                                         <td className="px-3 py-3 capitalize">{member.role || "none"}</td>
                                         <td className="px-3 py-3">{formatDate(member.created_at)}</td>
                                         <td className="px-3 py-3">
