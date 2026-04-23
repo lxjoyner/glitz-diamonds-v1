@@ -29,10 +29,14 @@ export async function POST(req: Request) {
             const passwordMatches = await bcrypt.compare(cleanPassword, admin.password_hash);
 
             if (passwordMatches) {
-                await sendUsernameReminderEmail({
-                    toEmail: admin.email,
-                    username: admin.username,
-                });
+                try {
+                    await sendUsernameReminderEmail({
+                        toEmail: admin.email,
+                        username: admin.username,
+                    });
+                } catch (mailError) {
+                    console.error("Forgot username admin email send failed:", mailError);
+                }
             }
 
             return NextResponse.json(genericResponse);
@@ -44,10 +48,14 @@ export async function POST(req: Request) {
             const passwordMatches = await bcrypt.compare(cleanPassword, user.password_hash);
 
             if (passwordMatches) {
-                await sendUsernameReminderEmail({
-                    toEmail: user.email,
-                    username: user.username,
-                });
+                try {
+                    await sendUsernameReminderEmail({
+                        toEmail: user.email,
+                        username: user.username,
+                    });
+                } catch (mailError) {
+                    console.error("Forgot username user email send failed:", mailError);
+                }
             }
         }
 
@@ -55,9 +63,6 @@ export async function POST(req: Request) {
     } catch (error) {
         console.error("Forgot username error:", error);
 
-        return NextResponse.json(
-            { success: false, error: "Failed to process forgot username request." },
-            { status: 500 }
-        );
+        return NextResponse.json(genericResponse);
     }
 }
