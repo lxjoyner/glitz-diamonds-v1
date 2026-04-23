@@ -1,5 +1,28 @@
 [
   {
+    "id": "fce96c71-b90c-4ba6-8a1b-bc8db0aa5d36",
+    "createdAt": "2026-04-23T00:58:17.843Z",
+    "channel": "member-registration-confirmation",
+    "status": "success",
+    "to": "jacobljoyner25@gmail.com",
+    "subject": "Your Glitz registration is complete"
+  },
+  {
+    "id": "e542d732-5782-4626-ac1a-e63ec630c496",
+    "createdAt": "2026-04-23T00:58:15.841Z",
+    "channel": "member-registration-confirmation",
+    "status": "attempt",
+    "to": "jacobljoyner25@gmail.com",
+    "subject": "Your Glitz registration is complete"
+  },
+  {
+    "id": "2bf08224-6d22-4d2c-aa64-bbcfb4a5ae2f",
+    "createdAt": "2026-04-23T00:58:15.821Z",
+    "channel": "member-registration-notification",
+    "status": "skipped",
+    "reason": "missing_admin_email"
+  },
+  {
     "id": "bc174349-9ade-43a3-8c21-8cb10004acab",
     "createdAt": "2026-04-22T23:29:41.414Z",
     "channel": "contact-user-confirmation",

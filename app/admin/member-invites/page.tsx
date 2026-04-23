@@ -177,7 +177,7 @@ export default function MemberInvitesPage() {
                         disabled={submitting}
                         className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold hover:bg-emerald-500 disabled:opacity-60"
                     >
-                        {submitting ? "Creating link..." : "Create invite link"}
+                        {submitting ? "Creating link..." : "Create Invite Link"}
                     </button>
                 </form>
 
