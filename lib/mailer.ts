@@ -194,6 +194,65 @@ Sign in with this temporary password, then immediately use Change Password to se
     }
 }
 
+export async function sendUsernameReminderEmail(params: {
+    toEmail: string;
+    username: string;
+}) {
+    if (!hasSmtpConfig()) {
+        const missingSmtpKeys = getMissingSmtpConfigKeys();
+        console.warn(
+            `SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping username reminder email dispatch.`
+        );
+        writeEmailLog({
+            channel: "username-reminder",
+            status: "skipped",
+            to: params.toEmail,
+            reason: "missing_smtp_config",
+            details: { missingEnv: missingSmtpKeys },
+        });
+        return { sent: false as const, reason: "missing_smtp_config" as const };
+    }
+
+    const subject = "Your Glitz username reminder";
+
+    writeEmailLog({
+        channel: "username-reminder",
+        status: "attempt",
+        to: params.toEmail,
+        subject,
+    });
+
+    try {
+        const transporter = getSmtpTransport();
+
+        await transporter.sendMail({
+            from: getFromEmailAddress(),
+            to: params.toEmail,
+            subject,
+            text: `A request was made to recover your username.\n\nYour username is: ${params.username}\n\nIf you did not request this, you can ignore this email.`,
+            html: `<p>A request was made to recover your username.</p><p><strong>Your username is: ${params.username}</strong></p><p>If you did not request this, you can ignore this email.</p>`,
+        });
+
+        writeEmailLog({
+            channel: "username-reminder",
+            status: "success",
+            to: params.toEmail,
+            subject,
+        });
+
+        return { sent: true as const };
+    } catch (error) {
+        writeEmailLog({
+            channel: "username-reminder",
+            status: "error",
+            to: params.toEmail,
+            subject,
+            reason: error instanceof Error ? error.message : "unknown_error",
+        });
+        throw error;
+    }
+}
+
 export async function sendMemberRegistrationNotification(params: {
     toEmails: string[];
     fullName: string;
