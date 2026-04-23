@@ -25,6 +25,7 @@ type GalleryItem = {
     caption: string;
     imageUrl: string;
     createdAt: string;
+    sortOrder?: number;
 };
 
 type SiteUser = {
@@ -207,6 +208,8 @@ export default function AdminMessagesPage() {
     const [galleryCaption, setGalleryCaption] = useState("");
     const [galleryFile, setGalleryFile] = useState<File | null>(null);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const [draggingGalleryId, setDraggingGalleryId] = useState<number | null>(null);
+    const [isSavingGalleryOrder, setIsSavingGalleryOrder] = useState(false);
     const [galleryError, setGalleryError] = useState("");
     const [gallerySuccess, setGallerySuccess] = useState("");
     const [messageStatus, setMessageStatus] = useState("");
@@ -434,6 +437,46 @@ export default function AdminMessagesPage() {
             await loadGallery();
         } catch (error) {
             setGalleryError(error instanceof Error ? error.message : "Failed to delete image.");
+        }
+    };
+
+    const moveGalleryItem = (fromId: number, toId: number) => {
+        if (fromId === toId) return;
+
+        setGalleryItems((prev) => {
+            const fromIndex = prev.findIndex((item) => item.id === fromId);
+            const toIndex = prev.findIndex((item) => item.id === toId);
+            if (fromIndex < 0 || toIndex < 0) return prev;
+
+            const next = [...prev];
+            const [moved] = next.splice(fromIndex, 1);
+            next.splice(toIndex, 0, moved);
+            return next;
+        });
+    };
+
+    const persistGalleryOrder = async (orderedItems: GalleryItem[]) => {
+        try {
+            setIsSavingGalleryOrder(true);
+            setGalleryError("");
+
+            const response = await fetch("/api/admin/gallery", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ imageIds: orderedItems.map((item) => item.id) }),
+            });
+            const data = await response.json();
+            if (!response.ok || !data?.success) {
+                throw new Error(data?.error || "Failed to save gallery order.");
+            }
+
+            setGallerySuccess("Gallery order updated.");
+            await loadGallery();
+        } catch (error) {
+            setGalleryError(error instanceof Error ? error.message : "Failed to save gallery order.");
+            await loadGallery();
+        } finally {
+            setIsSavingGalleryOrder(false);
         }
     };
 
@@ -688,12 +731,31 @@ export default function AdminMessagesPage() {
                         {galleryError && (
                             <p className="mt-3 text-sm text-red-400">{galleryError}</p>
                         )}
+                        <p className="mt-3 text-xs text-slate-300">
+                            Drag and drop gallery cards to set the scrolling order shown on the dashboard.
+                        </p>
+                        {isSavingGalleryOrder && (
+                            <p className="mt-3 text-xs text-slate-300">Saving gallery order...</p>
+                        )}
 
                         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                             {galleryItems.map((item) => (
                                 <div
                                     key={item.id}
-                                    className="rounded-xl border border-white/10 bg-black/30 p-3"
+                                    draggable
+                                    onDragStart={() => setDraggingGalleryId(item.id)}
+                                    onDragOver={(event) => {
+                                        event.preventDefault();
+                                        if (draggingGalleryId !== null) {
+                                            moveGalleryItem(draggingGalleryId, item.id);
+                                        }
+                                    }}
+                                    onDragEnd={async () => {
+                                        const latestOrder = [...galleryItems];
+                                        setDraggingGalleryId(null);
+                                        await persistGalleryOrder(latestOrder);
+                                    }}
+                                    className="rounded-xl border border-white/10 bg-black/30 p-3 cursor-move"
                                 >
                                     <div className="relative h-40 overflow-hidden rounded-lg border border-white/10">
                                         <Image

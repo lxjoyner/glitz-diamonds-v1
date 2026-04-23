@@ -5,6 +5,7 @@ export type GalleryImageRecord = {
     caption: string;
     mime_type: string;
     is_active: number;
+    sort_order: number;
     created_at: string;
     updated_at: string;
 };
@@ -21,10 +22,22 @@ async function ensureGalleryTable() {
             mime_type VARCHAR(64) NOT NULL,
             image_data LONGBLOB NOT NULL,
             is_active TINYINT(1) NOT NULL DEFAULT 1,
+            sort_order INT NOT NULL DEFAULT 0,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_gallery_active_created (is_active, created_at)
+            INDEX idx_gallery_active_sort (is_active, sort_order, created_at)
         )
+    `);
+
+    await pool.query(`
+        ALTER TABLE gallery_images
+        ADD COLUMN IF NOT EXISTS sort_order INT NOT NULL DEFAULT 0
+    `);
+
+    await pool.query(`
+        UPDATE gallery_images
+        SET sort_order = id
+        WHERE sort_order = 0
     `);
 
     bootstrapped = true;
@@ -40,8 +53,8 @@ export async function createGalleryImage(input: {
 
     const [result] = await pool.query(
         `
-        INSERT INTO gallery_images (caption, mime_type, image_data, is_active)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO gallery_images (caption, mime_type, image_data, is_active, sort_order)
+        VALUES (?, ?, ?, ?, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM gallery_images AS g))
         `,
         [input.caption, input.mimeType, input.imageData, input.isActive ? 1 : 0]
     );
@@ -56,10 +69,10 @@ export async function getPublicGalleryImages() {
 
     const [rows] = await pool.query(
         `
-        SELECT id, caption, mime_type, is_active, created_at, updated_at
+        SELECT id, caption, mime_type, is_active, sort_order, created_at, updated_at
         FROM gallery_images
         WHERE is_active = 1
-        ORDER BY created_at DESC
+        ORDER BY sort_order ASC, created_at DESC
         `
     );
 
@@ -71,9 +84,9 @@ export async function getAllGalleryImages() {
 
     const [rows] = await pool.query(
         `
-        SELECT id, caption, mime_type, is_active, created_at, updated_at
+        SELECT id, caption, mime_type, is_active, sort_order, created_at, updated_at
         FROM gallery_images
-        ORDER BY created_at DESC
+        ORDER BY sort_order ASC, created_at DESC
         `
     );
 
@@ -107,4 +120,19 @@ export async function deleteGalleryImageById(id: number) {
         `,
         [id]
     );
+}
+
+export async function updateGalleryImageOrder(imageIds: number[]) {
+    await ensureGalleryTable();
+
+    if (imageIds.length === 0) return;
+
+    const values = imageIds.map((id, idx) => `WHEN ${Number(id)} THEN ${idx + 1}`).join(" ");
+    const ids = imageIds.map((id) => Number(id)).join(",");
+
+    await pool.query(`
+        UPDATE gallery_images
+        SET sort_order = CASE id ${values} END
+        WHERE id IN (${ids})
+    `);
 }
