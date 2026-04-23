@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyMemberInviteToken } from "@/lib/auth";
+import { isMemberInviteTokenConsumed } from "@/lib/member-invite-db";
 
 export async function GET(req: NextRequest) {
     const inviteToken = req.nextUrl.searchParams.get("invite");
@@ -10,6 +11,11 @@ export async function GET(req: NextRequest) {
 
     try {
         const invite = verifyMemberInviteToken(inviteToken);
+        const isConsumed = await isMemberInviteTokenConsumed(inviteToken);
+
+        if (isConsumed) {
+            return NextResponse.json({ success: false, error: "This invite link has already been used." }, { status: 410 });
+        }
 
         return NextResponse.json({
             success: true,
