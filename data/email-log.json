@@ -1,5 +1,21 @@
 [
   {
+    "id": "691c058d-5c06-42b9-a837-175cda2af4e6",
+    "createdAt": "2026-04-23T02:35:55.423Z",
+    "channel": "admin-temporary-password",
+    "status": "success",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "Your Glitz temporary password"
+  },
+  {
+    "id": "d6bb5dd5-9636-44ad-9ea8-58aa6c778fad",
+    "createdAt": "2026-04-23T02:35:53.598Z",
+    "channel": "admin-temporary-password",
+    "status": "attempt",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "Your Glitz temporary password"
+  },
+  {
     "id": "fce96c71-b90c-4ba6-8a1b-bc8db0aa5d36",
     "createdAt": "2026-04-23T00:58:17.843Z",
     "channel": "member-registration-confirmation",
