@@ -99,6 +99,15 @@ export default function RegisterPage() {
             value = value.toUpperCase().slice(0, 2);
         }
 
+        if (name === "birthday") {
+            const digitsOnly = value.replace(/\D/g, "").slice(0, 4);
+            if (digitsOnly.length >= 3) {
+                value = `${digitsOnly.slice(0, 2)}/${digitsOnly.slice(2)}`;
+            } else {
+                value = digitsOnly;
+            }
+        }
+
         setForm((prev) => ({ ...prev, [name]: value }));
     };
 
@@ -140,11 +149,10 @@ export default function RegisterPage() {
                 throw new Error("Zip code must be exactly 5 numbers.");
             }
 
-            const birthdayMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(form.birthday);
-            if (!birthdayMatch) {
-                throw new Error("Birthday is required.");
+            const birthdayDigits = form.birthday.replace(/\D/g, "");
+            if (!/^\d{4}$/.test(birthdayDigits)) {
+                throw new Error("Birthday must be in MM/DD format.");
             }
-            const birthdayDigits = `${birthdayMatch[2]}${birthdayMatch[3]}${birthdayMatch[1]}`;
 
             const fullName = [form.firstName, form.middleInitial, form.lastName].filter(Boolean).join(" ");
             const address = [form.streetAddress, form.city, form.state, form.zipCode].filter(Boolean).join(", ");
@@ -439,10 +447,14 @@ export default function RegisterPage() {
                     <div>
                         <label className="mb-1 block text-sm text-slate-300">Birthday</label>
                         <input
-                            type="date"
+                            type="text"
                             name="birthday"
                             value={form.birthday}
                             onChange={onChange}
+                            inputMode="numeric"
+                            pattern="\d{2}/\d{2}"
+                            placeholder="MM/DD"
+                            maxLength={5}
                             className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
                             required
                         />
