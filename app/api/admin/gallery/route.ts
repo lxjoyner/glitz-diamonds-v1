@@ -4,6 +4,7 @@ import {
     createGalleryImage,
     deleteGalleryImageById,
     getAllGalleryImages,
+    updateGalleryImageOrder,
 } from "@/lib/gallery-db";
 
 const MAX_UPLOAD_MB = 18;
@@ -44,6 +45,7 @@ export async function GET(req: NextRequest) {
                 caption: image.caption,
                 isActive: Boolean(image.is_active),
                 mimeType: image.mime_type,
+                sortOrder: image.sort_order,
                 createdAt: image.created_at,
                 updatedAt: image.updated_at,
                 imageUrl: `/api/gallery/${image.id}/image?v=${encodeURIComponent(image.updated_at)}`,
@@ -54,6 +56,34 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json(
             { success: false, error: "Failed to load gallery images." },
+            { status: 500 }
+        );
+    }
+}
+
+export async function PUT(req: NextRequest) {
+    const auth = requireAdmin(req);
+    if ("error" in auth) return auth.error;
+
+    try {
+        const body = await req.json();
+        const imageIds = Array.isArray(body?.imageIds) ? body.imageIds.map(Number) : [];
+
+        if (imageIds.length === 0 || imageIds.some((id) => !Number.isInteger(id) || id <= 0)) {
+            return NextResponse.json(
+                { success: false, error: "A valid ordered imageIds array is required." },
+                { status: 400 }
+            );
+        }
+
+        await updateGalleryImageOrder(imageIds);
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error("Admin gallery PUT error:", error);
+
+        return NextResponse.json(
+            { success: false, error: "Failed to update gallery order." },
             { status: 500 }
         );
     }
