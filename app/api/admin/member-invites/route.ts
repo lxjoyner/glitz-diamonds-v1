@@ -55,9 +55,14 @@ export async function POST(req: NextRequest) {
         const registerUrl = new URL("/register", req.nextUrl.origin);
         registerUrl.searchParams.set("invite", inviteToken);
 
+        const inviteMessage = "This is a one time use link to register with Glitz Of Diamonds, once the register button is clicked on the registration form that you will see once the link below is clicked, the link will become inactive. If you use the link do not click register if plan to come back and finish the process. Your First & Last Name, email and phone number will automatically be placed into the registration form.";
+
         return NextResponse.json({
             success: true,
             inviteLink: registerUrl.toString(),
+            emailLink: `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent("Glitz Of Diamonds Member Registration")}&body=${encodeURIComponent(`${inviteMessage}
+
+${registerUrl.toString()}`)}`,
             smsLink: `sms:+1${phoneNumber}?&body=${encodeURIComponent(
                 `Hi ${firstName}, please complete your member registration: ${registerUrl.toString()}`
             )}`,

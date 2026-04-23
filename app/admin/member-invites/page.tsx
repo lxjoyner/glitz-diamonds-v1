@@ -25,6 +25,7 @@ export default function MemberInvitesPage() {
     const [error, setError] = useState("");
     const [inviteLink, setInviteLink] = useState("");
     const [smsLink, setSmsLink] = useState("");
+    const [emailLink, setEmailLink] = useState("");
 
     useEffect(() => {
         async function loadMe() {
@@ -65,6 +66,7 @@ export default function MemberInvitesPage() {
         setError("");
         setInviteLink("");
         setSmsLink("");
+        setEmailLink("");
 
         try {
             const res = await fetch("/api/admin/member-invites", {
@@ -81,6 +83,7 @@ export default function MemberInvitesPage() {
 
             setInviteLink(data.inviteLink || "");
             setSmsLink(data.smsLink || "");
+            setEmailLink(data.emailLink || "");
         } catch (submitError) {
             setError(submitError instanceof Error ? submitError.message : "Failed to create invite link.");
         } finally {
@@ -196,6 +199,16 @@ export default function MemberInvitesPage() {
                         >
                             Copy link
                         </button>
+
+
+                        {emailLink && (
+                            <div className="pt-2">
+                                <p className="text-xs text-slate-200">Optional: open your email app with the requested message:</p>
+                                <a href={emailLink} className="text-sm underline text-emerald-200">
+                                    Compose email
+                                </a>
+                            </div>
+                        )}
 
                         {smsLink && (
                             <div className="pt-2">
