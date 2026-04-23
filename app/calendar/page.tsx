@@ -194,7 +194,8 @@ export default function CalendarPage() {
                                             className={`rounded-md px-2 py-1 text-xs ${canMoveEvent ? "cursor-move bg-purple-700/80" : "bg-purple-700/40"}`}
                                             title={`${item.title} • ${item.start_date.slice(0, 10)} to ${item.end_date.slice(0, 10)} • ${item.location_text}`}
                                         >
-                                            {item.title}
+                                            <p className="font-medium">{item.title}</p>
+                                            <p className="mt-0.5 text-[11px] text-purple-100/90">{item.location_text}</p>
                                         </div>
                                     ))}
                                 </div>
