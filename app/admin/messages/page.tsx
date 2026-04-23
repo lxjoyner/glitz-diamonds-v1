@@ -209,6 +209,8 @@ export default function AdminMessagesPage() {
     const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [galleryError, setGalleryError] = useState("");
     const [gallerySuccess, setGallerySuccess] = useState("");
+    const [messageStatus, setMessageStatus] = useState("");
+    const [deletingMessageId, setDeletingMessageId] = useState<number | null>(null);
     const [settings, setSettings] = useState<DashboardSettings>(
         normalizeSettings({
             timezone: "America/Chicago",
@@ -447,6 +449,55 @@ export default function AdminMessagesPage() {
         }
     };
 
+    const handleDeleteContactMessage = async (messageId: number) => {
+        const confirmed = window.confirm(
+            "Delete this contact message from the dashboard? This also attempts to remove the matching inbox email."
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        setMessageStatus("");
+        setDeletingMessageId(messageId);
+
+        try {
+            const response = await fetch("/api/admin/messages", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: messageId }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data?.error || "Failed to delete contact message.");
+            }
+
+            setMessages((prev) => prev.filter((item) => item.id !== messageId));
+
+            if (data?.emailDeletionAttempted) {
+                if (data?.deletedEmailCount > 0) {
+                    setMessageStatus("Contact message deleted and matching inbox email removed.");
+                } else {
+                    setMessageStatus(
+                        "Contact message deleted. Inbox email cleanup ran but no matching email was found."
+                    );
+                }
+            } else {
+                setMessageStatus(
+                    "Contact message deleted. Set IMAP_* environment variables to enable inbox email cleanup."
+                );
+            }
+        } catch (error) {
+            setMessageStatus(
+                error instanceof Error ? error.message : "Failed to delete contact message."
+            );
+        } finally {
+            setDeletingMessageId(null);
+        }
+    };
+
     return (
         <main className="min-h-screen bg-black text-white px-6 py-10">
             <div className="mx-auto max-w-6xl space-y-8">
@@ -671,6 +722,9 @@ export default function AdminMessagesPage() {
                 {canViewMessages && (
                     <section>
                         <h2 className="mb-4 text-2xl font-semibold">Contact Messages</h2>
+                        {messageStatus && (
+                            <p className="mb-3 text-sm text-slate-300">{messageStatus}</p>
+                        )}
                         <div className="space-y-4">
                             {messages.map((item) => (
                                 <div
@@ -690,6 +744,16 @@ export default function AdminMessagesPage() {
                                         <p className="whitespace-pre-wrap text-slate-200">
                                             {item.message}
                                         </p>
+                                    </div>
+                                    <div className="mt-3 flex justify-end">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDeleteContactMessage(item.id)}
+                                            disabled={deletingMessageId === item.id}
+                                            className="rounded-md border border-red-400/40 bg-red-900/30 px-3 py-1.5 text-xs text-red-100 hover:bg-red-900/50 disabled:cursor-not-allowed disabled:opacity-60"
+                                        >
+                                            {deletingMessageId === item.id ? "Deleting..." : "Delete"}
+                                        </button>
                                     </div>
                                 </div>
                             ))}

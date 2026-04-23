@@ -48,6 +48,34 @@ export async function getAllContactMessages(): Promise<ContactMessage[]> {
     return rows as ContactMessage[];
 }
 
+export async function getContactMessageById(id: number): Promise<ContactMessage | null> {
+    const [rows] = await pool.query(
+        `
+        SELECT id, name, email, message, ip_address, created_at, processed_at, is_spam
+        FROM contact_messages
+        WHERE id = ?
+        LIMIT 1
+        `,
+        [id]
+    );
+
+    const items = rows as ContactMessage[];
+    return items[0] ?? null;
+}
+
+export async function deleteContactMessageById(id: number): Promise<boolean> {
+    const [result] = await pool.execute(
+        `
+        DELETE FROM contact_messages
+        WHERE id = ?
+        `,
+        [id]
+    );
+
+    const deleteResult = result as { affectedRows?: number };
+    return (deleteResult.affectedRows ?? 0) > 0;
+}
+
 export async function getTodayContactCount(): Promise<number> {
     const today = getChicagoDateKey();
 
