@@ -140,13 +140,6 @@ export async function POST(req: Request) {
             );
         }
 
-        if (cleanMiddleInitial && cleanMiddleInitial.length < 3) {
-            return NextResponse.json(
-                { success: false, error: "Middle initials must be at least 3 characters when provided." },
-                { status: 400 }
-            );
-        }
-
         if (!isValidPassword(cleanPassword)) {
             return NextResponse.json(
                 {

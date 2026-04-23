@@ -134,10 +134,6 @@ export default function RegisterPage() {
                 throw new Error("A valid invite token is required.");
             }
 
-            if (form.middleInitial && form.middleInitial.trim().length < 3) {
-                throw new Error("Middle initials must be at least 3 characters when provided.");
-            }
-
             const passwordPolicy = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%&*]).{12,}$/;
             if (!passwordPolicy.test(form.password)) {
                 throw new Error(
@@ -246,9 +242,8 @@ export default function RegisterPage() {
                             name="middleInitial"
                             value={form.middleInitial}
                             onChange={onChange}
-                            minLength={3}
                             className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
-                            placeholder="At least 3 characters if provided"
+                            placeholder="Optional"
                         />
                     </div>
 
