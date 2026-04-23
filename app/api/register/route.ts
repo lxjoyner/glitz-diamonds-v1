@@ -6,7 +6,7 @@ import { sendMemberRegistrationConfirmation, sendMemberRegistrationNotification 
 import { verifyMemberInviteToken } from "@/lib/auth";
 
 const T_SHIRT_SIZES = new Set(["XS", "SM", "M", "LG", "XL", "XXL", "XXXL", "XXXXL"]);
-const HAT_SIZES = new Set(["S", "M", "L", "XL"]);
+const JACKET_SIZES = new Set(["XS", "S", "M", "L", "XL", "XXL", "XXXL", "XXXXL"]);
 const GENDERS = new Set(["Male", "Female"]);
 
 function isValidEmail(email: string): boolean {
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
             zipCode,
             tshirtSize,
             favoriteColor,
-            hatSize,
+            jacketSize,
             gender,
             birthday,
             inviteToken,
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
             .trim() || [cleanStreetAddress, cleanCity, cleanState, cleanZipCode].filter(Boolean).join(", ");
         const cleanTshirtSize = String(tshirtSize || "").trim().toUpperCase();
         const cleanFavoriteColor = String(favoriteColor || "").trim();
-        const cleanHatSize = String(hatSize || "").trim().toUpperCase();
+        const cleanJacketSize = String(jacketSize || "").trim().toUpperCase();
         const cleanGender = String(gender || "").trim();
         const cleanBirthday = String(birthday || "").trim();
         const cleanInviteToken = String(inviteToken || "").trim();
@@ -101,7 +101,7 @@ export async function POST(req: Request) {
             !cleanAddress ||
             !cleanTshirtSize ||
             !cleanFavoriteColor ||
-            !cleanHatSize ||
+            !cleanJacketSize ||
             !cleanGender ||
             !cleanBirthday
         ) {
@@ -163,9 +163,9 @@ export async function POST(req: Request) {
             );
         }
 
-        if (!HAT_SIZES.has(cleanHatSize)) {
+        if (!JACKET_SIZES.has(cleanJacketSize)) {
             return NextResponse.json(
-                { success: false, error: "Please select a valid hat size." },
+                { success: false, error: "Please select a valid jacket size." },
                 { status: 400 }
             );
         }
@@ -217,7 +217,7 @@ export async function POST(req: Request) {
             address: cleanAddress,
             tshirtSize: cleanTshirtSize,
             favoriteColor: cleanFavoriteColor,
-            hatSize: cleanHatSize,
+            hatSize: cleanJacketSize,
             gender: cleanGender,
             birthday: cleanBirthday,
         });
@@ -231,7 +231,7 @@ export async function POST(req: Request) {
             address: cleanAddress,
             tshirtSize: cleanTshirtSize,
             favoriteColor: cleanFavoriteColor,
-            hatSize: cleanHatSize,
+            jacketSize: cleanJacketSize,
             gender: cleanGender,
             birthday: cleanBirthday,
         });

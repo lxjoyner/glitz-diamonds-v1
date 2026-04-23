@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 const T_SHIRT_SIZES = ["XS", "SM", "M", "LG", "XL", "XXL", "XXXL", "XXXXL"] as const;
-const HAT_SIZES = ["S", "M", "L", "XL"] as const;
+const JACKET_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "XXXL", "XXXXL"] as const;
 const GENDERS = ["Male", "Female"] as const;
 
 type InviteData = {
@@ -35,7 +35,7 @@ export default function RegisterPage() {
         zipCode: "",
         tshirtSize: "M",
         favoriteColor: "",
-        hatSize: "",
+        jacketSize: "",
         gender: "",
         birthday: "",
     });
@@ -178,7 +178,7 @@ export default function RegisterPage() {
                 zipCode: "",
                 tshirtSize: "M",
                 favoriteColor: "",
-                hatSize: "",
+                jacketSize: "",
                 gender: "",
                 birthday: "",
             }));
@@ -400,16 +400,16 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-sm text-slate-300">Hat Size</label>
+                        <label className="mb-1 block text-sm text-slate-300">Jacket Size</label>
                         <select
-                            name="hatSize"
-                            value={form.hatSize}
+                            name="jacketSize"
+                            value={form.jacketSize}
                             onChange={onChange}
                             className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
                             required
                         >
                             <option value="">Select size</option>
-                            {HAT_SIZES.map((size) => (
+                            {JACKET_SIZES.map((size) => (
                                 <option key={size} value={size}>
                                     {size}
                                 </option>
@@ -450,13 +450,22 @@ export default function RegisterPage() {
                     {error && <p className="text-sm text-red-400">{error}</p>}
                     {success && <p className="text-sm text-green-400">{success}</p>}
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold hover:bg-emerald-500 disabled:opacity-60"
-                    >
-                        {loading ? "Submitting..." : "Register"}
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={() => window.history.back()}
+                            className="rounded-lg border border-white/20 bg-transparent px-4 py-2 text-sm font-semibold hover:bg-white/10"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold hover:bg-emerald-500 disabled:opacity-60"
+                        >
+                            {loading ? "Submitting..." : "Register"}
+                        </button>
+                    </div>
                 </form>
             </div>
         </main>
