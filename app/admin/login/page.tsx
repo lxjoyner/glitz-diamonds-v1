@@ -199,13 +199,12 @@ export default function AdminLoginPage() {
                                 Forgot Password?
                             </Link>
                             <br />
-                            <button
-                                type="button"
-                                onClick={() => router.push("/admin/forgot-username")}
+                            <Link
+                                href="/admin/forgot-username"
                                 className="text-red-300 hover:text-red-200 underline"
                             >
                                 Forgot Username?
-                            </button>
+                            </Link>
                         </p>
                     </form>
                 ) : (
