@@ -127,6 +127,73 @@ export async function sendAdminPasswordResetEmail(params: {
     }
 }
 
+
+export async function sendAdminTemporaryPasswordEmail(params: {
+    toEmail: string;
+    username: string;
+    temporaryPassword: string;
+}) {
+    if (!hasSmtpConfig()) {
+        const missingSmtpKeys = getMissingSmtpConfigKeys();
+        console.warn(
+            `SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping admin temporary-password email dispatch.`
+        );
+        writeEmailLog({
+            channel: "admin-temporary-password",
+            status: "skipped",
+            to: params.toEmail,
+            reason: "missing_smtp_config",
+            details: { missingEnv: missingSmtpKeys },
+        });
+        return { sent: false as const, reason: "missing_smtp_config" as const };
+    }
+
+    const subject = "Your Glitz temporary password";
+
+    writeEmailLog({
+        channel: "admin-temporary-password",
+        status: "attempt",
+        to: params.toEmail,
+        subject,
+    });
+
+    try {
+        const transporter = getSmtpTransport();
+
+        await transporter.sendMail({
+            from: getFromEmailAddress(),
+            to: params.toEmail,
+            subject,
+            text: `Hi ${params.username},
+
+A temporary password was requested for your account.
+
+Temporary password: ${params.temporaryPassword}
+
+Sign in with this temporary password, then immediately use Change Password to set a new one.`,
+            html: `<p>Hi ${params.username},</p><p>A temporary password was requested for your account.</p><p><strong>Temporary password:</strong> ${params.temporaryPassword}</p><p>Sign in with this temporary password, then immediately use <strong>Change Password</strong> to set a new one.</p>`,
+        });
+
+        writeEmailLog({
+            channel: "admin-temporary-password",
+            status: "success",
+            to: params.toEmail,
+            subject,
+        });
+
+        return { sent: true as const };
+    } catch (error) {
+        writeEmailLog({
+            channel: "admin-temporary-password",
+            status: "error",
+            to: params.toEmail,
+            subject,
+            reason: error instanceof Error ? error.message : "unknown_error",
+        });
+        throw error;
+    }
+}
+
 export async function sendMemberRegistrationNotification(params: {
     toEmails: string[];
     fullName: string;

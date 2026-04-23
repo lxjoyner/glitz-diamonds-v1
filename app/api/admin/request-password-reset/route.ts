@@ -1,21 +1,25 @@
 import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import crypto from "node:crypto";
 import {
-    createPasswordResetToken,
     getAdminByEmail,
     getAdminByUsername,
-    markResetEmailSent,
     setAdminResetEmail,
+    setAdminTemporaryPassword,
 } from "@/lib/admin-db";
-import { sendAdminPasswordResetEmail } from "@/lib/mailer";
-
-function getAppBaseUrl() {
-    return process.env.APP_BASE_URL || "http://localhost:3000";
-}
+import { sendAdminTemporaryPasswordEmail } from "@/lib/mailer";
 
 const genericResponse = {
     success: true,
-    message: "If the admin account exists, a password reset email has been sent.",
+    message: "If the account exists, temporary password instructions have been sent.",
 };
+
+function generateTemporaryPassword(length = 16) {
+    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*";
+    const bytes = crypto.randomBytes(length);
+
+    return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("");
+}
 
 export async function POST(req: Request) {
     try {
@@ -39,16 +43,16 @@ export async function POST(req: Request) {
             return NextResponse.json(genericResponse);
         }
 
-        const resetToken = await createPasswordResetToken(admin.id);
-        const resetUrl = `${getAppBaseUrl()}/admin/reset-password?token=${encodeURIComponent(resetToken)}`;
+        const temporaryPassword = generateTemporaryPassword();
+        const temporaryPasswordHash = await bcrypt.hash(temporaryPassword, 12);
 
-        await sendAdminPasswordResetEmail({
+        await setAdminTemporaryPassword(admin.id, temporaryPasswordHash);
+
+        await sendAdminTemporaryPasswordEmail({
             toEmail: admin.email,
             username: admin.username,
-            resetUrl,
+            temporaryPassword,
         });
-
-        await markResetEmailSent(admin.id);
 
         return NextResponse.json(genericResponse);
     } catch (error) {

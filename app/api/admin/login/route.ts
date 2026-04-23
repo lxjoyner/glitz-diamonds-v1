@@ -45,6 +45,18 @@ export async function POST(req: Request) {
             }
 
             const securityState = await getAdminSecurityState(admin.id);
+
+            if (securityState.reset_required) {
+                return NextResponse.json(
+                    {
+                        success: false,
+                        error:
+                            "A temporary password was issued for this account. Please use Change Password now to set a new password.",
+                    },
+                    { status: 403 }
+                );
+            }
+
             const intervalMs = getPasswordResetIntervalDays() * 24 * 60 * 60 * 1000;
             const changedAtMs = new Date(securityState.password_changed_at).getTime();
             const passwordExpired = Date.now() - changedAtMs >= intervalMs;

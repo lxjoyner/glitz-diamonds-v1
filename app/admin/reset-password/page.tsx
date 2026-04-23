@@ -30,12 +30,12 @@ export default function AdminResetPasswordPage() {
             const data = await res.json();
 
             if (!res.ok) {
-                throw new Error(data?.error || "Failed to request reset link.");
+                throw new Error(data?.error || "Failed to send temporary password.");
             }
 
-            setMessage(data.message || "Reset email sent.");
+            setMessage(data.message || "Temporary password sent.");
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to request reset link.");
+            setError(err instanceof Error ? err.message : "Failed to send temporary password.");
         } finally {
             setLoading(false);
         }
@@ -72,12 +72,12 @@ export default function AdminResetPasswordPage() {
     return (
         <main className="min-h-screen bg-black text-white flex items-center justify-center px-4">
             <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6">
-                <h1 className="text-2xl font-semibold mb-4">Admin Password Reset</h1>
+                <h1 className="text-2xl font-semibold mb-4">Forgot Password</h1>
 
                 {!token ? (
                     <form onSubmit={requestReset} className="space-y-4">
                         <p className="text-sm text-slate-300">
-                            Enter your admin username or email and we&apos;ll send a reset link.
+                            Enter your username or email and we&apos;ll send a temporary password.
                         </p>
 
                         <div>
@@ -104,7 +104,7 @@ export default function AdminResetPasswordPage() {
                             disabled={loading}
                             className="inline-flex items-center px-5 py-2.5 rounded-lg bg-red-800 text-white text-sm font-medium hover:bg-red-400 transition disabled:opacity-60"
                         >
-                            {loading ? "Sending..." : "Send Reset Link"}
+                            {loading ? "Sending..." : "Get Temporary Password"}
                         </button>
                     </form>
                 ) : (
