@@ -311,7 +311,7 @@ export default function IdeasActivitiesPage() {
                             <input className="rounded-lg bg-white/10 px-3 py-2" placeholder="Location" value={form.location} onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))} />
                             <select className="rounded-lg bg-white/10 px-3 py-2" value={form.budgetRange} onChange={(e) => setForm((p) => ({ ...p, budgetRange: e.target.value }))}>{budgetOptions.map((option) => <option className="text-black" key={option}>{option}</option>)}</select>
                             <select className="rounded-lg bg-white/10 px-3 py-2" value={form.timeCommitment} onChange={(e) => setForm((p) => ({ ...p, timeCommitment: e.target.value }))}>{timeCommitmentOptions.map((option) => <option className="text-black" key={option}>{option}</option>)}</select>
-                            <input className="rounded-lg bg-white/10 px-3 py-2" type="number" min={1} max={500} value={form.groupSize} onChange={(e) => setForm((p) => ({ ...p, groupSize: e.target.value }))} />
+                            <input className="rounded-lg bg-white/10 px-3 py-2" type="number" min={1} max={500} placeholder="Number of participants" value={form.groupSize} onChange={(e) => setForm((p) => ({ ...p, groupSize: e.target.value }))} />
                         </div>
                         <div className="grid gap-3 sm:grid-cols-2">
                             <label className="text-xs">Preferred Date From<input className="mt-1 block w-full rounded-lg bg-white/10 px-3 py-2" type="date" value={form.preferredStartDate} onChange={(e) => setForm((p) => ({ ...p, preferredStartDate: e.target.value }))} /></label>
@@ -345,12 +345,12 @@ export default function IdeasActivitiesPage() {
                         <p className="mt-2 text-xs text-slate-300">Sends to active members, including admins, secretary, and treasurer roles.</p>
                         <div className="mt-3 grid gap-2">
                             <select
-                                className="rounded-lg bg-white/10 px-3 py-2"
+                                className="rounded-lg bg-white px-3 py-2 font-semibold text-black"
                                 value={pollForm.ideaId}
                                 onChange={(e) => setPollForm((prev) => ({ ...prev, ideaId: e.target.value }))}
                             >
-                                <option value="">Select activity/idea</option>
-                                {ideas.map((idea) => <option key={idea.id} value={idea.id}>{idea.title}</option>)}
+                                <option className="text-black" value="">Select activity/idea</option>
+                                {ideas.map((idea) => <option className="text-black" key={idea.id} value={idea.id}>{idea.title}</option>)}
                             </select>
                             <input className="rounded-lg bg-white/10 px-3 py-2" placeholder="Poll question" value={pollForm.question} onChange={(e) => setPollForm((prev) => ({ ...prev, question: e.target.value }))} />
                             <input className="rounded-lg bg-white/10 px-3 py-2" placeholder="Option 1" value={pollForm.optionA} onChange={(e) => setPollForm((prev) => ({ ...prev, optionA: e.target.value }))} />
