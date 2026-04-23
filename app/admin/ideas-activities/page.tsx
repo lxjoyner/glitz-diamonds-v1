@@ -41,11 +41,11 @@ type Poll = {
     options: Array<{ id: number; option_label: string; vote_count: number; selected_by_user: number }>;
 };
 
-const categoryOptions = ["Volunteer/Outreach", "Wellness", "Trip", "Dining Out", "Celebration", "Other"];
-const purposeOptions = ["Give Back", "Build Connections", "Relax and Recharge", "Improve Health", "Personal Growth"];
-const locationTypeOptions = ["Indoor", "Outdoor", "Virtual", "Hybrid"];
-const budgetOptions = ["$100-$500", "$600-1000", "more than $1000", "less than $100"];
-const timeCommitmentOptions = ["4-8 hrs", "Half Day", "Full Day", "Weekend", "Monthly", "Every Other Month", "Every 3 Months", "Every 6 Months"];
+const categoryOptions = ["Whats the category","Volunteer/Outreach", "Wellness", "Trip", "Dining Out", "Celebration", "Other"];
+const purposeOptions = ["Whats the purpose","Give Back", "Build Connections", "Relax and Recharge", "Improve Health", "Personal Growth"];
+const locationTypeOptions = ["Location Type","Indoor", "Outdoor", "Virtual", "Hybrid"];
+const budgetOptions = ["Expected Cost","$100-$500", "$600-1000", "more than $1000", "less than $100"];
+const timeCommitmentOptions = ["Time Commitment Needed","4-8 hrs", "Half Day", "Full Day", "Weekend", "Monthly", "Every Other Month", "Every 3 Months", "Every 6 Months"];
 
 export default function IdeasActivitiesPage() {
     const router = useRouter();
@@ -66,7 +66,7 @@ export default function IdeasActivitiesPage() {
         location: "",
         budgetRange: budgetOptions[0],
         timeCommitment: timeCommitmentOptions[0],
-        groupSize: "10",
+        groupSize: "Number of Participants",
         preferredStartDate: "",
         preferredEndDate: "",
     });
@@ -81,7 +81,7 @@ export default function IdeasActivitiesPage() {
         optionD: "",
     });
 
-    const canSchedule = user?.role === "admin" || user?.role === "secretary";
+    const canSchedule = user?.role === "admin";
 
     const previewTitle = form.title.trim() || "Donation Drive";
 
