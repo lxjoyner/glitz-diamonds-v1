@@ -263,14 +263,27 @@ export async function getAdminNotificationEmails(): Promise<string[]> {
 
     const [rows] = await pool.query(
         `
-        SELECT DISTINCT s.reset_email AS email
-        FROM admins a
-        JOIN admin_security s ON s.admin_id = a.id
-        WHERE a.is_active = 1 AND s.reset_email IS NOT NULL AND s.reset_email <> ''
+        SELECT DISTINCT email
+        FROM (
+            SELECT s.reset_email AS email
+            FROM admins a
+            JOIN admin_security s ON s.admin_id = a.id
+            WHERE a.is_active = 1
+              AND s.reset_email IS NOT NULL
+              AND TRIM(s.reset_email) <> ''
+            UNION
+            SELECT u.email AS email
+            FROM users u
+            WHERE u.is_active = 1
+              AND LOWER(COALESCE(u.role, '')) = 'admin'
+              AND u.email IS NOT NULL
+              AND TRIM(u.email) <> ''
+        ) candidate_emails
+        WHERE email IS NOT NULL AND TRIM(email) <> ''
         `
     );
 
-    return (rows as Array<{ email: string }>).map((item) => item.email);
+    return (rows as Array<{ email: string }>).map((item) => item.email.trim().toLowerCase());
 }
 
 export async function upsertAdminUser(params: {
