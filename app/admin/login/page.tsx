@@ -194,9 +194,13 @@ export default function AdminLoginPage() {
                             {loading ? "Signing in..." : "Sign In"}
                         </button>
 
-                        <p className="text-sm">
+                        <p className="text-sm space-y-1">
                             <Link href="/admin/reset-password" className="text-red-300 hover:text-red-200 underline">
                                 Forgot Password?
+                            </Link>
+                            <br />
+                            <Link href="/admin/forgot-username" className="text-red-300 hover:text-red-200 underline">
+                                Forgot Username?
                             </Link>
                         </p>
                     </form>
