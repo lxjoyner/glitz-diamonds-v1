@@ -208,6 +208,16 @@ export default function Header() {
 
                     {!loadingAuth && adminUser?.role === "admin" && (
                         <Link
+                            href="/admin/membership"
+                            className="nav-link"
+                            onClick={() => setOpen(false)}
+                        >
+                            Registered Users Details
+                        </Link>
+                    )}
+
+                    {!loadingAuth && adminUser?.role === "admin" && (
+                        <Link
                             href="/admin/member-invites"
                             className="nav-link"
                             onClick={() => setOpen(false)}

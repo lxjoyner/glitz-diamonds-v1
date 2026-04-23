@@ -162,16 +162,16 @@ export async function updateUserPassword(userId: number, passwordHash: string) {
     );
 }
 
-export async function getAllUsers(): Promise<Array<Pick<SiteUser, "id" | "username" | "email" | "full_name" | "role" | "is_active" | "created_at">>> {
+export async function getAllUsers(): Promise<Array<Pick<SiteUser, "id" | "username" | "email" | "full_name" | "address" | "tshirt_size" | "favorite_color" | "hat_size" | "gender" | "birthday" | "role" | "is_active" | "created_at">>> {
     await ensureUsersTable();
 
     const [rows] = await pool.query(`
-        SELECT id, username, email, full_name, role, is_active, created_at
+        SELECT id, username, email, full_name, address, tshirt_size, favorite_color, hat_size, gender, birthday, role, is_active, created_at
         FROM users
         ORDER BY created_at DESC
     `);
 
-    return rows as Array<Pick<SiteUser, "id" | "username" | "email" | "full_name" | "role" | "is_active" | "created_at">>;
+    return rows as Array<Pick<SiteUser, "id" | "username" | "email" | "full_name" | "address" | "tshirt_size" | "favorite_color" | "hat_size" | "gender" | "birthday" | "role" | "is_active" | "created_at">>;
 }
 
 export async function setUserRole(userId: number, role: UserRole | null) {
