@@ -8,7 +8,7 @@ import {
     ROLE_PERMISSION_OPTIONS,
     RolePermissionSection,
     RoleSettings,
-} from "@/lib/role-settings-db";
+} from "@/lib/role-settings";
 
 type AuthUser = {
     id: string;
