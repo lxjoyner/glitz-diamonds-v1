@@ -451,6 +451,19 @@ export async function deleteScheduledEventById(eventId: number) {
     return Number((result as { affectedRows?: number }).affectedRows || 0);
 }
 
+export async function updateScheduledEventDatesById(input: {
+    eventId: number;
+    startDate: string;
+    endDate: string;
+}) {
+    await ensureIdeasActivitiesTables();
+    const [result] = await pool.query(
+        `UPDATE scheduled_events SET start_date = ?, end_date = ? WHERE id = ?`,
+        [input.startDate, input.endDate, input.eventId]
+    );
+    return Number((result as { affectedRows?: number }).affectedRows || 0);
+}
+
 export async function deletePollById(pollId: number) {
     await ensureIdeasActivitiesTables();
     await pool.query(`DELETE FROM idea_poll_votes WHERE poll_id = ?`, [pollId]);

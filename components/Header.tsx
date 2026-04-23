@@ -246,6 +246,16 @@ export default function Header() {
                         </Link>
                     )}
 
+                    {!loadingAuth && adminUser && (
+                        <Link
+                            href="/calendar"
+                            className="nav-link"
+                            onClick={() => setOpen(false)}
+                        >
+                            Calendar
+                        </Link>
+                    )}
+
                     <div className="mt-4 border-t border-white/10 pt-4">
                         {!loadingAuth && !adminUser && (
                             <Link
