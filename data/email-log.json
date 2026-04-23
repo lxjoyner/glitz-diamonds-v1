@@ -1,5 +1,85 @@
 [
   {
+    "id": "19b66792-c85d-4efa-afcc-6a81be7f1348",
+    "createdAt": "2026-04-23T04:08:54.108Z",
+    "channel": "poll-email",
+    "status": "success",
+    "to": "yoljoyner@gmail.com",
+    "subject": "New Poll: Should We Eat Pizza"
+  },
+  {
+    "id": "991723db-d08c-425c-827c-94cd355d1c4a",
+    "createdAt": "2026-04-23T04:08:52.644Z",
+    "channel": "poll-email",
+    "status": "attempt",
+    "to": "yoljoyner@gmail.com",
+    "subject": "New Poll: Should We Eat Pizza"
+  },
+  {
+    "id": "bfa100cb-d810-4598-b294-7e5ad09ce2ff",
+    "createdAt": "2026-04-23T04:08:52.606Z",
+    "channel": "poll-email",
+    "status": "success",
+    "to": "lavasier@hotmail.com",
+    "subject": "New Poll: Should We Eat Pizza"
+  },
+  {
+    "id": "141a3106-038f-4452-984f-d0b96747fcdd",
+    "createdAt": "2026-04-23T04:08:51.095Z",
+    "channel": "poll-email",
+    "status": "attempt",
+    "to": "lavasier@hotmail.com",
+    "subject": "New Poll: Should We Eat Pizza"
+  },
+  {
+    "id": "4277eb5b-4e50-4067-b124-316c69332b65",
+    "createdAt": "2026-04-23T04:08:51.055Z",
+    "channel": "poll-email",
+    "status": "success",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Should We Eat Pizza"
+  },
+  {
+    "id": "dcd4c6ae-1b35-491c-80ae-5534451383e7",
+    "createdAt": "2026-04-23T04:08:49.549Z",
+    "channel": "poll-email",
+    "status": "attempt",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "New Poll: Should We Eat Pizza"
+  },
+  {
+    "id": "44c163e5-611a-4f55-bf53-a981b3acba7c",
+    "createdAt": "2026-04-23T04:08:49.512Z",
+    "channel": "poll-email",
+    "status": "success",
+    "to": "jacobljoyner25@gmail.com",
+    "subject": "New Poll: Should We Eat Pizza"
+  },
+  {
+    "id": "fead90f2-cd1e-4df8-9249-d51bb264d0e1",
+    "createdAt": "2026-04-23T04:08:47.814Z",
+    "channel": "poll-email",
+    "status": "attempt",
+    "to": "jacobljoyner25@gmail.com",
+    "subject": "New Poll: Should We Eat Pizza"
+  },
+  {
+    "id": "c9757dc5-1b05-4634-a97b-0fb3ec9212f4",
+    "createdAt": "2026-04-23T03:42:19.868Z",
+    "channel": "username-reminder",
+    "status": "success",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "Your Glitz username reminder"
+  },
+  {
+    "id": "ad7e2e4f-b3e2-413c-a208-36041e8c6140",
+    "createdAt": "2026-04-23T03:42:18.291Z",
+    "channel": "username-reminder",
+    "status": "attempt",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "Your Glitz username reminder"
+  },
+  {
     "id": "691c058d-5c06-42b9-a837-175cda2af4e6",
     "createdAt": "2026-04-23T02:35:55.423Z",
     "channel": "admin-temporary-password",

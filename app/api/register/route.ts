@@ -262,7 +262,7 @@ export async function POST(req: Request) {
             message: "Registration successful. Your account was created as a Member.",
         });
     } catch (error) {
-        console.error("Registration error:", error);
+        console.error("Registration error please contact owner:", error);
 
         return NextResponse.json(
             { success: false, error: "Failed to register at this time." },
