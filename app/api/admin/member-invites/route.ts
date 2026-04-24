@@ -9,6 +9,22 @@ function isValidEmail(email: string): boolean {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+function getBaseUrl(request: NextRequest): string {
+    const configuredUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+
+    if (configuredUrl) {
+        return configuredUrl.replace(/\/$/, "");
+    }
+
+    const origin = request.headers.get("origin")?.trim();
+
+    if (origin) {
+        return origin.replace(/\/$/, "");
+    }
+
+    return request.nextUrl.origin.replace(/\/$/, "");
+}
+
 export async function POST(req: NextRequest) {
     const token = req.cookies.get("glitz_token")?.value;
 
@@ -52,7 +68,7 @@ export async function POST(req: NextRequest) {
             phoneNumber,
         });
 
-        const registerUrl = new URL("/register", req.nextUrl.origin);
+        const registerUrl = new URL("/register", getBaseUrl(req));
         registerUrl.searchParams.set("invite", inviteToken);
 
         const inviteMessage = "This is a one time use link to register with Glitz Of Diamonds, once the register button is clicked on the registration form that you will see once the link below is clicked, the link will become inactive. If you use the link do not click register if plan to come back and finish the process. Your First & Last Name, email and phone number will automatically be placed into the registration form.";
