@@ -127,3 +127,69 @@ STRIPE_DONATION_PRICE_ID=price_12345
 - Donors are redirected to Stripe and then returned to `/donate?status=success` or `/donate?status=cancelled`.
 
 > Note: If you set `STRIPE_DONATION_PRICE_ID`, Stripe will charge that configured price. The selected amount is still captured in metadata as `requestedAmount`.
+
+## Deploying to Hostinger (Next.js checklist)
+
+If you are deploying to a Hostinger Node.js/VPS setup (not static hosting), review this before going live:
+
+### 1) Build/start model
+- This app is configured with `output: "standalone"` in `next.config.ts` to make production deployment easier.
+- Use the standard production flow:
+
+```bash
+npm ci
+npm run build
+npm run start
+```
+
+### 2) Production environment variables
+Set these in Hostinger (do not commit secrets):
+
+```bash
+NODE_ENV=production
+PORT=3000
+APP_BASE_URL=https://your-domain.com
+NEXT_PUBLIC_SITE_URL=https://your-domain.com
+
+# DB
+DB_HOST=...
+DB_USER=...
+DB_PASSWORD=...
+DB_NAME=...
+
+# Email / password reset
+SMTP_HOST=...
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=...
+SMTP_PASS=...
+PASSWORD_RESET_FROM_EMAIL=...
+PASSWORD_RESET_INTERVAL_DAYS=60
+
+# Stripe (if donations enabled)
+STRIPE_SECRET_KEY=...
+STRIPE_DONATION_PRICE_ID=... # optional
+
+# Auth
+JWT_SECRET=use-a-long-random-secret
+```
+
+### 3) Reverse proxy and domain
+- Point your domain to the Hostinger server.
+- Terminate SSL at your proxy and forward traffic to your Node app port.
+- Ensure forwarded headers are preserved so generated absolute URLs use HTTPS.
+
+### 4) Runtime requirements
+- Use a modern Node.js LTS/runtime compatible with your Next.js version.
+- Keep `package-lock.json` in repo and install with `npm ci` for reproducible builds.
+
+### 5) Post-deploy smoke checks
+- Open `/`, `/admin/login`, and `/donate` (if enabled).
+- Submit contact/poll forms and verify DB writes + email delivery.
+- Trigger password-reset flow and confirm reset link uses your production domain.
+- Verify Stripe checkout redirects back to `https://your-domain.com/donate`.
+
+### 6) Optional hardening
+- Run app behind a process manager (PM2/systemd) with restart on failure.
+- Restrict DB user privileges to only what the app needs.
+- Rotate SMTP/JWT/Stripe credentials periodically.
