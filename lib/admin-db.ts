@@ -113,9 +113,17 @@ export async function getAdminByUsername(username: string): Promise<AdminUser | 
 
     const [rows] = await pool.query(
         `
-        SELECT a.id, a.username, s.reset_email AS email, a.password_hash, a.role, a.is_active, a.created_at
+        SELECT
+            a.id,
+            a.username,
+            COALESCE(NULLIF(TRIM(s.reset_email), ''), NULLIF(TRIM(u.email), '')) AS email,
+            a.password_hash,
+            a.role,
+            a.is_active,
+            a.created_at
         FROM admins a
         LEFT JOIN admin_security s ON s.admin_id = a.id
+        LEFT JOIN users u ON u.username = a.username
         WHERE a.username = ?
         LIMIT 1
         `,
@@ -131,13 +139,21 @@ export async function getAdminByEmail(email: string): Promise<AdminUser | null> 
 
     const [rows] = await pool.query(
         `
-        SELECT a.id, a.username, s.reset_email AS email, a.password_hash, a.role, a.is_active, a.created_at
+        SELECT
+            a.id,
+            a.username,
+            COALESCE(NULLIF(TRIM(s.reset_email), ''), NULLIF(TRIM(u.email), '')) AS email,
+            a.password_hash,
+            a.role,
+            a.is_active,
+            a.created_at
         FROM admins a
-        JOIN admin_security s ON s.admin_id = a.id
-        WHERE s.reset_email = ?
+        LEFT JOIN admin_security s ON s.admin_id = a.id
+        LEFT JOIN users u ON u.username = a.username
+        WHERE s.reset_email = ? OR u.email = ?
         LIMIT 1
         `,
-        [email]
+        [email, email]
     );
 
     const result = rows as AdminUser[];
