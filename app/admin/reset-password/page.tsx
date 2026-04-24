@@ -1,9 +1,19 @@
 "use client";
 
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
 
-export default function AdminResetPasswordPage() {
+function AdminResetPasswordPageFallback() {
+    return (
+        <main className="min-h-screen bg-black text-white flex items-center justify-center px-4">
+            <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6">
+                <p className="text-sm text-slate-300">Loading reset password form...</p>
+            </div>
+        </main>
+    );
+}
+
+function AdminResetPasswordPageContent() {
     const searchParams = useSearchParams();
     const token = searchParams.get("token") || "";
 
@@ -140,5 +150,13 @@ export default function AdminResetPasswordPage() {
                 {error && <p className="text-sm text-red-400 mt-4">{error}</p>}
             </div>
         </main>
+    );
+}
+
+export default function AdminResetPasswordPage() {
+    return (
+        <Suspense fallback={<AdminResetPasswordPageFallback />}>
+            <AdminResetPasswordPageContent />
+        </Suspense>
     );
 }
