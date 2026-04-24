@@ -144,6 +144,38 @@ export async function getAdminByEmail(email: string): Promise<AdminUser | null> 
     return result[0] ?? null;
 }
 
+export async function upsertAdminUser(params: {
+    username: string;
+    passwordHash: string;
+    isActive: number;
+}) {
+    await ensureAdminSecurityTables();
+
+    await pool.query(
+        `
+        INSERT INTO admins (username, password_hash, role, is_active)
+        VALUES (?, ?, 'admin', ?)
+        ON DUPLICATE KEY UPDATE
+            password_hash = VALUES(password_hash),
+            role = 'admin',
+            is_active = VALUES(is_active)
+        `,
+        [params.username, params.passwordHash, params.isActive]
+    );
+}
+
+export async function removeAdminByUsername(username: string) {
+    await ensureAdminSecurityTables();
+
+    await pool.query(
+        `
+        DELETE FROM admins
+        WHERE username = ?
+        `,
+        [username]
+    );
+}
+
 export async function getAdminSecurityState(adminId: number): Promise<AdminSecurityState> {
     await ensureAdminSecurityRow(adminId);
 
