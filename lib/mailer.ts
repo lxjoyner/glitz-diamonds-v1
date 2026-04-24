@@ -253,6 +253,71 @@ export async function sendUsernameReminderEmail(params: {
     }
 }
 
+
+export async function sendAdminLoginVerificationCodeEmail(params: {
+    toEmail: string;
+    username: string;
+    verificationCode: string;
+}) {
+    if (!hasSmtpConfig()) {
+        const missingSmtpKeys = getMissingSmtpConfigKeys();
+        console.warn(
+            `SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping login verification code email dispatch.`
+        );
+        writeEmailLog({
+            channel: "admin-login-2fa",
+            status: "skipped",
+            to: params.toEmail,
+            reason: "missing_smtp_config",
+            details: { missingEnv: missingSmtpKeys },
+        });
+        return { sent: false as const, reason: "missing_smtp_config" as const };
+    }
+
+    const subject = "Your Glitz login verification code";
+
+    writeEmailLog({
+        channel: "admin-login-2fa",
+        status: "attempt",
+        to: params.toEmail,
+        subject,
+    });
+
+    try {
+        const transporter = getSmtpTransport();
+
+        await transporter.sendMail({
+            from: getFromEmailAddress(),
+            to: params.toEmail,
+            subject,
+            text: `Hi ${params.username},
+
+Your verification code is: ${params.verificationCode}
+
+This code expires in 10 minutes. If you did not try to sign in, ignore this email.`,
+            html: `<p>Hi ${params.username},</p><p>Your verification code is:</p><p><strong style="font-size: 22px; letter-spacing: 4px;">${params.verificationCode}</strong></p><p>This code expires in 10 minutes. If you did not try to sign in, ignore this email.</p>`,
+        });
+
+        writeEmailLog({
+            channel: "admin-login-2fa",
+            status: "success",
+            to: params.toEmail,
+            subject,
+        });
+
+        return { sent: true as const };
+    } catch (error) {
+        writeEmailLog({
+            channel: "admin-login-2fa",
+            status: "error",
+            to: params.toEmail,
+            subject,
+            reason: error instanceof Error ? error.message : "unknown_error",
+        });
+        throw error;
+    }
+}
+
 export async function sendMemberRegistrationNotification(params: {
     toEmails: string[];
     fullName: string;

@@ -1,13 +1,13 @@
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import {
+    createLoginVerificationChallenge,
     createPasswordResetToken,
     getAdminByUsername,
     getAdminSecurityState,
     markResetEmailSent,
 } from "@/lib/admin-db";
-import { sendAdminPasswordResetEmail } from "@/lib/mailer";
-import { signAdminToken } from "@/lib/auth";
+import { sendAdminLoginVerificationCodeEmail, sendAdminPasswordResetEmail } from "@/lib/mailer";
 import { getUserByUsername } from "@/lib/user-db";
 
 function getPasswordResetIntervalDays() {
@@ -16,6 +16,10 @@ function getPasswordResetIntervalDays() {
 
 function getAppBaseUrl() {
     return process.env.APP_BASE_URL || "http://localhost:3000";
+}
+
+function generateSixDigitCode() {
+    return String(Math.floor(100000 + Math.random() * 900000));
 }
 
 export async function POST(req: Request) {
@@ -94,19 +98,40 @@ export async function POST(req: Request) {
                 );
             }
 
-            const token = signAdminToken({
-                sub: String(admin.id),
+            if (!admin.email) {
+                return NextResponse.json(
+                    {
+                        success: false,
+                        error: "Your account has no registered email address for two-factor verification.",
+                    },
+                    { status: 403 }
+                );
+            }
+
+            const verificationCode = generateSixDigitCode();
+            const challengeToken = await createLoginVerificationChallenge({
+                userId: admin.id,
+                userType: "admin",
                 username: admin.username,
                 role: "admin",
+                email: admin.email,
+                code: verificationCode,
+                ttlMinutes: 10,
             });
 
-            const response = NextResponse.json({ success: true });
-            response.cookies.set("glitz_token", token, {
+            await sendAdminLoginVerificationCodeEmail({
+                toEmail: admin.email,
+                username: admin.username,
+                verificationCode,
+            });
+
+            const response = NextResponse.json({ success: true, requiresTwoFactor: true });
+            response.cookies.set("glitz_admin_2fa", challengeToken, {
                 httpOnly: true,
                 sameSite: "lax",
                 secure: process.env.NODE_ENV === "production",
                 path: "/",
-                maxAge: 60 * 60 * 8,
+                maxAge: 60 * 10,
             });
             return response;
         }
@@ -128,19 +153,40 @@ export async function POST(req: Request) {
             );
         }
 
-        const token = signAdminToken({
-            sub: String(user.id),
+        if (!user.email) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: "Your account has no registered email address for two-factor verification.",
+                },
+                { status: 403 }
+            );
+        }
+
+        const verificationCode = generateSixDigitCode();
+        const challengeToken = await createLoginVerificationChallenge({
+            userId: user.id,
+            userType: "user",
             username: user.username,
             role: user.role,
+            email: user.email,
+            code: verificationCode,
+            ttlMinutes: 10,
         });
 
-        const response = NextResponse.json({ success: true });
-        response.cookies.set("glitz_token", token, {
+        await sendAdminLoginVerificationCodeEmail({
+            toEmail: user.email,
+            username: user.username,
+            verificationCode,
+        });
+
+        const response = NextResponse.json({ success: true, requiresTwoFactor: true });
+        response.cookies.set("glitz_admin_2fa", challengeToken, {
             httpOnly: true,
             sameSite: "lax",
             secure: process.env.NODE_ENV === "production",
             path: "/",
-            maxAge: 60 * 60 * 8,
+            maxAge: 60 * 10,
         });
 
         return response;

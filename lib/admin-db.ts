@@ -27,6 +27,20 @@ export type AdminResetToken = {
     created_at: string;
 };
 
+export type LoginVerificationChallenge = {
+    id: number;
+    user_id: number;
+    user_type: "admin" | "user";
+    username: string;
+    role: string;
+    email: string;
+    code_hash: string;
+    challenge_hash: string;
+    expires_at: string;
+    consumed_at: string | null;
+    created_at: string;
+};
+
 let bootstrapped = false;
 
 async function ensureAdminSecurityTables() {
@@ -56,6 +70,25 @@ async function ensureAdminSecurityTables() {
             UNIQUE KEY uniq_token_hash (token_hash),
             INDEX idx_admin_expires (admin_id, expires_at),
             FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE
+        )
+    `);
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS admin_login_verification_challenges (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            user_type ENUM('admin', 'user') NOT NULL,
+            username VARCHAR(64) NOT NULL,
+            role VARCHAR(32) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            code_hash VARCHAR(64) NOT NULL,
+            challenge_hash VARCHAR(64) NOT NULL,
+            expires_at DATETIME NOT NULL,
+            consumed_at DATETIME NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_challenge_hash (challenge_hash),
+            INDEX idx_login_verify_lookup (challenge_hash, expires_at, consumed_at),
+            INDEX idx_login_verify_user (user_id, user_type, created_at)
         )
     `);
 
@@ -258,62 +291,82 @@ export async function consumePasswordResetToken(rawToken: string): Promise<Admin
     return token;
 }
 
-export async function getAdminNotificationEmails(): Promise<string[]> {
-    await ensureAdminSecurityTables();
-
-    const [rows] = await pool.query(
-        `
-        SELECT DISTINCT email
-        FROM (
-            SELECT s.reset_email AS email
-            FROM admins a
-            JOIN admin_security s ON s.admin_id = a.id
-            WHERE a.is_active = 1
-              AND s.reset_email IS NOT NULL
-              AND TRIM(s.reset_email) <> ''
-            UNION
-            SELECT u.email AS email
-            FROM users u
-            WHERE u.is_active = 1
-              AND LOWER(COALESCE(u.role, '')) = 'admin'
-              AND u.email IS NOT NULL
-              AND TRIM(u.email) <> ''
-        ) candidate_emails
-        WHERE email IS NOT NULL AND TRIM(email) <> ''
-        `
-    );
-
-    return (rows as Array<{ email: string }>).map((item) => item.email.trim().toLowerCase());
-}
-
-export async function upsertAdminUser(params: {
+export async function createLoginVerificationChallenge(params: {
+    userId: number;
+    userType: "admin" | "user";
     username: string;
-    passwordHash: string;
-    isActive: number;
+    role: string;
+    email: string;
+    code: string;
+    ttlMinutes?: number;
 }) {
     await ensureAdminSecurityTables();
 
+    const rawChallengeToken = crypto.randomBytes(32).toString("hex");
+    const challengeHash = hashToken(rawChallengeToken);
+    const codeHash = hashToken(params.code);
+    const ttlMinutes = params.ttlMinutes ?? 10;
+
     await pool.query(
         `
-        INSERT INTO admins (username, password_hash, role, is_active)
-        VALUES (?, ?, 'admin', ?)
-        ON DUPLICATE KEY UPDATE
-            password_hash = VALUES(password_hash),
-            role = 'admin',
-            is_active = VALUES(is_active)
+        INSERT INTO admin_login_verification_challenges (
+            user_id, user_type, username, role, email, code_hash, challenge_hash, expires_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? MINUTE))
         `,
-        [params.username, params.passwordHash, params.isActive]
+        [
+            params.userId,
+            params.userType,
+            params.username,
+            params.role,
+            params.email,
+            codeHash,
+            challengeHash,
+            ttlMinutes,
+        ]
     );
+
+    return rawChallengeToken;
 }
 
-export async function removeAdminByUsername(username: string) {
+export async function consumeLoginVerificationChallenge(rawChallengeToken: string, code: string): Promise<LoginVerificationChallenge | null> {
     await ensureAdminSecurityTables();
+
+    const challengeHash = hashToken(rawChallengeToken);
+    const codeHash = hashToken(code);
+
+    const [rows] = await pool.query(
+        `
+        SELECT id, user_id, user_type, username, role, email, code_hash, challenge_hash, expires_at, consumed_at, created_at
+        FROM admin_login_verification_challenges
+        WHERE challenge_hash = ?
+        LIMIT 1
+        `,
+        [challengeHash]
+    );
+
+    const challenge = (rows as LoginVerificationChallenge[])[0];
+
+    if (!challenge) {
+        return null;
+    }
+
+    if (challenge.consumed_at || new Date(challenge.expires_at).getTime() < Date.now()) {
+        return null;
+    }
+
+    if (challenge.code_hash !== codeHash) {
+        return null;
+    }
 
     await pool.query(
         `
-        DELETE FROM admins
-        WHERE username = ?
+        UPDATE admin_login_verification_challenges
+        SET consumed_at = NOW()
+        WHERE id = ?
         `,
-        [username]
+        [challenge.id]
     );
+
+    return challenge;
 }
