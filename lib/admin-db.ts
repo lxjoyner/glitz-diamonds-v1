@@ -144,6 +144,27 @@ export async function getAdminByEmail(email: string): Promise<AdminUser | null> 
     return result[0] ?? null;
 }
 
+export async function getAdminNotificationEmails(): Promise<string[]> {
+    await ensureAdminSecurityTables();
+
+    const [rows] = await pool.query(
+        `
+        SELECT DISTINCT s.reset_email AS email
+        FROM admins a
+        JOIN admin_security s ON s.admin_id = a.id
+        WHERE a.role = 'admin'
+          AND a.is_active = 1
+          AND s.reset_email IS NOT NULL
+          AND TRIM(s.reset_email) <> ''
+        `
+    );
+
+    const records = rows as Array<{ email: string | null }>;
+    return records
+        .map((record) => record.email?.trim() ?? "")
+        .filter(Boolean);
+}
+
 export async function upsertAdminUser(params: {
     username: string;
     passwordHash: string;
