@@ -46,7 +46,6 @@ export default function Hero() {
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
     const [isOpen, setIsOpen] = useState(false);
     const [galleryImages, setGalleryImages] = useState(fallbackGalleryImages);
-    const [isLargeScreen, setIsLargeScreen] = useState(false);
 
     const handleScrollRight = () => {
         if (scrollRef.current && firstCardRef.current) {
@@ -71,7 +70,6 @@ export default function Hero() {
     };
 
     const openLightbox = (index: number) => {
-        if (!isLargeScreen) return;
         setSelectedIndex(index);
         requestAnimationFrame(() => setIsOpen(true));
     };
@@ -91,25 +89,6 @@ export default function Hero() {
         setSelectedIndex((selectedIndex + 1) % galleryImages.length);
     };
 
-
-    useEffect(() => {
-        const mediaQuery = window.matchMedia("(min-width: 1024px)");
-
-        const syncScreenSize = () => {
-            const isNowLargeScreen = mediaQuery.matches;
-            setIsLargeScreen(isNowLargeScreen);
-
-            if (!isNowLargeScreen) {
-                setIsOpen(false);
-                setSelectedIndex(null);
-            }
-        };
-
-        syncScreenSize();
-        mediaQuery.addEventListener("change", syncScreenSize);
-
-        return () => mediaQuery.removeEventListener("change", syncScreenSize);
-    }, []);
 
     useEffect(() => {
         async function loadGalleryImages() {
