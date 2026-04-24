@@ -67,7 +67,9 @@ export async function PUT(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const imageIds = Array.isArray(body?.imageIds) ? body.imageIds.map(Number) : [];
+        const imageIds: number[] = Array.isArray(body?.imageIds)
+            ? body.imageIds.map((id: unknown) => Number(id))
+            : [];
 
         if (imageIds.length === 0 || imageIds.some((id) => !Number.isInteger(id) || id <= 0)) {
             return NextResponse.json(
