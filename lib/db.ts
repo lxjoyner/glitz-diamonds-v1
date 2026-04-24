@@ -18,6 +18,17 @@ const pool =
         queueLimit: 0,
     });
 
+// 🔥 TEST CONNECTION ON STARTUP
+(async () => {
+    try {
+        const conn = await pool.getConnection();
+        console.log("✅ MySQL Connected Successfully");
+        conn.release();
+    } catch (err) {
+        console.error("❌ MySQL Connection Failed:", err);
+    }
+})();
+
 if (process.env.NODE_ENV !== "production") {
     global.mysqlPool = pool;
 }
