@@ -128,7 +128,7 @@ STRIPE_DONATION_PRICE_ID=price_12345
 
 > Note: If you set `STRIPE_DONATION_PRICE_ID`, Stripe will charge that configured price. The selected amount is still captured in metadata as `requestedAmount`.
 
-## Deploying to Hostinger (Next.js checklist)
+## **Deploying to Hostinger (Next.js checklist)**
 
 If you are deploying to a Hostinger Node.js/VPS setup (not static hosting), review this before going live:
 

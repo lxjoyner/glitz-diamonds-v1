@@ -1,5 +1,283 @@
 [
   {
+    "id": "18fbd58a-6bcc-43b0-b8ca-9b8afc1ca47c",
+    "createdAt": "2026-04-24T00:14:26.825Z",
+    "channel": "admin-login-2fa",
+    "status": "success",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "Your Glitz login verification code"
+  },
+  {
+    "id": "173cda9d-6a52-4e37-a273-e6cba30ee7f8",
+    "createdAt": "2026-04-24T00:14:25.169Z",
+    "channel": "admin-login-2fa",
+    "status": "attempt",
+    "to": "lavasierjoyner@gmail.com",
+    "subject": "Your Glitz login verification code"
+  },
+  {
+    "id": "604c37e9-a619-433c-9646-64148fcf6b53",
+    "createdAt": "2026-04-23T20:52:01.027Z",
+    "channel": "member-registration-confirmation",
+    "status": "success",
+    "to": "lavasier@hotmail.com",
+    "subject": "Your Glitz registration is complete"
+  },
+  {
+    "id": "2b7101a3-a2d7-4022-b24b-d88aeee8a80f",
+    "createdAt": "2026-04-23T20:51:59.098Z",
+    "channel": "member-registration-confirmation",
+    "status": "attempt",
+    "to": "lavasier@hotmail.com",
+    "subject": "Your Glitz registration is complete"
+  },
+  {
+    "id": "1e6e1b71-11d1-419e-804b-a2708067b0d2",
+    "createdAt": "2026-04-23T20:51:59.088Z",
+    "channel": "member-registration-notification",
+    "status": "success",
+    "to": [
+      "lavasierjoyner@gmail.com",
+      "yoljoyner@gmail.com"
+    ],
+    "subject": "New member registration submitted"
+  },
+  {
+    "id": "0434de18-fea2-4754-8757-915eef801639",
+    "createdAt": "2026-04-23T20:51:51.057Z",
+    "channel": "member-registration-notification",
+    "status": "attempt",
+    "to": [
+      "lavasierjoyner@gmail.com",
+      "yoljoyner@gmail.com"
+    ],
+    "subject": "New member registration submitted"
+  },
+  {
+    "id": "4a90d5b8-36cd-4af5-b56b-d832f7e42549",
+    "createdAt": "2026-04-23T18:13:44.757Z",
+    "channel": "member-registration-confirmation",
+    "status": "success",
+    "to": "lavasier@hotmail.com",
+    "subject": "Your Glitz registration is complete"
+  },
+  {
+    "id": "78c48c10-d516-41ce-925d-665c3ca1d01c",
+    "createdAt": "2026-04-23T18:13:43.011Z",
+    "channel": "member-registration-confirmation",
+    "status": "attempt",
+    "to": "lavasier@hotmail.com",
+    "subject": "Your Glitz registration is complete"
+  },
+  {
+    "id": "d5c2a962-4451-40f3-885b-b31406e33253",
+    "createdAt": "2026-04-23T18:13:42.989Z",
+    "channel": "member-registration-notification",
+    "status": "success",
+    "to": [
+      "lavasierjoyner@gmail.com",
+      "yoljoyner@gmail.com"
+    ],
+    "subject": "New member registration submitted"
+  },
+  {
+    "id": "3141e3be-d565-4889-9179-a6137d871c9a",
+    "createdAt": "2026-04-23T18:13:40.948Z",
+    "channel": "member-registration-notification",
+    "status": "attempt",
+    "to": [
+      "lavasierjoyner@gmail.com",
+      "yoljoyner@gmail.com"
+    ],
+    "subject": "New member registration submitted"
+  },
+  {
+    "id": "0862b7fc-c144-477f-8bb7-0e275bcf6297",
+    "createdAt": "2026-04-23T17:53:34.379Z",
+    "channel": "member-registration-confirmation",
+    "status": "success",
+    "to": "lavasier@hotmail.com",
+    "subject": "Your Glitz registration is complete"
+  },
+  {
+    "id": "9378a6ff-2c3a-45fb-a767-9affd3ae9aaf",
+    "createdAt": "2026-04-23T17:53:32.416Z",
+    "channel": "member-registration-confirmation",
+    "status": "attempt",
+    "to": "lavasier@hotmail.com",
+    "subject": "Your Glitz registration is complete"
+  },
+  {
+    "id": "fae14212-435e-4553-922a-f8fc1e53529b",
+    "createdAt": "2026-04-23T17:53:32.406Z",
+    "channel": "member-registration-notification",
+    "status": "success",
+    "to": [
+      "lavasierjoyner@gmail.com",
+      "yoljoyner@gmail.com"
+    ],
+    "subject": "New member registration submitted"
+  },
+  {
+    "id": "a1f32b53-2699-4ceb-8f1e-23dea6756f7c",
+    "createdAt": "2026-04-23T17:53:30.089Z",
+    "channel": "member-registration-notification",
+    "status": "attempt",
+    "to": [
+      "lavasierjoyner@gmail.com",
+      "yoljoyner@gmail.com"
+    ],
+    "subject": "New member registration submitted"
+  },
+  {
+    "id": "b633b0fe-151a-4719-bd63-ba57d87dc1ce",
+    "createdAt": "2026-04-23T17:07:45.421Z",
+    "channel": "member-registration-confirmation",
+    "status": "success",
+    "to": "lavasier@hotmail.com",
+    "subject": "Your Glitz registration is complete"
+  },
+  {
+    "id": "a16c9978-abe0-49da-91e8-5091a8502fd1",
+    "createdAt": "2026-04-23T17:07:43.869Z",
+    "channel": "member-registration-confirmation",
+    "status": "attempt",
+    "to": "lavasier@hotmail.com",
+    "subject": "Your Glitz registration is complete"
+  },
+  {
+    "id": "e11049ed-5da8-49db-ae0a-4b8a0a5480cb",
+    "createdAt": "2026-04-23T17:07:43.855Z",
+    "channel": "member-registration-notification",
+    "status": "success",
+    "to": [
+      "lavasierjoyner@gmail.com",
+      "yoljoyner@gmail.com"
+    ],
+    "subject": "New member registration submitted"
+  },
+  {
+    "id": "f2958635-e9a7-40b6-8fdc-a1ce9d7323bd",
+    "createdAt": "2026-04-23T17:07:42.000Z",
+    "channel": "member-registration-notification",
+    "status": "attempt",
+    "to": [
+      "lavasierjoyner@gmail.com",
+      "yoljoyner@gmail.com"
+    ],
+    "subject": "New member registration submitted"
+  },
+  {
+    "id": "9c4b0699-66de-4155-ac4b-887241e0b970",
+    "createdAt": "2026-04-23T15:37:54.752Z",
+    "channel": "member-registration-confirmation",
+    "status": "success",
+    "to": "lavasier@hotmail.com",
+    "subject": "Your Glitz registration is complete"
+  },
+  {
+    "id": "1ad58f85-4269-4657-996c-ec1d8e4ea37a",
+    "createdAt": "2026-04-23T15:37:53.170Z",
+    "channel": "member-registration-confirmation",
+    "status": "attempt",
+    "to": "lavasier@hotmail.com",
+    "subject": "Your Glitz registration is complete"
+  },
+  {
+    "id": "e27ebebf-75c4-47cd-9905-39f500810248",
+    "createdAt": "2026-04-23T15:37:53.160Z",
+    "channel": "member-registration-notification",
+    "status": "success",
+    "to": [
+      "lavasierjoyner@gmail.com",
+      "yoljoyner@gmail.com"
+    ],
+    "subject": "New member registration submitted"
+  },
+  {
+    "id": "622382ad-5521-4f79-8c9f-06f64688198f",
+    "createdAt": "2026-04-23T15:37:51.014Z",
+    "channel": "member-registration-notification",
+    "status": "attempt",
+    "to": [
+      "lavasierjoyner@gmail.com",
+      "yoljoyner@gmail.com"
+    ],
+    "subject": "New member registration submitted"
+  },
+  {
+    "id": "4dccd224-ec2b-491c-b36f-fb41d54f0964",
+    "createdAt": "2026-04-23T14:34:39.850Z",
+    "channel": "member-registration-confirmation",
+    "status": "success",
+    "to": "lavasier@hotmail.com",
+    "subject": "Your Glitz registration is complete"
+  },
+  {
+    "id": "483b9d9a-3c7f-4324-bec8-85a0595ecd72",
+    "createdAt": "2026-04-23T14:34:38.206Z",
+    "channel": "member-registration-confirmation",
+    "status": "attempt",
+    "to": "lavasier@hotmail.com",
+    "subject": "Your Glitz registration is complete"
+  },
+  {
+    "id": "51bc84a3-bc8c-462d-8cd2-761eea4047d9",
+    "createdAt": "2026-04-23T14:34:38.184Z",
+    "channel": "member-registration-notification",
+    "status": "success",
+    "to": [
+      "lavasierjoyner@gmail.com"
+    ],
+    "subject": "New member registration submitted"
+  },
+  {
+    "id": "a5e427cc-72e7-4050-9dc5-486f42315c1a",
+    "createdAt": "2026-04-23T14:34:36.462Z",
+    "channel": "member-registration-notification",
+    "status": "attempt",
+    "to": [
+      "lavasierjoyner@gmail.com"
+    ],
+    "subject": "New member registration submitted"
+  },
+  {
+    "id": "5a6169f0-b5bd-4586-bd6f-eccbdb0da9af",
+    "createdAt": "2026-04-23T14:02:25.137Z",
+    "channel": "member-registration-confirmation",
+    "status": "success",
+    "to": "lavasier@hotmail.com",
+    "subject": "Your Glitz registration is complete"
+  },
+  {
+    "id": "3d7ee10f-36ba-418b-a7c8-c34fbd8937fd",
+    "createdAt": "2026-04-23T14:02:23.636Z",
+    "channel": "member-registration-confirmation",
+    "status": "attempt",
+    "to": "lavasier@hotmail.com",
+    "subject": "Your Glitz registration is complete"
+  },
+  {
+    "id": "c3d6cee4-03ae-4207-9feb-ac3ad8442b1c",
+    "createdAt": "2026-04-23T14:02:23.605Z",
+    "channel": "member-registration-notification",
+    "status": "success",
+    "to": [
+      "lavasierjoyner@gmail.com"
+    ],
+    "subject": "New member registration submitted"
+  },
+  {
+    "id": "08c1aa3e-b0da-4662-9baa-ba2aa62ccf46",
+    "createdAt": "2026-04-23T14:02:21.796Z",
+    "channel": "member-registration-notification",
+    "status": "attempt",
+    "to": [
+      "lavasierjoyner@gmail.com"
+    ],
+    "subject": "New member registration submitted"
+  },
+  {
     "id": "19b66792-c85d-4efa-afcc-6a81be7f1348",
     "createdAt": "2026-04-23T04:08:54.108Z",
     "channel": "poll-email",
