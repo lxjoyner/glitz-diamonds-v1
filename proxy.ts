@@ -7,6 +7,7 @@ export function proxy(req: NextRequest) {
         "/admin/login",
         "/admin/reset-password",
         "/admin/forgot-username",
+        "/admin/verify-code",
     ];
 
     const isPublicAdminRoute = publicAdminRoutes.includes(pathname);

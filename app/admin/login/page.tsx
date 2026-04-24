@@ -71,7 +71,11 @@ export default function AdminLoginPage() {
                 throw new Error(data?.error || "Login failed.");
             }
 
-            router.push("/admin/messages");
+            if (data?.requiresTwoFactor) {
+                router.push("/admin/verify-code");
+            } else {
+                router.push("/");
+            }
             router.refresh();
         } catch (err) {
             setError(err instanceof Error ? err.message : "Login failed.");

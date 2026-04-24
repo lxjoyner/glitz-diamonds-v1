@@ -11,5 +11,13 @@ export async function POST() {
         maxAge: 0,
     });
 
+    response.cookies.set("glitz_admin_2fa", "", {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: 0,
+    });
+
     return response;
 }
