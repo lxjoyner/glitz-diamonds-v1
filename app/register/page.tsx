@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 const T_SHIRT_SIZES = ["XS", "SM", "M", "LG", "XL", "XXL", "XXXL", "XXXXL"] as const;
@@ -14,7 +14,17 @@ type InviteData = {
     phoneNumber: string;
 };
 
-export default function RegisterPage() {
+function RegisterPageFallback() {
+    return (
+        <main className="min-h-screen bg-black text-white px-4 py-12">
+            <div className="mx-auto max-w-xl rounded-2xl border border-white/10 bg-white/5 p-6">
+                <p className="text-sm text-slate-300">Loading registration form...</p>
+            </div>
+        </main>
+    );
+}
+
+function RegisterPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const inviteToken = useMemo(() => searchParams.get("invite") || "", [searchParams]);
@@ -477,5 +487,13 @@ export default function RegisterPage() {
                 </form>
             </div>
         </main>
+    );
+}
+
+export default function RegisterPage() {
+    return (
+        <Suspense fallback={<RegisterPageFallback />}>
+            <RegisterPageContent />
+        </Suspense>
     );
 }
