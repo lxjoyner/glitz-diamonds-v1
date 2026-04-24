@@ -92,17 +92,6 @@ header {
   animation: sparkle-flare 5s ease-in-out infinite;
 }
 
-/* Keep sparkles from sitting too high on phones/tablets. */
-@media (max-width: 1024px) {
-  .sparkle-wrapper:nth-child(2) {
-    top: 18% !important;
-  }
-
-  .sparkle-wrapper:nth-child(4) {
-    top: 16% !important;
-  }
-}
-
 .sparkle-image {
   object-fit: contain;
   mix-blend-mode: screen;      /* makes it blend nicely with dark bg */
@@ -136,3 +125,4 @@ header {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
