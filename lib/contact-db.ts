@@ -92,3 +92,16 @@ export async function getTodayContactCount(): Promise<number> {
     const result = rows as { count: number }[];
     return result[0]?.count ?? 0;
 }
+
+export async function getTotalContactCount(): Promise<number> {
+    const [rows] = await pool.query(
+        `
+        SELECT COUNT(*) AS count
+        FROM contact_messages
+        WHERE is_spam = 0
+        `
+    );
+
+    const result = rows as { count: number }[];
+    return result[0]?.count ?? 0;
+}

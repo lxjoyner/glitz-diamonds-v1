@@ -36,3 +36,15 @@ export async function getTodayVisitCount(): Promise<number> {
     const result = rows as { count: number }[];
     return result[0]?.count ?? 0;
 }
+
+export async function getTotalVisitCount(): Promise<number> {
+    const [rows] = await pool.query(
+        `
+        SELECT COUNT(*) AS count
+        FROM page_visits
+        `
+    );
+
+    const result = rows as { count: number }[];
+    return result[0]?.count ?? 0;
+}
