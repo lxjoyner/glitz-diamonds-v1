@@ -85,8 +85,8 @@ header {
 
 .sparkle-wrapper {
   position: absolute;
-  top: min(95%, max(5%, var(--sparkle-top)));
-  left: min(95%, max(5%, var(--sparkle-left)));
+  top: var(--sparkle-top);
+  left: var(--sparkle-left);
   width: 80px;
   height: 80px;
   transform-origin: center center;
@@ -97,8 +97,8 @@ header {
 /* Phone and tablet fix */
 @media (max-width: 1024px) {
   .sparkle-wrapper {
-    top: min(92%, max(8%, var(--sparkle-mobile-top, var(--sparkle-top))));
-    left: min(94%, max(6%, var(--sparkle-mobile-left, var(--sparkle-left))));
+    top: var(--sparkle-mobile-top);
+    left: var(--sparkle-mobile-left);
     width: 58px;
     height: 58px;
   }
