@@ -34,7 +34,7 @@ const sparklePositions = [
         mobileLeft: "76%",
     },
     {
-        top: "30%",
+        top: "35%",
         left: "80%",
         mobileTop: "43%",
         mobileLeft: "82%",
