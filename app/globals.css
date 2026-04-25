@@ -85,11 +85,31 @@ header {
 
 .sparkle-wrapper {
   position: absolute;
-  width: 80px;          /* adjust size of the flare */
+  top: var(--sparkle-top);
+  left: var(--sparkle-left);
+  width: 80px;
   height: 80px;
   transform-origin: center center;
   opacity: 0.6;
   animation: sparkle-flare 5s ease-in-out infinite;
+}
+
+/* Phone and tablet fix */
+@media (max-width: 1024px) {
+  .sparkle-wrapper {
+    top: var(--sparkle-mobile-top);
+    left: var(--sparkle-mobile-left);
+    width: 58px;
+    height: 58px;
+  }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+  .sparkle-wrapper {
+    width: 46px;
+    height: 46px;
+  }
 }
 
 .sparkle-image {

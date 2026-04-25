@@ -3,12 +3,42 @@ import Image from "next/image";
 import { useRef, useEffect, useState } from "react";
 
 const sparklePositions = [
-    { top: "48%", left: "12%" },
-    { top: "10%", left: "37%" },
-    { top: "41%", left: "40%" },
-    { top: "6%", left: "58%" },
-    { top: "53%", left: "76%" },
-    { top: "35%", left: "80%" },
+    {
+        top: "48%",
+        left: "12%",
+        mobileTop: "47%",
+        mobileLeft: "10%",
+    },
+    {
+        top: "10%",
+        left: "37%",
+        mobileTop: "30%",
+        mobileLeft: "41%",
+    },
+    {
+        top: "41%",
+        left: "40%",
+        mobileTop: "55%",
+        mobileLeft: "45%",
+    },
+    {
+        top: "6%",
+        left: "58%",
+        mobileTop: "25%",
+        mobileLeft: "62%",
+    },
+    {
+        top: "53%",
+        left: "76%",
+        mobileTop: "54%",
+        mobileLeft: "76%",
+    },
+    {
+        top: "35%",
+        left: "80%",
+        mobileTop: "43%",
+        mobileLeft: "82%",
+    },
 ];
 
 const fallbackGalleryImages = [
@@ -196,11 +226,15 @@ export default function Hero() {
                             <div
                                 key={index}
                                 className="sparkle-wrapper"
-                                style={{
-                                    top: pos.top,
-                                    left: pos.left,
-                                    animationDelay: `${index * 0.7}s`,
-                                }}
+                                style={
+                                    {
+                                        "--sparkle-top": pos.top,
+                                        "--sparkle-left": pos.left,
+                                        "--sparkle-mobile-top": pos.mobileTop,
+                                        "--sparkle-mobile-left": pos.mobileLeft,
+                                        animationDelay: `${index * 0.7}s`,
+                                    } as React.CSSProperties
+                                }
                             >
                                 <Image
                                     src="/sparkle2.png"
