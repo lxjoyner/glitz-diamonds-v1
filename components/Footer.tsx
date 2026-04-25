@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 
 export default function Footer() {
     const [stats, setStats] = useState({
-        visitsToday: 0,
-        contactsToday: 0,
+        visitsTotal: 0,
+        contactsTotal: 0,
     });
 
     useEffect(() => {
@@ -17,8 +17,8 @@ export default function Footer() {
 
                 if (data?.success) {
                     setStats({
-                        visitsToday: data.visitsToday ?? 0,
-                        contactsToday: data.contactsToday ?? 0,
+                        visitsTotal: data.visitsTotal ?? 0,
+                        contactsTotal: data.contactsTotal ?? 0,
                     });
                 }
             } catch (error) {
@@ -42,15 +42,15 @@ export default function Footer() {
                     {/* 👇 NEW STATS SECTION */}
                     <div className="mt-3 space-y-1 text-xs text-slate-500">
                         <p>
-                            Visitors today:{" "}
+                            Total visitors:{" "}
                             <span className="text-slate-300 font-medium">
-                                {stats.visitsToday}
+                                {stats.visitsTotal}
                             </span>
                         </p>
                         <p>
-                            Contacts today:{" "}
+                            Total contact messages:{" "}
                             <span className="text-slate-300 font-medium">
-                                {stats.contactsToday}
+                                {stats.contactsTotal}
                             </span>
                         </p>
                     </div>
