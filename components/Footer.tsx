@@ -2,12 +2,24 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+
+type FooterStats = {
+    visitsToday: number;
+    contactsToday: number;
+    visitsTotal: number;
+    contactsTotal: number;
+};
 
 export default function Footer() {
-    const [stats, setStats] = useState({
+    const pathname = usePathname();
+    const [stats, setStats] = useState<FooterStats>({
+        visitsToday: 0,
+        contactsToday: 0,
         visitsTotal: 0,
         contactsTotal: 0,
     });
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
         async function loadStats() {
@@ -17,6 +29,8 @@ export default function Footer() {
 
                 if (data?.success) {
                     setStats({
+                        visitsToday: data.visitsToday ?? 0,
+                        contactsToday: data.contactsToday ?? 0,
                         visitsTotal: data.visitsTotal ?? 0,
                         contactsTotal: data.contactsTotal ?? 0,
                     });
@@ -26,8 +40,25 @@ export default function Footer() {
             }
         }
 
+        async function loadAuthStatus() {
+            try {
+                const res = await fetch("/api/admin/me", {
+                    method: "GET",
+                    cache: "no-store",
+                });
+                const data = await res.json();
+                setIsAuthenticated(Boolean(data?.authenticated));
+            } catch (error) {
+                console.error("Failed to load auth status for footer:", error);
+                setIsAuthenticated(false);
+            }
+        }
+
         loadStats();
-    }, []);
+        loadAuthStatus();
+    }, [pathname]);
+
+    const showTodayStats = pathname === "/" && isAuthenticated;
 
     return (
         <footer className="border-t border-white/10 bg-black/40">
@@ -39,19 +70,27 @@ export default function Footer() {
                         © {new Date().getFullYear()} Glitz Of Diamonds. All rights reserved.
                     </p>
 
-                    {/* 👇 NEW STATS SECTION */}
                     <div className="mt-3 space-y-1 text-xs text-slate-500">
+                        {showTodayStats && (
+                            <>
+                                <p>
+                                    Visitors today:{" "}
+                                    <span className="text-slate-300 font-medium">{stats.visitsToday}</span>
+                                </p>
+                                <p>
+                                    Contacts today:{" "}
+                                    <span className="text-slate-300 font-medium">{stats.contactsToday}</span>
+                                </p>
+                            </>
+                        )}
+
                         <p>
                             Total visitors:{" "}
-                            <span className="text-slate-300 font-medium">
-                                {stats.visitsTotal}
-                            </span>
+                            <span className="text-slate-300 font-medium">{stats.visitsTotal}</span>
                         </p>
                         <p>
                             Total contact messages:{" "}
-                            <span className="text-slate-300 font-medium">
-                                {stats.contactsTotal}
-                            </span>
+                            <span className="text-slate-300 font-medium">{stats.contactsTotal}</span>
                         </p>
                     </div>
                 </div>
