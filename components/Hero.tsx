@@ -6,38 +6,50 @@ const sparklePositions = [
     {
         top: "48%",
         left: "12%",
-        mobileTop: "42%",
-        mobileLeft: "10%",
+        tabletTop: "42%",
+        tabletLeft: "10%",
+        phoneTop: "45%",
+        phoneLeft: "8%",
     },
     {
         top: "10%",
         left: "37%",
-        mobileTop: "25%",
-        mobileLeft: "41%",
+        tabletTop: "25%",
+        tabletLeft: "41%",
+        phoneTop: "31%",
+        phoneLeft: "39%",
     },
     {
         top: "41%",
         left: "40%",
-        mobileTop: "60%",
-        mobileLeft: "45%",
+        tabletTop: "60%",
+        tabletLeft: "45%",
+        phoneTop: "58%",
+        phoneLeft: "46%",
     },
     {
         top: "6%",
         left: "58%",
-        mobileTop: "30%",
-        mobileLeft: "62%",
+        tabletTop: "30%",
+        tabletLeft: "62%",
+        phoneTop: "34%",
+        phoneLeft: "61%",
     },
     {
         top: "53%",
         left: "76%",
-        mobileTop: "57%",
-        mobileLeft: "76%",
+        tabletTop: "57%",
+        tabletLeft: "76%",
+        phoneTop: "56%",
+        phoneLeft: "75%",
     },
     {
         top: "35%",
         left: "80%",
-        mobileTop: "43%",
-        mobileLeft: "82%",
+        tabletTop: "43%",
+        tabletLeft: "82%",
+        phoneTop: "46%",
+        phoneLeft: "81%",
     },
 ];
 
@@ -228,10 +240,10 @@ export default function Hero() {
                                 className="sparkle-wrapper"
                                 style={
                                     {
-                                        "--sparkle-top": pos.top,
-                                        "--sparkle-left": pos.left,
-                                        "--sparkle-mobile-top": pos.mobileTop,
-                                        "--sparkle-mobile-left": pos.mobileLeft,
+                                        "--sparkle-tablet-top": pos.tabletTop,
+                                        "--sparkle-tablet-left": pos.tabletLeft,
+                                        "--sparkle-phone-top": pos.phoneTop,
+                                        "--sparkle-phone-left": pos.phoneLeft,
                                         animationDelay: `${index * 0.7}s`,
                                     } as React.CSSProperties
                                 }

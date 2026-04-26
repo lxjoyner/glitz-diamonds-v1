@@ -85,8 +85,17 @@ header {
 
 .sparkle-wrapper {
   position: absolute;
+
+  --sparkle-top: 50%;
+  --sparkle-left: 50%;
+  --sparkle-tablet-top: var(--sparkle-top);
+  --sparkle-tablet-left: var(--sparkle-left);
+  --sparkle-phone-top: var(--sparkle-tablet-top);
+  --sparkle-phone-left: var(--sparkle-tablet-left);
+
   top: var(--sparkle-top);
   left: var(--sparkle-left);
+
   width: 80px;
   height: 80px;
   transform-origin: center center;
@@ -94,21 +103,31 @@ header {
   animation: sparkle-flare 5s ease-in-out infinite;
 }
 
-/* Phone and tablet fix */
+/* Tablets */
 @media (max-width: 1024px) {
   .sparkle-wrapper {
-    top: var(--sparkle-mobile-top);
-    left: var(--sparkle-mobile-left);
+    top: var(--sparkle-tablet-top);
+    left: var(--sparkle-tablet-left);
     width: 58px;
     height: 58px;
+  }
+}
+
+/* Phones */
+@media (max-width: 768px) {
+  .sparkle-wrapper {
+    top: var(--sparkle-phone-top);
+    left: var(--sparkle-phone-left);
+    width: 50px;
+    height: 50px;
   }
 }
 
 /* Small phones */
 @media (max-width: 480px) {
   .sparkle-wrapper {
-    width: 46px;
-    height: 46px;
+    width: 44px;
+    height: 44px;
   }
 }
 
