@@ -218,7 +218,7 @@ export default function Hero() {
         <>
             <section
                 id="home"
-                className="relative min-h-[calc(100vh-64px)] flex items-center"
+                className="relative min-h-[calc(100svh-64px)] flex items-end md:items-center"
             >
                 {/* Background */}
                 <div aria-hidden className="absolute inset-0">
@@ -228,7 +228,7 @@ export default function Hero() {
                         fill
                         priority
                         quality={100}
-                        className="object-cover object-center contrast-125 brightness-110 saturate-110"
+                        className="object-cover object-[center_70%] md:object-center contrast-125 brightness-110 saturate-110"
                     />
                     <div className="absolute inset-0 hero-overlay" />
 
