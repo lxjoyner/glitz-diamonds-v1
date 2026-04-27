@@ -3,54 +3,12 @@ import Image from "next/image";
 import { useRef, useEffect, useState } from "react";
 
 const sparklePositions = [
-    {
-        top: "48%",
-        left: "12%",
-        tabletTop: "42%",
-        tabletLeft: "10%",
-        phoneTop: "45%",
-        phoneLeft: "8%",
-    },
-    {
-        top: "10%",
-        left: "37%",
-        tabletTop: "25%",
-        tabletLeft: "41%",
-        phoneTop: "31%",
-        phoneLeft: "39%",
-    },
-    {
-        top: "41%",
-        left: "40%",
-        tabletTop: "60%",
-        tabletLeft: "45%",
-        phoneTop: "58%",
-        phoneLeft: "46%",
-    },
-    {
-        top: "6%",
-        left: "58%",
-        tabletTop: "30%",
-        tabletLeft: "62%",
-        phoneTop: "34%",
-        phoneLeft: "61%",
-    },
-    {
-        top: "53%",
-        left: "76%",
-        tabletTop: "57%",
-        tabletLeft: "76%",
-        phoneTop: "56%",
-        phoneLeft: "75%",
-    },
-    {
-        top: "35%",
-        left: "80%",
-        tabletTop: "43%",
-        tabletLeft: "82%",
-        phoneTop: "46%",
-        phoneLeft: "81%",
-    },
+    { x: "13%", y: "68%", size: "clamp(38px, 4vw, 78px)", delay: "0s" },
+    { x: "39%", y: "31%", size: "clamp(42px, 5vw, 86px)", delay: ".6s" },
+    { x: "45%", y: "62%", size: "clamp(36px, 4vw, 72px)", delay: "1.2s" },
+    { x: "56%", y: "17%", size: "clamp(44px, 5vw, 90px)", delay: "1.8s" },
+    { x: "82%", y: "53%", size: "clamp(38px, 4vw, 78px)", delay: "2.4s" },
+    { x: "74%", y: "69%", size: "clamp(30px, 3.5vw, 62px)", delay: "3s" },
 ];
 
 const fallbackGalleryImages = [
@@ -218,46 +176,45 @@ export default function Hero() {
         <>
             <section
                 id="home"
-                className="relative min-h-[calc(100svh-64px)] flex items-end md:items-center"
+                className="hero-safe-height relative min-h-[calc(100svh-64px)] flex items-end md:items-center"
             >
                 {/* Background */}
-                <div aria-hidden className="absolute inset-0">
-                    <Image
-                        src="/diamonds_pic.png"
-                        alt="Diamonds background"
-                        fill
-                        priority
-                        quality={100}
-                        className="object-cover object-[center_70%] md:object-center contrast-125 brightness-110 saturate-110"
-                    />
-                    <div className="absolute inset-0 hero-overlay" />
+                <div aria-hidden className="absolute inset-0 overflow-hidden">
+                    <div className="diamond-stage">
+                        <Image
+                            src="/diamonds_pic.png"
+                            alt="Diamonds background"
+                            fill
+                            priority
+                            quality={100}
+                            className="object-contain object-bottom contrast-125 brightness-110 saturate-110"
+                        />
 
-                    {/* Sparkles */}
-                    <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                        {sparklePositions.map((pos, index) => (
-                            <div
-                                key={index}
-                                className="sparkle-wrapper"
-                                style={
-                                    {
-                                        "--sparkle-top": pos.top,
-                                        "--sparkle-left": pos.left,
-                                        "--sparkle-tablet-top": pos.tabletTop,
-                                        "--sparkle-tablet-left": pos.tabletLeft,
-                                        "--sparkle-phone-top": pos.phoneTop,
-                                        "--sparkle-phone-left": pos.phoneLeft,
-                                        animationDelay: `${index * 0.7}s`,
-                                    } as React.CSSProperties
-                                }
-                            >
-                                <Image
-                                    src="/sparkle2.png"
-                                    alt="Diamond sparkle"
-                                    fill
-                                    className="sparkle-image"
-                                />
-                            </div>
-                        ))}
+                        <div className="absolute inset-0 hero-overlay" />
+
+                        <div className="diamond-sparkle-layer pointer-events-none">
+                            {sparklePositions.map((pos, index) => (
+                                <div
+                                    key={index}
+                                    className="sparkle-wrapper premium-sparkle"
+                                    style={
+                                        {
+                                            "--sparkle-x": pos.x,
+                                            "--sparkle-y": pos.y,
+                                            "--sparkle-size": pos.size,
+                                            animationDelay: pos.delay,
+                                        } as React.CSSProperties
+                                    }
+                                >
+                                    <Image
+                                        src="/sparkle2.png"
+                                        alt="Diamond sparkle"
+                                        fill
+                                        className="sparkle-image"
+                                    />
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
