@@ -85,29 +85,37 @@ header {
 
 .sparkle-wrapper {
   position: absolute;
-
-  --sparkle-x: 50%;
-  --sparkle-y: 50%;
-  --sparkle-size: 70px;
-
-  left: var(--sparkle-x);
-  top: var(--sparkle-y);
-
-  width: var(--sparkle-size);
-  height: var(--sparkle-size);
-
-  transform: translate(-50%, -50%);
+  width: 80px;          /* adjust size of the flare */
+  height: 80px;
   transform-origin: center center;
-  opacity: 0.75;
+  opacity: 0.6;
+  animation: sparkle-flare 5s ease-in-out infinite;
 }
 
 .sparkle-image {
   object-fit: contain;
-  mix-blend-mode: screen;
-  filter:
-          drop-shadow(0 0 8px rgba(255,255,255,.95))
-          drop-shadow(0 0 18px rgba(255,255,255,.55))
-          drop-shadow(0 0 30px rgba(212,54,54,.25));
+  mix-blend-mode: screen;      /* makes it blend nicely with dark bg */
+  filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.9));
+}
+
+/* pulsing/rotating flare animation */
+@keyframes sparkle-flare {
+  0% {
+    opacity: 0;
+    transform: scale(0.2) rotate(0deg);
+  }
+  20% {
+    opacity: 0.6;
+    transform: scale(1) rotate(90deg);
+  }
+  60% {
+    opacity: 0.4;
+    transform: scale(0.85) rotate(-90deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.2) rotate(360deg);
+  }
 }
 
 .no-scrollbar {
@@ -118,84 +126,3 @@ header {
   display: none;
 }
 
-.diamond-stage {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-
-/* This layer matches the diamond image area */
-.diamond-sparkle-layer {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.premium-sparkle {
-  animation: premium-sparkle-glow 5.5s ease-in-out infinite;
-}
-
-@keyframes premium-sparkle-glow {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(.25) rotate(0deg);
-    filter: brightness(1);
-  }
-
-  20% {
-    opacity: .85;
-    transform: translate(-50%, -50%) scale(1.05) rotate(80deg);
-    filter: brightness(1.25);
-  }
-
-  50% {
-    opacity: .55;
-    transform: translate(-50%, -50%) scale(.82) rotate(-45deg);
-    filter: brightness(1.05);
-  }
-
-  75% {
-    opacity: .75;
-    transform: translate(-50%, -50%) scale(.95) rotate(140deg);
-    filter: brightness(1.2);
-  }
-
-  100% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(.25) rotate(360deg);
-    filter: brightness(1);
-  }
-}
-
-/* Apple/iPad/Safari viewport polish */
-@supports (height: 100svh) {
-  .hero-safe-height {
-    min-height: calc(100svh - 64px);
-  }
-}
-
-/* iPad/tablet */
-@media (max-width: 1024px) {
-  .diamond-stage img {
-    object-position: center bottom;
-  }
-
-  .sparkle-wrapper {
-    --sparkle-size: 58px;
-  }
-}
-
-/* Phones */
-@media (max-width: 768px) {
-  .sparkle-wrapper {
-    --sparkle-size: 48px;
-  }
-}
-
-/* Small phones */
-@media (max-width: 480px) {
-  .sparkle-wrapper {
-    --sparkle-size: 40px;
-  }
-}
