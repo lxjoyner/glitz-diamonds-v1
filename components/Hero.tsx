@@ -240,6 +240,8 @@ export default function Hero() {
                                 className="sparkle-wrapper"
                                 style={
                                     {
+                                        "--sparkle-top": pos.top,
+                                        "--sparkle-left": pos.left,
                                         "--sparkle-tablet-top": pos.tabletTop,
                                         "--sparkle-tablet-left": pos.tabletLeft,
                                         "--sparkle-phone-top": pos.phoneTop,
