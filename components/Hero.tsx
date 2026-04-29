@@ -218,7 +218,7 @@ export default function Hero() {
         <>
             <section
                 id="home"
-                className="relative min-h-[calc(100svh-64px)] flex items-end md:items-center"
+                className="relative h-[calc(100dvh-64px)] min-h-[520px] max-h-[900px] overflow-hidden flex items-end md:items-center"
             >
                 {/* Background */}
                 <div aria-hidden className="absolute inset-0">
@@ -293,7 +293,7 @@ export default function Hero() {
                                         type="button"
                                         ref={idx === 0 ? firstCardRef : null}
                                         onClick={() => openLightbox(idx)}
-                                        className="relative h-24 w-40 md:h-32 md:w-40 flex-shrink-0 overflow-hidden rounded-lg border border-white/20 bg-black/50 cursor-pointer group"
+                                        className="relative h-[90px] w-[150px] md:h-[120px] md:w-[165px] flex-none overflow-hidden rounded-lg border border-white/20 bg-black/50 cursor-pointer group"
                                         aria-label={`Open ${item.caption}`}
                                     >
                                         <Image
