@@ -13,56 +13,58 @@ type FooterStats = {
 
 export default function Footer() {
     const pathname = usePathname();
+
     const [stats, setStats] = useState<FooterStats>({
         visitsToday: 0,
         contactsToday: 0,
         visitsTotal: 0,
         contactsTotal: 0,
     });
+
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
-        async function loadStats() {
+        async function loadAuthStatusAndStats() {
             try {
-                const res = await fetch("/api/stats");
-                const data = await res.json();
-
-                if (data?.success) {
-                    setStats({
-                        visitsToday: data.visitsToday ?? 0,
-                        contactsToday: data.contactsToday ?? 0,
-                        visitsTotal: data.visitsTotal ?? 0,
-                        contactsTotal: data.contactsTotal ?? 0,
-                    });
-                }
-            } catch (error) {
-                console.error("Failed to load footer stats:", error);
-            }
-        }
-
-        async function loadAuthStatus() {
-            try {
-                const res = await fetch("/api/admin/me", {
+                const authRes = await fetch("/api/admin/me", {
                     method: "GET",
                     cache: "no-store",
                 });
-                const data = await res.json();
-                setIsAuthenticated(Boolean(data?.authenticated));
+
+                const authData = await authRes.json();
+                const loggedIn = Boolean(authData?.authenticated);
+
+                setIsAuthenticated(loggedIn);
+
+                // Only load stats if logged in
+                if (!loggedIn) return;
+
+                const statsRes = await fetch("/api/stats", {
+                    cache: "no-store",
+                });
+
+                const statsData = await statsRes.json();
+
+                if (statsData?.success) {
+                    setStats({
+                        visitsToday: statsData.visitsToday ?? 0,
+                        contactsToday: statsData.contactsToday ?? 0,
+                        visitsTotal: statsData.visitsTotal ?? 0,
+                        contactsTotal: statsData.contactsTotal ?? 0,
+                    });
+                }
             } catch (error) {
-                console.error("Failed to load auth status for footer:", error);
+                console.error("Failed to load footer data:", error);
                 setIsAuthenticated(false);
             }
         }
 
-        loadStats();
-        loadAuthStatus();
+        loadAuthStatusAndStats();
     }, [pathname]);
-
-    const showTodayStats = pathname === "/" && isAuthenticated;
 
     return (
         <footer className="border-t border-white/10 bg-black/40">
-            <div className="container py-8 grid md:grid-cols-3 gap-8 text-sm text-slate-300">
+            <div className="container px-6 py-8 grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm text-slate-300">
 
                 {/* Left section */}
                 <div>
@@ -70,44 +72,44 @@ export default function Footer() {
                         © {new Date().getFullYear()} Glitz Of Diamonds. All rights reserved.
                     </p>
 
-                    <div className="mt-3 space-y-1 text-xs text-slate-500">
-                        {showTodayStats && (
-                            <>
-                                <p>
-                                    Visitors today:{" "}
-                                    <span className="text-slate-300 font-medium">{stats.visitsToday}</span>
-                                </p>
-                                <p>
-                                    Contacts today:{" "}
-                                    <span className="text-slate-300 font-medium">{stats.contactsToday}</span>
-                                </p>
-                            </>
-                        )}
+                    {isAuthenticated && (
+                        <div className="mt-3 space-y-1 text-xs text-slate-500">
+                            <p>
+                                Visitors today:{" "}
+                                <span className="text-slate-300 font-medium">{stats.visitsToday}</span>
+                            </p>
 
-                        <p>
-                            Total visitors:{" "}
-                            <span className="text-slate-300 font-medium">{stats.visitsTotal}</span>
-                        </p>
-                        <p>
-                            Total contact messages:{" "}
-                            <span className="text-slate-300 font-medium">{stats.contactsTotal}</span>
-                        </p>
-                    </div>
+                            <p>
+                                Contacts today:{" "}
+                                <span className="text-slate-300 font-medium">{stats.contactsToday}</span>
+                            </p>
+
+                            <p>
+                                Total visitors:{" "}
+                                <span className="text-slate-300 font-medium">{stats.visitsTotal}</span>
+                            </p>
+
+                            <p>
+                                Total contact messages:{" "}
+                                <span className="text-slate-300 font-medium">{stats.contactsTotal}</span>
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Center navigation */}
-                <div className="md:justify-self-center">
-                    <nav className="space-x-4">
-                        <Link href="/" className="hover:underline">Home</Link>
-                        <Link href="/about" className="hover:underline">About Us</Link>
-                        <Link href="/contact" className="hover:underline">Contact</Link>
-                        <Link href="/donate" className="hover:underline">Donate</Link>
+                <div className="sm:justify-self-center">
+                    <nav className="flex flex-wrap gap-x-4 gap-y-2">
+                        <Link href="/" className="hover:underline whitespace-nowrap">Home</Link>
+                        <Link href="/about" className="hover:underline whitespace-nowrap">About Us</Link>
+                        <Link href="/contact" className="hover:underline whitespace-nowrap">Contact</Link>
+                        <Link href="/donate" className="hover:underline whitespace-nowrap">Donate</Link>
                     </nav>
                 </div>
 
                 {/* Right section */}
-                <div className="md:justify-self-end">
-                    <p>Created by Lavasier Joyner</p>
+                <div className="sm:justify-self-end">
+                    <p className="whitespace-nowrap">Created by Lavasier Joyner</p>
                 </div>
 
             </div>
