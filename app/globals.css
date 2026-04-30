@@ -162,5 +162,39 @@ header {
     height: 42px;
   }
 }
+
+  .hero-bg-img {
+    object-fit: cover;
+    object-position: center center;
+  }
+
+  /* Samsung Fold / narrow mobile protection */
+  @media (max-width: 640px) {
+    #home {
+      height: calc(100dvh - 64px);
+      min-height: 520px;
+      max-height: 720px;
+      overflow: hidden;
+    }
+
+    .hero-bg-img {
+      object-fit: cover;
+      object-position: center top;
+    }
+  }
+
+  /* Extra protection for short/wide foldable layouts */
+  @media (max-width: 950px) and (max-height: 600px) {
+    #home {
+      height: calc(100dvh - 64px);
+      min-height: 460px;
+      max-height: 620px;
+    }
+
+    .hero-bg-img {
+      object-fit: contain;
+      object-position: center top;
+    }
+  }
 }
 

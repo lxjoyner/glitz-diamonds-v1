@@ -228,7 +228,7 @@ export default function Hero() {
                         fill
                         priority
                         quality={100}
-                        className="object-cover object-[center_70%] md:object-center contrast-125 brightness-110 saturate-110"
+                        className="hero-bg-img contrast-125 brightness-110 saturate-110"
                     />
                     <div className="absolute inset-0 hero-overlay" />
 
