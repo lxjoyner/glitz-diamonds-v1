@@ -30,7 +30,7 @@ const sparklePositions = [
     {
         top: "6%",
         left: "58%",
-        tabletTop: "45%",
+        tabletTop: "55%",
         tabletLeft: "62%",
         phoneTop: "34%",
         phoneLeft: "61%",
@@ -38,7 +38,7 @@ const sparklePositions = [
     {
         top: "53%",
         left: "76%",
-        tabletTop: "63%",
+        tabletTop: "73%",
         tabletLeft: "76%",
         phoneTop: "56%",
         phoneLeft: "75%",
