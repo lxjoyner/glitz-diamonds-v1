@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+:root {
+  --sparkle-top: 0%;
+  --sparkle-left: 0%;
+  --sparkle-tablet-top: 0%;
+  --sparkle-tablet-left: 0%;
+  --sparkle-phone-top: 0%;
+  --sparkle-phone-left: 0%;
+}
+
 /* === Theme tokens from your PDF === */
 @layer theme {
   :root {
@@ -153,3 +162,5 @@ header {
     height: 42px;
   }
 }
+}
+
