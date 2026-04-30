@@ -85,7 +85,9 @@ header {
 
 .sparkle-wrapper {
   position: absolute;
-  width: 80px;          /* adjust size of the flare */
+  top: var(--sparkle-top);
+  left: var(--sparkle-left);
+  width: 80px;
   height: 80px;
   transform-origin: center center;
   opacity: 0.6;
@@ -142,8 +144,12 @@ header {
     max-height: 820px;
   }
 
-  #home .sparkle-wrapper {
-    width: 48px;
-    height: 48px;
+ /* Phone */
+@media (max-width: 640px) {
+  .sparkle-wrapper {
+    top: var(--sparkle-phone-top);
+    left: var(--sparkle-phone-left);
+    width: 42px;
+    height: 42px;
   }
 }
