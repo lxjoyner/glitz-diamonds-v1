@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { signMemberInviteToken, verifyAdminToken } from "@/lib/auth";
+import { sendMemberInviteEmail } from "@/lib/mailer";
 
 function normalizePhoneNumber(value: string): string {
     return value.replace(/[^\d]/g, "").slice(-10);
@@ -73,9 +74,18 @@ export async function POST(req: NextRequest) {
 
         const inviteMessage = "This is a one time use link to register with Glitz Of Diamonds, once the register button is clicked on the registration form that you will see once the link below is clicked, the link will become inactive. If you use the link do not click register if plan to come back and finish the process. Your First & Last Name, email and phone number will automatically be placed into the registration form.";
 
+        const emailSendResult = await sendMemberInviteEmail({
+            toEmail: email,
+            firstName,
+            invitedBy: adminPayload.username,
+            inviteLink: registerUrl.toString(),
+        });
+
         return NextResponse.json({
             success: true,
             inviteLink: registerUrl.toString(),
+            inviteEmailSent: emailSendResult.sent,
+            inviteEmailReason: emailSendResult.sent ? null : emailSendResult.reason,
             emailLink: `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent("Glitz Of Diamonds Member Registration")}&body=${encodeURIComponent(`${inviteMessage}
 
 ${registerUrl.toString()}`)}`,

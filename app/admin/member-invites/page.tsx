@@ -27,6 +27,7 @@ export default function MemberInvitesPage() {
     const [smsLink, setSmsLink] = useState("");
     const [emailLink, setEmailLink] = useState("");
     const [copyMessage, setCopyMessage] = useState("");
+    const [emailStatusMessage, setEmailStatusMessage] = useState("");
 
     useEffect(() => {
         async function loadMe() {
@@ -69,6 +70,7 @@ export default function MemberInvitesPage() {
         setInviteLink("");
         setSmsLink("");
         setEmailLink("");
+        setEmailStatusMessage("");
 
         try {
             const res = await fetch("/api/admin/member-invites", {
@@ -86,6 +88,13 @@ export default function MemberInvitesPage() {
             setInviteLink(data.inviteLink || "");
             setSmsLink(data.smsLink || "");
             setEmailLink(data.emailLink || "");
+            if (data.inviteEmailSent) {
+                setEmailStatusMessage(`Invite email sent to ${form.email}.`);
+            } else {
+                setEmailStatusMessage(
+                    "Invite email could not be sent automatically. Please copy the invite link below and send it manually."
+                );
+            }
         } catch (submitError) {
             setError(submitError instanceof Error ? submitError.message : "Failed to create invite link.");
         } finally {
@@ -231,6 +240,11 @@ export default function MemberInvitesPage() {
                             Copy link
                         </button>
                         {copyMessage && <p className="text-xs text-slate-200">{copyMessage}</p>}
+                        {emailStatusMessage && (
+                            <p className={`text-xs ${emailStatusMessage.startsWith("Invite email sent") ? "text-emerald-200" : "text-amber-200"}`}>
+                                {emailStatusMessage}
+                            </p>
+                        )}
 
 
                         {emailLink && (
