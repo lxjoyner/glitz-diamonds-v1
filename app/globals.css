@@ -75,7 +75,7 @@ header {
 }
 .btn-primary {
   background-color: var(--color-accent);
-  color: var(--color-text-primary);
+  color: #0b0d0f;
 }
 .btn-primary:hover {
   background-color: color-mix(in srgb, var(--color-accent) 85%, white 10%);
