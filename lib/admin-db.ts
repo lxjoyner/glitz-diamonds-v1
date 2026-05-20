@@ -439,3 +439,31 @@ export async function consumeLoginVerificationChallenge(rawChallengeToken: strin
 
     return challenge;
 }
+
+export async function getActiveLoginVerificationChallenge(rawChallengeToken: string): Promise<LoginVerificationChallenge | null> {
+    await ensureAdminSecurityTables();
+
+    const challengeHash = hashToken(rawChallengeToken);
+
+    const [rows] = await pool.query(
+        `
+        SELECT id, user_id, user_type, username, role, email, code_hash, challenge_hash, expires_at, consumed_at, created_at
+        FROM admin_login_verification_challenges
+        WHERE challenge_hash = ?
+        LIMIT 1
+        `,
+        [challengeHash]
+    );
+
+    const challenge = (rows as LoginVerificationChallenge[])[0];
+
+    if (!challenge) {
+        return null;
+    }
+
+    if (challenge.consumed_at || new Date(challenge.expires_at).getTime() < Date.now()) {
+        return null;
+    }
+
+    return challenge;
+}

@@ -72,6 +72,7 @@ export default function AdminLoginPage() {
             }
 
             if (data?.requiresTwoFactor) {
+                window.localStorage.setItem("glitz_admin_2fa_sent_at", String(Date.now()));
                 router.push("/admin/verify-code");
             } else {
                 router.push("/");
