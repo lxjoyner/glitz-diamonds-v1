@@ -44,6 +44,7 @@ type DonationRecord = {
     donor_email: string | null;
     message: string | null;
     amount_cents: number;
+    stripe_payment_intent_id?: string | null;
     payment_status?: string;
     created_at: string;
 };
@@ -214,6 +215,7 @@ export default function AdminMessagesPage() {
     const [gallerySuccess, setGallerySuccess] = useState("");
     const [messageStatus, setMessageStatus] = useState("");
     const [deletingMessageId, setDeletingMessageId] = useState<number | null>(null);
+    const [deletingDonationId, setDeletingDonationId] = useState<number | null>(null);
     const [settings, setSettings] = useState<DashboardSettings>(
         normalizeSettings({
             timezone: "America/Chicago",
@@ -375,6 +377,30 @@ export default function AdminMessagesPage() {
         const data = await response.json();
         if (data?.success) {
             setDonations(data.donations || []);
+        }
+    };
+
+    const handleDeleteDonation = async (id: number) => {
+        setDeletingDonationId(id);
+        setMessageStatus("");
+
+        try {
+            const response = await fetch("/api/admin/donations", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id }),
+            });
+
+            const data = await response.json();
+            if (!response.ok || !data?.success) {
+                setMessageStatus(data?.error || "Failed to delete donation.");
+                return;
+            }
+
+            setDonations(data.donations || []);
+            setMessageStatus("Donation deleted.");
+        } finally {
+            setDeletingDonationId(null);
         }
     };
 
@@ -860,6 +886,16 @@ export default function AdminMessagesPage() {
                                         {formatDate(record.created_at)} (
                                         {record.payment_status || "pending"})
                                     </p>
+                                    <div className="mt-3 flex justify-end">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDeleteDonation(record.id)}
+                                            disabled={deletingDonationId === record.id}
+                                            className="rounded-md border border-red-400/40 bg-red-900/30 px-3 py-1.5 text-xs text-red-100 hover:bg-red-900/50 disabled:cursor-not-allowed disabled:opacity-60"
+                                        >
+                                            {deletingDonationId === record.id ? "Deleting..." : "Delete"}
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                             {donations.length === 0 && (

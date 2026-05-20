@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth";
 import {
     createManualDonationRecord,
+    deleteDonationRecordById,
     getAllDonations,
     upsertCompletedStripeDonation,
 } from "@/lib/donation-db";
@@ -100,4 +101,20 @@ export async function POST(req: NextRequest) {
 
     const donations = await getAllDonations();
     return NextResponse.json({ success: true, donations, synced: intents.length });
+}
+
+export async function DELETE(req: NextRequest) {
+    const auth = requireTreasurerOrAdmin(req);
+    if ("error" in auth) return auth.error;
+
+    const body = await req.json().catch(() => null);
+    const id = Number(body?.id);
+
+    if (!Number.isInteger(id) || id <= 0) {
+        return NextResponse.json({ success: false, error: "Valid donation id is required." }, { status: 400 });
+    }
+
+    await deleteDonationRecordById(id);
+    const donations = await getAllDonations();
+    return NextResponse.json({ success: true, donations });
 }

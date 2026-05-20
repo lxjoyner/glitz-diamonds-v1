@@ -92,6 +92,12 @@ export async function createManualDonationRecord(params: {
     );
 }
 
+export async function deleteDonationRecordById(id: number) {
+    await ensureDonationsTable();
+
+    await pool.query("DELETE FROM donations WHERE id = ? LIMIT 1", [id]);
+}
+
 export async function upsertCompletedStripeDonation(params: {
     paymentIntentId: string;
     amountCents: number;
