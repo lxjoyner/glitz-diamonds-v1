@@ -61,8 +61,11 @@ header {
 
 /* Reusable utilities */
 .nav-link {
-  @apply text-sm md:text-base px-3 py-2 rounded-lg transition;
+  @apply block text-sm md:text-base px-3 py-2 rounded-lg transition;
   color: var(--color-text-muted);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
 }
 .nav-link:hover {
   background-color: rgba(255,255,255,0.06);
@@ -194,6 +197,5 @@ header {
     object-position: center top;
   }
 }
-
 
 
