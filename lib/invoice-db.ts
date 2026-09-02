@@ -48,6 +48,27 @@ export type InvoiceWithDisplayStatus = InvoiceRecord & {
     display_status: string;
 };
 
+export type PublicInvoiceItem = RowDataPacket & {
+    description: string;
+    quantity: number | string;
+    unit_price_cents: number;
+    line_total_cents: number;
+};
+
+export type PublicInvoiceRecord = InvoiceRecord & {
+    business_name: string | null;
+    business_address: string | null;
+    business_phone: string | null;
+    business_email: string | null;
+    footer_text: string | null;
+    has_logo: number | boolean;
+};
+
+export type PublicInvoice = PublicInvoiceRecord & {
+    items: PublicInvoiceItem[];
+    display_status: string;
+};
+
 export async function ensureInvoiceSchema() {
     await pool.query(`
         CREATE TABLE IF NOT EXISTS invoice_settings (
@@ -211,9 +232,9 @@ export async function getInvoiceById(invoiceId: number): Promise<InvoiceWithDisp
     return { ...row, display_status: computedStatus(row) };
 }
 
-export async function getInvoiceByPublicToken(token: string) {
+export async function getInvoiceByPublicToken(token: string): Promise<PublicInvoice | null> {
     await ensureInvoiceSchema();
-    const [rows] = await pool.query<RowDataPacket[]>(`
+    const [rows] = await pool.query<PublicInvoiceRecord[]>(`
         SELECT i.*, u.full_name AS member_name, u.email AS member_email,
                s.business_name, s.business_address, s.business_phone, s.business_email, s.footer_text,
                s.logo_data IS NOT NULL AS has_logo
@@ -224,11 +245,12 @@ export async function getInvoiceByPublicToken(token: string) {
         LIMIT 1
     `, [token]);
     if (!rows[0]) return null;
-    const [items] = await pool.query<RowDataPacket[]>(`
+    const row = rows[0];
+    const [items] = await pool.query<PublicInvoiceItem[]>(`
         SELECT description, quantity, unit_price_cents, line_total_cents
         FROM invoice_items WHERE invoice_id = ? ORDER BY sort_order, id
-    `, [rows[0].id]);
-    return { ...rows[0], items, display_status: computedStatus(rows[0] as never) };
+    `, [row.id]);
+    return { ...row, items, display_status: computedStatus(row) };
 }
 
 export async function markInvoiceSent(invoiceId: number) {
