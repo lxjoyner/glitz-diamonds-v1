@@ -1,4 +1,5 @@
 import pool from "@/lib/db";
+import crypto from "node:crypto";
 import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 
 export type InvoiceStatus = "draft" | "sent" | "viewed" | "due" | "past_due" | "partially_paid" | "paid" | "void";
@@ -56,13 +57,23 @@ export async function ensureInvoiceSchema() {
             amount_paid_cents INT NOT NULL DEFAULT 0,
             notes TEXT NULL,
             terms TEXT NULL,
+            public_token VARCHAR(96) UNIQUE NULL,
+            sent_at DATETIME NULL,
+            viewed_at DATETIME NULL,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             INDEX idx_invoices_member (member_id),
             INDEX idx_invoices_due_date (due_date),
-            INDEX idx_invoices_status (status)
+            INDEX idx_invoices_status (status),
+            INDEX idx_invoices_public_token (public_token)
         )
     `);
+
+    const [columns] = await pool.query<RowDataPacket[]>(`SHOW COLUMNS FROM invoices`);
+    const columnNames = new Set(columns.map((column) => String(column.Field)));
+    if (!columnNames.has("public_token")) await pool.query(`ALTER TABLE invoices ADD COLUMN public_token VARCHAR(96) UNIQUE NULL`);
+    if (!columnNames.has("sent_at")) await pool.query(`ALTER TABLE invoices ADD COLUMN sent_at DATETIME NULL`);
+    if (!columnNames.has("viewed_at")) await pool.query(`ALTER TABLE invoices ADD COLUMN viewed_at DATETIME NULL`);
 
     await pool.query(`
         CREATE TABLE IF NOT EXISTS invoice_items (
@@ -155,6 +166,55 @@ export async function getInvoiceLogo() {
     return rows[0] as { logo_mime_type: string | null; logo_data: Buffer | null } | undefined;
 }
 
+export async function getInvoiceById(invoiceId: number) {
+    await ensureInvoiceSchema();
+    const [rows] = await pool.query<RowDataPacket[]>(`
+        SELECT i.*, u.full_name AS member_name, u.email AS member_email
+        FROM invoices i
+        LEFT JOIN users u ON u.id = i.member_id
+        WHERE i.id = ?
+        LIMIT 1
+    `, [invoiceId]);
+    if (!rows[0]) return null;
+    const row = rows[0];
+    if (!row.public_token) {
+        const token = crypto.randomBytes(32).toString("hex");
+        await pool.query(`UPDATE invoices SET public_token = ? WHERE id = ?`, [token, invoiceId]);
+        row.public_token = token;
+    }
+    return { ...row, display_status: computedStatus(row as never) };
+}
+
+export async function getInvoiceByPublicToken(token: string) {
+    await ensureInvoiceSchema();
+    const [rows] = await pool.query<RowDataPacket[]>(`
+        SELECT i.*, u.full_name AS member_name, u.email AS member_email,
+               s.business_name, s.business_address, s.business_phone, s.business_email, s.footer_text,
+               s.logo_data IS NOT NULL AS has_logo
+        FROM invoices i
+        LEFT JOIN users u ON u.id = i.member_id
+        CROSS JOIN invoice_settings s
+        WHERE i.public_token = ?
+        LIMIT 1
+    `, [token]);
+    if (!rows[0]) return null;
+    const [items] = await pool.query<RowDataPacket[]>(`
+        SELECT description, quantity, unit_price_cents, line_total_cents
+        FROM invoice_items WHERE invoice_id = ? ORDER BY sort_order, id
+    `, [rows[0].id]);
+    return { ...rows[0], items, display_status: computedStatus(rows[0] as never) };
+}
+
+export async function markInvoiceSent(invoiceId: number) {
+    await ensureInvoiceSchema();
+    await pool.query(`UPDATE invoices SET status = IF(status = 'draft', 'sent', status), sent_at = NOW() WHERE id = ?`, [invoiceId]);
+}
+
+export async function markInvoiceViewed(token: string) {
+    await ensureInvoiceSchema();
+    await pool.query(`UPDATE invoices SET status = IF(status IN ('sent','draft'), 'viewed', status), viewed_at = COALESCE(viewed_at, NOW()) WHERE public_token = ?`, [token]);
+}
+
 export async function createInvoice(input: InvoiceInput) {
     await ensureInvoiceSchema();
     const subtotalCents = input.items.reduce((sum, item) => sum + Math.round(item.quantity * item.unitPriceCents), 0);
@@ -165,11 +225,12 @@ export async function createInvoice(input: InvoiceInput) {
     const connection = await pool.getConnection();
     try {
         await connection.beginTransaction();
+        const publicToken = crypto.randomBytes(32).toString("hex");
         const [result] = await connection.execute<ResultSetHeader>(`
             INSERT INTO invoices (
                 member_id, invoice_date, due_date, reference_number, status,
-                subtotal_cents, discount_cents, tax_cents, total_cents, notes, terms
-            ) VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?)
+                subtotal_cents, discount_cents, tax_cents, total_cents, notes, terms, public_token
+            ) VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?)
         `, [
             input.memberId,
             input.invoiceDate,
@@ -181,6 +242,7 @@ export async function createInvoice(input: InvoiceInput) {
             totalCents,
             input.notes || null,
             input.terms || null,
+            publicToken,
         ]);
 
         const invoiceId = result.insertId;
@@ -200,7 +262,7 @@ export async function createInvoice(input: InvoiceInput) {
         }
 
         await connection.commit();
-        return { id: invoiceId, invoiceNumber };
+        return { id: invoiceId, invoiceNumber, publicToken };
     } catch (error) {
         await connection.rollback();
         throw error;
