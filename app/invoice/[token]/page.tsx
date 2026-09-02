@@ -46,7 +46,7 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
                 <div className="overflow-x-auto">
                     <table className="w-full min-w-[620px] border-collapse text-sm">
                         <thead><tr className="border-b-2 border-slate-200 text-left"><th className="py-3 pr-4">Description</th><th className="py-3 pr-4 text-right">Qty</th><th className="py-3 pr-4 text-right">Price</th><th className="py-3 text-right">Amount</th></tr></thead>
-                        <tbody>{invoice.items.map((item: any, index: number) => <tr key={index} className="border-b border-slate-100"><td className="py-4 pr-4">{item.description}</td><td className="py-4 pr-4 text-right">{Number(item.quantity)}</td><td className="py-4 pr-4 text-right">{money(Number(item.unit_price_cents))}</td><td className="py-4 text-right font-semibold">{money(Number(item.line_total_cents))}</td></tr>)}</tbody>
+                        <tbody>{invoice.items.map((item, index) => <tr key={index} className="border-b border-slate-100"><td className="py-4 pr-4">{item.description}</td><td className="py-4 pr-4 text-right">{Number(item.quantity)}</td><td className="py-4 pr-4 text-right">{money(Number(item.unit_price_cents))}</td><td className="py-4 text-right font-semibold">{money(Number(item.line_total_cents))}</td></tr>)}</tbody>
                     </table>
                 </div>
 
