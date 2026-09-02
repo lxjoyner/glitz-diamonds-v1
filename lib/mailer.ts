@@ -68,6 +68,49 @@ export function getSmtpTransport() {
     });
 }
 
+export async function sendInvoiceEmail(params: {
+    toEmail: string;
+    memberName: string;
+    invoiceNumber: string;
+    amountDueCents: number;
+    dueDate: string;
+    invoiceUrl: string;
+}) {
+    if (!hasSmtpConfig()) {
+        const missingSmtpKeys = getMissingSmtpConfigKeys();
+        writeEmailLog({
+            channel: "invoice",
+            status: "skipped",
+            to: params.toEmail,
+            reason: "missing_smtp_config",
+            details: { missingEnv: missingSmtpKeys },
+        });
+        throw new Error(`SMTP config is incomplete: ${missingSmtpKeys.join(", ")}`);
+    }
+
+    const amountDue = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(params.amountDueCents / 100);
+    const dueDate = new Date(params.dueDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+    const subject = `Glitz Of Diamonds invoice ${params.invoiceNumber}`;
+
+    writeEmailLog({ channel: "invoice", status: "attempt", to: params.toEmail, subject });
+
+    try {
+        const transporter = getSmtpTransport();
+        await transporter.sendMail({
+            from: getFromEmailAddress(),
+            to: params.toEmail,
+            subject,
+            text: `Hello ${params.memberName},\n\nYou have a new invoice from Glitz Of Diamonds.\n\nInvoice: ${params.invoiceNumber}\nAmount Due: ${amountDue}\nDue Date: ${dueDate}\n\nView your invoice:\n${params.invoiceUrl}\n\nThank you,\nGlitz Of Diamonds`,
+            html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937"><h2>Glitz Of Diamonds</h2><p>Hello ${params.memberName},</p><p>You have a new invoice from Glitz Of Diamonds.</p><p><strong>Invoice:</strong> ${params.invoiceNumber}<br/><strong>Amount Due:</strong> ${amountDue}<br/><strong>Due Date:</strong> ${dueDate}</p><p style="margin:28px 0"><a href="${params.invoiceUrl}" style="background:#1d4ed8;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600">View Invoice</a></p><p>Thank you,<br/>Glitz Of Diamonds</p></div>`,
+        });
+        writeEmailLog({ channel: "invoice", status: "success", to: params.toEmail, subject });
+        return { sent: true as const };
+    } catch (error) {
+        writeEmailLog({ channel: "invoice", status: "error", to: params.toEmail, subject, reason: error instanceof Error ? error.message : "unknown_error" });
+        throw error;
+    }
+}
+
 export async function sendAdminPasswordResetEmail(params: {
     toEmail: string;
     username: string;
@@ -126,7 +169,6 @@ export async function sendAdminPasswordResetEmail(params: {
         throw error;
     }
 }
-
 
 export async function sendAdminTemporaryPasswordEmail(params: {
     toEmail: string;
@@ -253,7 +295,6 @@ export async function sendUsernameReminderEmail(params: {
     }
 }
 
-
 export async function sendAdminLoginVerificationCodeEmail(params: {
     toEmail: string;
     username: string;
@@ -304,7 +345,6 @@ This code expires in 10 minutes. If you did not try to sign in, ignore this emai
             to: params.toEmail,
             subject,
         });
-
         return { sent: true as const };
     } catch (error) {
         writeEmailLog({
@@ -436,7 +476,6 @@ export async function sendMemberRegistrationConfirmation(params: {
             to: params.toEmail,
             subject,
         });
-
         return { sent: true as const };
     } catch (error) {
         writeEmailLog({
@@ -447,65 +486,5 @@ export async function sendMemberRegistrationConfirmation(params: {
             reason: error instanceof Error ? error.message : "unknown_error",
         });
         throw error;
-    }
-}
-
-export async function sendMemberInviteEmail(params: {
-    toEmail: string;
-    firstName: string;
-    invitedBy: string;
-    inviteLink: string;
-}) {
-    if (!hasSmtpConfig()) {
-        const missingSmtpKeys = getMissingSmtpConfigKeys();
-        console.warn(`SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping member invite email dispatch.`);
-        writeEmailLog({
-            channel: "member-invite",
-            status: "skipped",
-            to: params.toEmail,
-            reason: "missing_smtp_config",
-            details: { missingEnv: missingSmtpKeys },
-        });
-        return { sent: false as const, reason: "missing_smtp_config" as const };
-    }
-
-    const subject = "Your Glitz of Diamonds member invite";
-
-    writeEmailLog({
-        channel: "member-invite",
-        status: "attempt",
-        to: params.toEmail,
-        subject,
-    });
-
-    try {
-        const transporter = getSmtpTransport();
-
-        await transporter.sendMail({
-            from: getFromEmailAddress(),
-            to: params.toEmail,
-            subject,
-            text: `Hi ${params.firstName},\n\n${params.invitedBy} invited you to register as a member at Glitz of Diamonds.\n\nUse this one-time registration link:\n${params.inviteLink}\n\nThis link becomes inactive after registration is submitted.`,
-            html: `<p>Hi ${params.firstName},</p><p><strong>${params.invitedBy}</strong> invited you to register as a member at Glitz of Diamonds.</p><p>Use this one-time registration link:</p><p><a href="${params.inviteLink}">${params.inviteLink}</a></p><p>This link becomes inactive after registration is submitted.</p>`,
-        });
-
-        writeEmailLog({
-            channel: "member-invite",
-            status: "success",
-            to: params.toEmail,
-            subject,
-        });
-
-        return { sent: true as const };
-    } catch (error) {
-        writeEmailLog({
-            channel: "member-invite",
-            status: "error",
-            to: params.toEmail,
-            subject,
-            reason: error instanceof Error ? error.message : "unknown_error",
-        });
-
-        return { sent: false as const, reason: "send_failed" as const };
     }
 }
