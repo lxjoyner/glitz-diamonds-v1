@@ -22,6 +22,32 @@ export type InvoiceInput = {
     items: InvoiceItemInput[];
 };
 
+export type InvoiceRecord = RowDataPacket & {
+    id: number;
+    invoice_number: string;
+    member_id: number;
+    member_name: string | null;
+    member_email: string | null;
+    invoice_date: string;
+    due_date: string;
+    reference_number: string | null;
+    status: string;
+    subtotal_cents: number;
+    discount_cents: number;
+    tax_cents: number;
+    total_cents: number;
+    amount_paid_cents: number;
+    notes: string | null;
+    terms: string | null;
+    public_token: string | null;
+    sent_at: string | null;
+    viewed_at: string | null;
+};
+
+export type InvoiceWithDisplayStatus = InvoiceRecord & {
+    display_status: string;
+};
+
 export async function ensureInvoiceSchema() {
     await pool.query(`
         CREATE TABLE IF NOT EXISTS invoice_settings (
@@ -99,15 +125,15 @@ function computedStatus(row: { status: string; due_date: string; total_cents: nu
     return due.getTime() < Date.now() ? "past_due" : "due";
 }
 
-export async function listInvoices() {
+export async function listInvoices(): Promise<InvoiceWithDisplayStatus[]> {
     await ensureInvoiceSchema();
-    const [rows] = await pool.query<RowDataPacket[]>(`
+    const [rows] = await pool.query<InvoiceRecord[]>(`
         SELECT i.*, u.full_name AS member_name, u.email AS member_email
         FROM invoices i
         LEFT JOIN users u ON u.id = i.member_id
         ORDER BY i.created_at DESC, i.id DESC
     `);
-    return rows.map((row) => ({ ...row, display_status: computedStatus(row as never) }));
+    return rows.map((row) => ({ ...row, display_status: computedStatus(row) }));
 }
 
 export async function getInvoiceSettings() {
@@ -166,9 +192,9 @@ export async function getInvoiceLogo() {
     return rows[0] as { logo_mime_type: string | null; logo_data: Buffer | null } | undefined;
 }
 
-export async function getInvoiceById(invoiceId: number) {
+export async function getInvoiceById(invoiceId: number): Promise<InvoiceWithDisplayStatus | null> {
     await ensureInvoiceSchema();
-    const [rows] = await pool.query<RowDataPacket[]>(`
+    const [rows] = await pool.query<InvoiceRecord[]>(`
         SELECT i.*, u.full_name AS member_name, u.email AS member_email
         FROM invoices i
         LEFT JOIN users u ON u.id = i.member_id
@@ -182,7 +208,7 @@ export async function getInvoiceById(invoiceId: number) {
         await pool.query(`UPDATE invoices SET public_token = ? WHERE id = ?`, [token, invoiceId]);
         row.public_token = token;
     }
-    return { ...row, display_status: computedStatus(row as never) };
+    return { ...row, display_status: computedStatus(row) };
 }
 
 export async function getInvoiceByPublicToken(token: string) {
