@@ -26,6 +26,7 @@ function getDisplayName(user: AdminUser | null) {
 
 export default function Header() {
     const [open, setOpen] = useState(false);
+    const [invoicingOpen, setInvoicingOpen] = useState(false);
     const [loadingAuth, setLoadingAuth] = useState(true);
     const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
     const router = useRouter();
@@ -264,6 +265,49 @@ export default function Header() {
                         >
                             Calendar
                         </Link>
+                    )}
+
+                    {!loadingAuth && (adminUser?.role === "admin" || adminUser?.role === "treasurer") && (
+                        <div className="rounded-lg border border-white/10 bg-white/[0.03]">
+                            <button
+                                type="button"
+                                onClick={() => setInvoicingOpen((current) => !current)}
+                                className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-white hover:bg-white/10 transition"
+                                aria-expanded={invoicingOpen}
+                                aria-controls="invoicing-submenu"
+                            >
+                                <span>Invoicing</span>
+                                <span className={`text-sm transition-transform ${invoicingOpen ? "rotate-180" : ""}`} aria-hidden="true">⌄</span>
+                            </button>
+
+                            {invoicingOpen && (
+                                <div id="invoicing-submenu" className="flex flex-col gap-1 border-t border-white/10 px-2 py-2">
+                                    <Link
+                                        href="/admin/invoices"
+                                        className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition"
+                                        onClick={() => setOpen(false)}
+                                    >
+                                        Invoices Dashboard
+                                    </Link>
+                                    <Link
+                                        href="/admin/invoices/new"
+                                        className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition"
+                                        onClick={() => setOpen(false)}
+                                    >
+                                        New Invoice
+                                    </Link>
+                                    {adminUser?.role === "admin" && (
+                                        <Link
+                                            href="/admin/invoices/settings"
+                                            className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition"
+                                            onClick={() => setOpen(false)}
+                                        >
+                                            Invoice Settings
+                                        </Link>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     )}
 
                     <div className="mt-4 border-t border-white/10 pt-4">
