@@ -14,8 +14,26 @@ function getPasswordResetIntervalDays() {
     return Number(process.env.PASSWORD_RESET_INTERVAL_DAYS || 60);
 }
 
-function getAppBaseUrl() {
-    return process.env.APP_BASE_URL || "http://localhost:3000";
+function getAppBaseUrl(req: Request) {
+    const configuredBaseUrl = process.env.APP_BASE_URL?.trim();
+    if (configuredBaseUrl) {
+        return configuredBaseUrl.replace(/\/$/, "");
+    }
+
+    if (process.env.NODE_ENV === "production") {
+        const forwardedProto = req.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+        const forwardedHost = req.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+        const host = forwardedHost || req.headers.get("host")?.trim();
+
+        if (host) {
+            const protocol = forwardedProto || "https";
+            return `${protocol}://${host}`.replace(/\/$/, "");
+        }
+
+        return "https://www.glitzofdiamonds.com";
+    }
+
+    return "http://localhost:3000";
 }
 
 function generateSixDigitCode() {
@@ -78,7 +96,7 @@ export async function POST(req: Request) {
                 }
 
                 const resetToken = await createPasswordResetToken(admin.id);
-                const resetUrl = `${getAppBaseUrl()}/admin/reset-password?token=${encodeURIComponent(resetToken)}`;
+                const resetUrl = `${getAppBaseUrl(req)}/admin/reset-password?token=${encodeURIComponent(resetToken)}`;
 
                 await sendAdminPasswordResetEmail({
                     toEmail: admin.email,
