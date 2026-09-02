@@ -68,6 +68,10 @@ export function getSmtpTransport() {
     });
 }
 
+function money(cents: number) {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format((cents || 0) / 100);
+}
+
 export async function sendInvoiceEmail(params: {
     toEmail: string;
     memberName: string;
@@ -78,17 +82,11 @@ export async function sendInvoiceEmail(params: {
 }) {
     if (!hasSmtpConfig()) {
         const missingSmtpKeys = getMissingSmtpConfigKeys();
-        writeEmailLog({
-            channel: "invoice",
-            status: "skipped",
-            to: params.toEmail,
-            reason: "missing_smtp_config",
-            details: { missingEnv: missingSmtpKeys },
-        });
+        writeEmailLog({ channel: "invoice", status: "skipped", to: params.toEmail, reason: "missing_smtp_config", details: { missingEnv: missingSmtpKeys } });
         throw new Error(`SMTP config is incomplete: ${missingSmtpKeys.join(", ")}`);
     }
 
-    const amountDue = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(params.amountDueCents / 100);
+    const amountDue = money(params.amountDueCents);
     const dueDate = new Date(params.dueDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
     const subject = `Glitz Of Diamonds invoice ${params.invoiceNumber}`;
 
@@ -111,430 +109,120 @@ export async function sendInvoiceEmail(params: {
     }
 }
 
-export async function sendAdminPasswordResetEmail(params: {
+export async function sendInvoicePaymentReceipt(params: {
     toEmail: string;
-    username: string;
-    resetUrl: string;
+    memberName: string;
+    invoiceNumber: string;
+    paymentAmountCents: number;
+    remainingBalanceCents: number;
 }) {
-    if (!hasSmtpConfig()) {
-        const missingSmtpKeys = getMissingSmtpConfigKeys();
-        console.warn(
-            `SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping admin password-reset email dispatch.`
-        );
-        writeEmailLog({
-            channel: "admin-password-reset",
-            status: "skipped",
-            to: params.toEmail,
-            reason: "missing_smtp_config",
-            details: { missingEnv: missingSmtpKeys },
-        });
-        return { sent: false as const, reason: "missing_smtp_config" as const };
-    }
-
-    const subject = "Reset your Glitz admin password";
-
-    writeEmailLog({
-        channel: "admin-password-reset",
-        status: "attempt",
-        to: params.toEmail,
-        subject,
-    });
-
+    if (!hasSmtpConfig()) return { sent: false as const, reason: "missing_smtp_config" as const };
+    const subject = `Payment received for invoice ${params.invoiceNumber}`;
+    writeEmailLog({ channel: "invoice-payment-receipt", status: "attempt", to: params.toEmail, subject });
     try {
         const transporter = getSmtpTransport();
-
         await transporter.sendMail({
             from: getFromEmailAddress(),
             to: params.toEmail,
             subject,
-            text: `Hi ${params.username},\n\nYour admin password has reached the 60-day rotation window. Reset it using this link:\n${params.resetUrl}\n\nIf you did not request this, contact your system administrator immediately.`,
-            html: `<p>Hi ${params.username},</p><p>Your admin password has reached the 60-day rotation window.</p><p>Reset it using this link:</p><p><a href="${params.resetUrl}">${params.resetUrl}</a></p><p>If you did not request this, contact your system administrator immediately.</p>`,
+            text: `Hi ${params.memberName},\n\nWe received your payment of ${money(params.paymentAmountCents)} for invoice ${params.invoiceNumber}.\nRemaining balance: ${money(params.remainingBalanceCents)}.\n\nThank you,\nGlitz Of Diamonds`,
+            html: `<p>Hi ${params.memberName},</p><p>We received your payment of <strong>${money(params.paymentAmountCents)}</strong> for invoice <strong>${params.invoiceNumber}</strong>.</p><p>Remaining balance: <strong>${money(params.remainingBalanceCents)}</strong>.</p><p>Thank you,<br/>Glitz Of Diamonds</p>`,
         });
-
-        writeEmailLog({
-            channel: "admin-password-reset",
-            status: "success",
-            to: params.toEmail,
-            subject,
-        });
+        writeEmailLog({ channel: "invoice-payment-receipt", status: "success", to: params.toEmail, subject });
         return { sent: true as const };
     } catch (error) {
-        writeEmailLog({
-            channel: "admin-password-reset",
-            status: "error",
-            to: params.toEmail,
-            subject,
-            reason: error instanceof Error ? error.message : "unknown_error",
-        });
+        writeEmailLog({ channel: "invoice-payment-receipt", status: "error", to: params.toEmail, subject, reason: error instanceof Error ? error.message : "unknown_error" });
         throw error;
     }
 }
 
-export async function sendAdminTemporaryPasswordEmail(params: {
-    toEmail: string;
-    username: string;
-    temporaryPassword: string;
-}) {
-    if (!hasSmtpConfig()) {
-        const missingSmtpKeys = getMissingSmtpConfigKeys();
-        console.warn(
-            `SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping admin temporary-password email dispatch.`
-        );
-        writeEmailLog({
-            channel: "admin-temporary-password",
-            status: "skipped",
-            to: params.toEmail,
-            reason: "missing_smtp_config",
-            details: { missingEnv: missingSmtpKeys },
-        });
-        return { sent: false as const, reason: "missing_smtp_config" as const };
-    }
-
-    const subject = "Your Glitz temporary password";
-
-    writeEmailLog({
-        channel: "admin-temporary-password",
-        status: "attempt",
-        to: params.toEmail,
-        subject,
-    });
-
-    try {
-        const transporter = getSmtpTransport();
-
-        await transporter.sendMail({
-            from: getFromEmailAddress(),
-            to: params.toEmail,
-            subject,
-            text: `Hi ${params.username},\n\nA temporary password was requested for your account.\n\nTemporary password: ${params.temporaryPassword}\n\nSign in with this temporary password, then immediately use Change Password to set a new one.`,
-            html: `<p>Hi ${params.username},</p><p>A temporary password was requested for your account.</p><p><strong>Temporary password:</strong> ${params.temporaryPassword}</p><p>Sign in with this temporary password, then immediately use <strong>Change Password</strong> to set a new one.</p>`,
-        });
-
-        writeEmailLog({
-            channel: "admin-temporary-password",
-            status: "success",
-            to: params.toEmail,
-            subject,
-        });
-
-        return { sent: true as const };
-    } catch (error) {
-        writeEmailLog({
-            channel: "admin-temporary-password",
-            status: "error",
-            to: params.toEmail,
-            subject,
-            reason: error instanceof Error ? error.message : "unknown_error",
-        });
-        throw error;
-    }
-}
-
-export async function sendUsernameReminderEmail(params: {
-    toEmail: string;
-    username: string;
-}) {
-    if (!hasSmtpConfig()) {
-        const missingSmtpKeys = getMissingSmtpConfigKeys();
-        console.warn(
-            `SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping username reminder email dispatch.`
-        );
-        writeEmailLog({
-            channel: "username-reminder",
-            status: "skipped",
-            to: params.toEmail,
-            reason: "missing_smtp_config",
-            details: { missingEnv: missingSmtpKeys },
-        });
-        return { sent: false as const, reason: "missing_smtp_config" as const };
-    }
-
-    const subject = "Your Glitz username reminder";
-
-    writeEmailLog({
-        channel: "username-reminder",
-        status: "attempt",
-        to: params.toEmail,
-        subject,
-    });
-
-    try {
-        const transporter = getSmtpTransport();
-
-        await transporter.sendMail({
-            from: getFromEmailAddress(),
-            to: params.toEmail,
-            subject,
-            text: `A request was made to recover your username.\n\nYour username is: ${params.username}\n\nIf you did not request this, you can ignore this email.`,
-            html: `<p>A request was made to recover your username.</p><p><strong>Your username is: ${params.username}</strong></p><p>If you did not request this, you can ignore this email.</p>`,
-        });
-
-        writeEmailLog({
-            channel: "username-reminder",
-            status: "success",
-            to: params.toEmail,
-            subject,
-        });
-
-        return { sent: true as const };
-    } catch (error) {
-        writeEmailLog({
-            channel: "username-reminder",
-            status: "error",
-            to: params.toEmail,
-            subject,
-            reason: error instanceof Error ? error.message : "unknown_error",
-        });
-        throw error;
-    }
-}
-
-export async function sendAdminLoginVerificationCodeEmail(params: {
-    toEmail: string;
-    username: string;
-    verificationCode: string;
-}) {
-    if (!hasSmtpConfig()) {
-        const missingSmtpKeys = getMissingSmtpConfigKeys();
-        console.warn(
-            `SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping login verification code email dispatch.`
-        );
-        writeEmailLog({
-            channel: "admin-login-2fa",
-            status: "skipped",
-            to: params.toEmail,
-            reason: "missing_smtp_config",
-            details: { missingEnv: missingSmtpKeys },
-        });
-        return { sent: false as const, reason: "missing_smtp_config" as const };
-    }
-
-    const subject = "Your Glitz login verification code";
-
-    writeEmailLog({
-        channel: "admin-login-2fa",
-        status: "attempt",
-        to: params.toEmail,
-        subject,
-    });
-
-    try {
-        const transporter = getSmtpTransport();
-
-        await transporter.sendMail({
-            from: getFromEmailAddress(),
-            to: params.toEmail,
-            subject,
-            text: `Hi ${params.username},\n\nYour verification code is: ${params.verificationCode}\n\nThis code expires in 10 minutes. If you did not try to sign in, ignore this email.`,
-            html: `<p>Hi ${params.username},</p><p>Your verification code is:</p><p><strong style="font-size: 22px; letter-spacing: 4px;">${params.verificationCode}</strong></p><p>This code expires in 10 minutes. If you did not try to sign in, ignore this email.</p>`,
-        });
-
-        writeEmailLog({
-            channel: "admin-login-2fa",
-            status: "success",
-            to: params.toEmail,
-            subject,
-        });
-        return { sent: true as const };
-    } catch (error) {
-        writeEmailLog({
-            channel: "admin-login-2fa",
-            status: "error",
-            to: params.toEmail,
-            subject,
-            reason: error instanceof Error ? error.message : "unknown_error",
-        });
-        throw error;
-    }
-}
-
-export async function sendMemberRegistrationNotification(params: {
+export async function sendInvoicePaymentNotification(params: {
     toEmails: string[];
-    fullName: string;
-    username: string;
-    email: string;
-    address: string;
-    tshirtSize: string;
-    favoriteColor: string;
-    jacketSize: string;
-    gender: string;
-    birthday: string;
+    memberName: string;
+    invoiceNumber: string;
+    paymentAmountCents: number;
+    totalPaidCents: number;
+    invoiceTotalCents: number;
+    status: string;
 }) {
-    if (!hasSmtpConfig()) {
-        const missingSmtpKeys = getMissingSmtpConfigKeys();
-        console.warn(`SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping member registration email dispatch.`);
-        writeEmailLog({
-            channel: "member-registration-notification",
-            status: "skipped",
-            to: params.toEmails,
-            reason: "missing_smtp_config",
-            details: { missingEnv: missingSmtpKeys },
-        });
-        return { sent: false as const, reason: "missing_smtp_config" as const };
-    }
-
-    if (!params.toEmails.length) {
-        writeEmailLog({
-            channel: "member-registration-notification",
-            status: "skipped",
-            reason: "missing_admin_email",
-        });
-        return { sent: false as const, reason: "missing_admin_email" as const };
-    }
-
-    const subject = "New member registration submitted";
-    const to = params.toEmails.join(", ");
-
-    writeEmailLog({
-        channel: "member-registration-notification",
-        status: "attempt",
-        to: params.toEmails,
-        subject,
-    });
-
+    if (!hasSmtpConfig() || params.toEmails.length === 0) return { sent: false as const, reason: "missing_config_or_recipient" as const };
+    const subject = `Invoice payment received: ${params.invoiceNumber}`;
+    writeEmailLog({ channel: "invoice-payment-admin", status: "attempt", to: params.toEmails, subject });
     try {
         const transporter = getSmtpTransport();
-
         await transporter.sendMail({
             from: getFromEmailAddress(),
-            to,
+            to: params.toEmails.join(", "),
             subject,
-            text: `A new user registered as Member.\n\nName: ${params.fullName}\nUsername: ${params.username}\nEmail: ${params.email}\nAddress: ${params.address}\nT-Shirt Size: ${params.tshirtSize}\nFavorite Color: ${params.favoriteColor}\nJacket Size: ${params.jacketSize}\nGender: ${params.gender}\nBirthday (MMDD): ${params.birthday}`,
-            html: `<p>A new user registered as <strong>Member</strong>.</p><ul><li><strong>Name:</strong> ${params.fullName}</li><li><strong>Username:</strong> ${params.username}</li><li><strong>Email:</strong> ${params.email}</li><li><strong>Address:</strong> ${params.address}</li><li><strong>T-Shirt Size:</strong> ${params.tshirtSize}</li><li><strong>Favorite Color:</strong> ${params.favoriteColor}</li><li><strong>Jacket Size:</strong> ${params.jacketSize}</li><li><strong>Gender:</strong> ${params.gender}</li><li><strong>Birthday (MMDD):</strong> ${params.birthday}</li></ul>`,
+            text: `${params.memberName} paid ${money(params.paymentAmountCents)} toward invoice ${params.invoiceNumber}.\nTotal paid: ${money(params.totalPaidCents)} of ${money(params.invoiceTotalCents)}.\nStatus: ${params.status}.`,
+            html: `<p><strong>${params.memberName}</strong> paid <strong>${money(params.paymentAmountCents)}</strong> toward invoice <strong>${params.invoiceNumber}</strong>.</p><p>Total paid: ${money(params.totalPaidCents)} of ${money(params.invoiceTotalCents)}.</p><p>Status: <strong>${params.status}</strong>.</p>`,
         });
-
-        writeEmailLog({
-            channel: "member-registration-notification",
-            status: "success",
-            to: params.toEmails,
-            subject,
-        });
-
+        writeEmailLog({ channel: "invoice-payment-admin", status: "success", to: params.toEmails, subject });
         return { sent: true as const };
     } catch (error) {
-        writeEmailLog({
-            channel: "member-registration-notification",
-            status: "error",
-            to: params.toEmails,
-            subject,
-            reason: error instanceof Error ? error.message : "unknown_error",
-        });
+        writeEmailLog({ channel: "invoice-payment-admin", status: "error", to: params.toEmails, subject, reason: error instanceof Error ? error.message : "unknown_error" });
         throw error;
     }
 }
 
-export async function sendMemberRegistrationConfirmation(params: {
-    toEmail: string;
-    fullName: string;
-}) {
-    if (!hasSmtpConfig()) {
-        const missingSmtpKeys = getMissingSmtpConfigKeys();
-        console.warn(`SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping member registration confirmation email.`);
-        writeEmailLog({
-            channel: "member-registration-confirmation",
-            status: "skipped",
-            to: params.toEmail,
-            reason: "missing_smtp_config",
-            details: { missingEnv: missingSmtpKeys },
-        });
-        return { sent: false as const, reason: "missing_smtp_config" as const };
-    }
-
-    const subject = "Your Glitz registration is complete";
-
-    writeEmailLog({
-        channel: "member-registration-confirmation",
-        status: "attempt",
-        to: params.toEmail,
-        subject,
-    });
-
+export async function sendAdminPasswordResetEmail(params: { toEmail: string; username: string; resetUrl: string }) {
+    if (!hasSmtpConfig()) return { sent: false as const, reason: "missing_smtp_config" as const };
+    const subject = "Reset your Glitz admin password";
+    writeEmailLog({ channel: "admin-password-reset", status: "attempt", to: params.toEmail, subject });
     try {
         const transporter = getSmtpTransport();
-
-        await transporter.sendMail({
-            from: getFromEmailAddress(),
-            to: params.toEmail,
-            subject,
-            text: `Hi ${params.fullName},\n\nThank you for registering with Glitz of Diamonds. Your registration has been completed successfully and your member account is now active.\n\nIf you have any questions, please reply to this email.\n\n- Glitz of Diamonds`,
-            html: `<p>Hi ${params.fullName},</p><p>Thank you for registering with <strong>Glitz of Diamonds</strong>. Your registration has been completed successfully and your member account is now active.</p><p>If you have any questions, please reply to this email.</p><p>- Glitz of Diamonds</p>`,
-        });
-
-        writeEmailLog({
-            channel: "member-registration-confirmation",
-            status: "success",
-            to: params.toEmail,
-            subject,
-        });
+        await transporter.sendMail({ from: getFromEmailAddress(), to: params.toEmail, subject, text: `Hi ${params.username},\n\nYour admin password has reached the 60-day rotation window. Reset it using this link:\n${params.resetUrl}\n\nIf you did not request this, contact your system administrator immediately.`, html: `<p>Hi ${params.username},</p><p>Your admin password has reached the 60-day rotation window.</p><p>Reset it using this link:</p><p><a href="${params.resetUrl}">${params.resetUrl}</a></p><p>If you did not request this, contact your system administrator immediately.</p>` });
+        writeEmailLog({ channel: "admin-password-reset", status: "success", to: params.toEmail, subject });
         return { sent: true as const };
     } catch (error) {
-        writeEmailLog({
-            channel: "member-registration-confirmation",
-            status: "error",
-            to: params.toEmail,
-            subject,
-            reason: error instanceof Error ? error.message : "unknown_error",
-        });
+        writeEmailLog({ channel: "admin-password-reset", status: "error", to: params.toEmail, subject, reason: error instanceof Error ? error.message : "unknown_error" });
         throw error;
     }
 }
 
-export async function sendMemberInviteEmail(params: {
-    toEmail: string;
-    firstName: string;
-    invitedBy: string;
-    inviteLink: string;
-}) {
-    if (!hasSmtpConfig()) {
-        const missingSmtpKeys = getMissingSmtpConfigKeys();
-        console.warn(`SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping member invite email dispatch.`);
-        writeEmailLog({
-            channel: "member-invite",
-            status: "skipped",
-            to: params.toEmail,
-            reason: "missing_smtp_config",
-            details: { missingEnv: missingSmtpKeys },
-        });
-        return { sent: false as const, reason: "missing_smtp_config" as const };
-    }
+export async function sendAdminTemporaryPasswordEmail(params: { toEmail: string; username: string; temporaryPassword: string }) {
+    if (!hasSmtpConfig()) return { sent: false as const, reason: "missing_smtp_config" as const };
+    const subject = "Your Glitz temporary password";
+    const transporter = getSmtpTransport();
+    await transporter.sendMail({ from: getFromEmailAddress(), to: params.toEmail, subject, text: `Hi ${params.username},\n\nA temporary password was requested for your account.\n\nTemporary password: ${params.temporaryPassword}\n\nSign in with this temporary password, then immediately use Change Password to set a new one.`, html: `<p>Hi ${params.username},</p><p>A temporary password was requested for your account.</p><p><strong>Temporary password:</strong> ${params.temporaryPassword}</p><p>Sign in with this temporary password, then immediately use <strong>Change Password</strong> to set a new one.</p>` });
+    return { sent: true as const };
+}
 
-    const subject = "Your Glitz of Diamonds member invite";
+export async function sendUsernameReminderEmail(params: { toEmail: string; username: string }) {
+    if (!hasSmtpConfig()) return { sent: false as const, reason: "missing_smtp_config" as const };
+    const transporter = getSmtpTransport();
+    await transporter.sendMail({ from: getFromEmailAddress(), to: params.toEmail, subject: "Your Glitz username reminder", text: `A request was made to recover your username.\n\nYour username is: ${params.username}\n\nIf you did not request this, you can ignore this email.`, html: `<p>A request was made to recover your username.</p><p><strong>Your username is: ${params.username}</strong></p><p>If you did not request this, you can ignore this email.</p>` });
+    return { sent: true as const };
+}
 
-    writeEmailLog({
-        channel: "member-invite",
-        status: "attempt",
-        to: params.toEmail,
-        subject,
-    });
+export async function sendAdminLoginVerificationCodeEmail(params: { toEmail: string; username: string; verificationCode: string }) {
+    if (!hasSmtpConfig()) return { sent: false as const, reason: "missing_smtp_config" as const };
+    const transporter = getSmtpTransport();
+    await transporter.sendMail({ from: getFromEmailAddress(), to: params.toEmail, subject: "Your Glitz login verification code", text: `Hi ${params.username},\n\nYour verification code is: ${params.verificationCode}\n\nThis code expires in 10 minutes. If you did not try to sign in, ignore this email.`, html: `<p>Hi ${params.username},</p><p>Your verification code is:</p><p><strong style="font-size: 22px; letter-spacing: 4px;">${params.verificationCode}</strong></p><p>This code expires in 10 minutes. If you did not try to sign in, ignore this email.</p>` });
+    return { sent: true as const };
+}
 
+export async function sendMemberRegistrationNotification(params: { toEmails: string[]; fullName: string; username: string; email: string; address: string; tshirtSize: string; favoriteColor: string; jacketSize: string; gender: string; birthday: string }) {
+    if (!hasSmtpConfig() || !params.toEmails.length) return { sent: false as const, reason: "missing_config_or_recipient" as const };
+    const transporter = getSmtpTransport();
+    await transporter.sendMail({ from: getFromEmailAddress(), to: params.toEmails.join(", "), subject: "New member registration submitted", text: `A new user registered as Member.\n\nName: ${params.fullName}\nUsername: ${params.username}\nEmail: ${params.email}\nAddress: ${params.address}\nT-Shirt Size: ${params.tshirtSize}\nFavorite Color: ${params.favoriteColor}\nJacket Size: ${params.jacketSize}\nGender: ${params.gender}\nBirthday (MMDD): ${params.birthday}` });
+    return { sent: true as const };
+}
+
+export async function sendMemberRegistrationConfirmation(params: { toEmail: string; fullName: string }) {
+    if (!hasSmtpConfig()) return { sent: false as const, reason: "missing_smtp_config" as const };
+    const transporter = getSmtpTransport();
+    await transporter.sendMail({ from: getFromEmailAddress(), to: params.toEmail, subject: "Your Glitz registration is complete", text: `Hi ${params.fullName},\n\nThank you for registering with Glitz of Diamonds. Your registration has been completed successfully and your member account is now active.\n\nIf you have any questions, please reply to this email.\n\n- Glitz of Diamonds` });
+    return { sent: true as const };
+}
+
+export async function sendMemberInviteEmail(params: { toEmail: string; firstName: string; invitedBy: string; inviteLink: string }) {
+    if (!hasSmtpConfig()) return { sent: false as const, reason: "missing_smtp_config" as const };
+    const transporter = getSmtpTransport();
     try {
-        const transporter = getSmtpTransport();
-
-        await transporter.sendMail({
-            from: getFromEmailAddress(),
-            to: params.toEmail,
-            subject,
-            text: `Hi ${params.firstName},\n\n${params.invitedBy} invited you to register as a member at Glitz of Diamonds.\n\nUse this one-time registration link:\n${params.inviteLink}\n\nThis link becomes inactive after registration is submitted.`,
-            html: `<p>Hi ${params.firstName},</p><p><strong>${params.invitedBy}</strong> invited you to register as a member at Glitz of Diamonds.</p><p>Use this one-time registration link:</p><p><a href="${params.inviteLink}">${params.inviteLink}</a></p><p>This link becomes inactive after registration is submitted.</p>`,
-        });
-
-        writeEmailLog({
-            channel: "member-invite",
-            status: "success",
-            to: params.toEmail,
-            subject,
-        });
-
+        await transporter.sendMail({ from: getFromEmailAddress(), to: params.toEmail, subject: "Your Glitz of Diamonds member invite", text: `Hi ${params.firstName},\n\n${params.invitedBy} invited you to register as a member at Glitz of Diamonds.\n\nUse this one-time registration link:\n${params.inviteLink}\n\nThis link becomes inactive after registration is submitted.`, html: `<p>Hi ${params.firstName},</p><p><strong>${params.invitedBy}</strong> invited you to register as a member at Glitz of Diamonds.</p><p>Use this one-time registration link:</p><p><a href="${params.inviteLink}">${params.inviteLink}</a></p><p>This link becomes inactive after registration is submitted.</p>` });
         return { sent: true as const };
-    } catch (error) {
-        writeEmailLog({
-            channel: "member-invite",
-            status: "error",
-            to: params.toEmail,
-            subject,
-            reason: error instanceof Error ? error.message : "unknown_error",
-        });
-
+    } catch {
         return { sent: false as const, reason: "send_failed" as const };
     }
 }
