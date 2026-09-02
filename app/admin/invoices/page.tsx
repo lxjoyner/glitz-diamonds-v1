@@ -88,8 +88,8 @@ export default function InvoicesPage() {
             <div className="mx-auto max-w-[1500px]">
                 <header className="mb-7 flex flex-wrap items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-4xl font-bold tracking-tight">Invoices</h1>
-                        <p className="mt-1 text-sm text-slate-500">Glitz Of Diamonds invoicing dashboard</p>
+                        <h1 className="text-4xl font-bold tracking-tight text-white">Invoices</h1>
+                        <p className="mt-1 text-sm text-white">Glitz Of Diamonds invoicing dashboard</p>
                     </div>
                     <div className="flex gap-3">
                         <Link href="/admin/invoices/settings" className="rounded-full border border-blue-600 bg-white px-5 py-3 font-semibold text-blue-700 hover:bg-blue-50">Invoice settings</Link>
