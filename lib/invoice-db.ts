@@ -55,6 +55,18 @@ export type PublicInvoiceItem = RowDataPacket & {
     line_total_cents: number;
 };
 
+export type InvoicePaymentRecord = RowDataPacket & {
+    id: number;
+    invoice_id: number;
+    amount_cents: number;
+    provider: string;
+    provider_session_id: string | null;
+    provider_payment_intent_id: string | null;
+    payment_status: string;
+    paid_at: string | null;
+    created_at: string;
+};
+
 export type PublicInvoiceRecord = InvoiceRecord & {
     business_name: string | null;
     business_address: string | null;
@@ -66,6 +78,7 @@ export type PublicInvoiceRecord = InvoiceRecord & {
 
 export type PublicInvoice = PublicInvoiceRecord & {
     items: PublicInvoiceItem[];
+    payments: InvoicePaymentRecord[];
     display_status: string;
 };
 
@@ -134,6 +147,35 @@ export async function ensureInvoiceSchema() {
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_invoice_items_invoice (invoice_id),
             CONSTRAINT fk_invoice_items_invoice FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+        )
+    `);
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS invoice_payments (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            invoice_id BIGINT NOT NULL,
+            amount_cents INT NOT NULL,
+            provider VARCHAR(30) NOT NULL DEFAULT 'stripe',
+            provider_session_id VARCHAR(255) NULL,
+            provider_payment_intent_id VARCHAR(255) NULL,
+            payment_status VARCHAR(30) NOT NULL DEFAULT 'paid',
+            paid_at DATETIME NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_invoice_payment_session (provider_session_id),
+            INDEX idx_invoice_payments_invoice (invoice_id),
+            INDEX idx_invoice_payments_status (payment_status),
+            CONSTRAINT fk_invoice_payments_invoice FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+        )
+    `);
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS payment_webhook_events (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            provider VARCHAR(30) NOT NULL DEFAULT 'stripe',
+            event_id VARCHAR(255) NOT NULL,
+            event_type VARCHAR(120) NOT NULL,
+            processed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_payment_webhook_event (provider, event_id)
         )
     `);
 }
@@ -250,7 +292,14 @@ export async function getInvoiceByPublicToken(token: string): Promise<PublicInvo
         SELECT description, quantity, unit_price_cents, line_total_cents
         FROM invoice_items WHERE invoice_id = ? ORDER BY sort_order, id
     `, [row.id]);
-    return { ...row, items, display_status: computedStatus(row) };
+    const [payments] = await pool.query<InvoicePaymentRecord[]>(`
+        SELECT id, invoice_id, amount_cents, provider, provider_session_id, provider_payment_intent_id,
+               payment_status, paid_at, created_at
+        FROM invoice_payments
+        WHERE invoice_id = ? AND payment_status = 'paid'
+        ORDER BY paid_at DESC, id DESC
+    `, [row.id]);
+    return { ...row, items, payments, display_status: computedStatus(row) };
 }
 
 export async function markInvoiceSent(invoiceId: number) {
@@ -261,6 +310,79 @@ export async function markInvoiceSent(invoiceId: number) {
 export async function markInvoiceViewed(token: string) {
     await ensureInvoiceSchema();
     await pool.query(`UPDATE invoices SET status = IF(status IN ('sent','draft'), 'viewed', status), viewed_at = COALESCE(viewed_at, NOW()) WHERE public_token = ?`, [token]);
+}
+
+export async function hasProcessedPaymentWebhook(eventId: string) {
+    await ensureInvoiceSchema();
+    const [rows] = await pool.query<RowDataPacket[]>(`
+        SELECT id FROM payment_webhook_events WHERE provider = 'stripe' AND event_id = ? LIMIT 1
+    `, [eventId]);
+    return Boolean(rows[0]);
+}
+
+export async function recordStripePayment(input: {
+    eventId: string;
+    eventType: string;
+    invoiceId: number;
+    amountCents: number;
+    sessionId: string;
+    paymentIntentId?: string | null;
+}) {
+    await ensureInvoiceSchema();
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const [existingEvents] = await connection.query<RowDataPacket[]>(`
+            SELECT id FROM payment_webhook_events WHERE provider = 'stripe' AND event_id = ? LIMIT 1 FOR UPDATE
+        `, [input.eventId]);
+        if (existingEvents[0]) {
+            await connection.rollback();
+            return { duplicate: true as const };
+        }
+
+        const [invoices] = await connection.query<InvoiceRecord[]>(`
+            SELECT i.*, u.full_name AS member_name, u.email AS member_email
+            FROM invoices i
+            LEFT JOIN users u ON u.id = i.member_id
+            WHERE i.id = ?
+            LIMIT 1 FOR UPDATE
+        `, [input.invoiceId]);
+        const invoice = invoices[0];
+        if (!invoice) throw new Error("Invoice not found for Stripe payment.");
+
+        const remaining = Math.max(0, Number(invoice.total_cents) - Number(invoice.amount_paid_cents));
+        const appliedAmount = Math.min(Math.max(0, input.amountCents), remaining);
+        if (appliedAmount <= 0) {
+            await connection.execute(`
+                INSERT INTO payment_webhook_events (provider, event_id, event_type) VALUES ('stripe', ?, ?)
+            `, [input.eventId, input.eventType]);
+            await connection.commit();
+            return { duplicate: false as const, invoice, appliedAmount: 0, newAmountPaid: Number(invoice.amount_paid_cents), newStatus: invoice.status };
+        }
+
+        await connection.execute(`
+            INSERT INTO invoice_payments (
+                invoice_id, amount_cents, provider, provider_session_id, provider_payment_intent_id, payment_status, paid_at
+            ) VALUES (?, ?, 'stripe', ?, ?, 'paid', NOW())
+        `, [input.invoiceId, appliedAmount, input.sessionId, input.paymentIntentId || null]);
+
+        const newAmountPaid = Number(invoice.amount_paid_cents) + appliedAmount;
+        const newStatus = newAmountPaid >= Number(invoice.total_cents) ? "paid" : "partially_paid";
+        await connection.execute(`UPDATE invoices SET amount_paid_cents = ?, status = ? WHERE id = ?`, [newAmountPaid, newStatus, input.invoiceId]);
+
+        await connection.execute(`
+            INSERT INTO payment_webhook_events (provider, event_id, event_type) VALUES ('stripe', ?, ?)
+        `, [input.eventId, input.eventType]);
+
+        await connection.commit();
+        return { duplicate: false as const, invoice, appliedAmount, newAmountPaid, newStatus };
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
 }
 
 export async function createInvoice(input: InvoiceInput) {
