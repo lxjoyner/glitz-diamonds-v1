@@ -206,13 +206,7 @@ export async function sendAdminTemporaryPasswordEmail(params: {
             from: getFromEmailAddress(),
             to: params.toEmail,
             subject,
-            text: `Hi ${params.username},
-
-A temporary password was requested for your account.
-
-Temporary password: ${params.temporaryPassword}
-
-Sign in with this temporary password, then immediately use Change Password to set a new one.`,
+            text: `Hi ${params.username},\n\nA temporary password was requested for your account.\n\nTemporary password: ${params.temporaryPassword}\n\nSign in with this temporary password, then immediately use Change Password to set a new one.`,
             html: `<p>Hi ${params.username},</p><p>A temporary password was requested for your account.</p><p><strong>Temporary password:</strong> ${params.temporaryPassword}</p><p>Sign in with this temporary password, then immediately use <strong>Change Password</strong> to set a new one.</p>`,
         });
 
@@ -331,11 +325,7 @@ export async function sendAdminLoginVerificationCodeEmail(params: {
             from: getFromEmailAddress(),
             to: params.toEmail,
             subject,
-            text: `Hi ${params.username},
-
-Your verification code is: ${params.verificationCode}
-
-This code expires in 10 minutes. If you did not try to sign in, ignore this email.`,
+            text: `Hi ${params.username},\n\nYour verification code is: ${params.verificationCode}\n\nThis code expires in 10 minutes. If you did not try to sign in, ignore this email.`,
             html: `<p>Hi ${params.username},</p><p>Your verification code is:</p><p><strong style="font-size: 22px; letter-spacing: 4px;">${params.verificationCode}</strong></p><p>This code expires in 10 minutes. If you did not try to sign in, ignore this email.</p>`,
         });
 
@@ -486,5 +476,65 @@ export async function sendMemberRegistrationConfirmation(params: {
             reason: error instanceof Error ? error.message : "unknown_error",
         });
         throw error;
+    }
+}
+
+export async function sendMemberInviteEmail(params: {
+    toEmail: string;
+    firstName: string;
+    invitedBy: string;
+    inviteLink: string;
+}) {
+    if (!hasSmtpConfig()) {
+        const missingSmtpKeys = getMissingSmtpConfigKeys();
+        console.warn(`SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping member invite email dispatch.`);
+        writeEmailLog({
+            channel: "member-invite",
+            status: "skipped",
+            to: params.toEmail,
+            reason: "missing_smtp_config",
+            details: { missingEnv: missingSmtpKeys },
+        });
+        return { sent: false as const, reason: "missing_smtp_config" as const };
+    }
+
+    const subject = "Your Glitz of Diamonds member invite";
+
+    writeEmailLog({
+        channel: "member-invite",
+        status: "attempt",
+        to: params.toEmail,
+        subject,
+    });
+
+    try {
+        const transporter = getSmtpTransport();
+
+        await transporter.sendMail({
+            from: getFromEmailAddress(),
+            to: params.toEmail,
+            subject,
+            text: `Hi ${params.firstName},\n\n${params.invitedBy} invited you to register as a member at Glitz of Diamonds.\n\nUse this one-time registration link:\n${params.inviteLink}\n\nThis link becomes inactive after registration is submitted.`,
+            html: `<p>Hi ${params.firstName},</p><p><strong>${params.invitedBy}</strong> invited you to register as a member at Glitz of Diamonds.</p><p>Use this one-time registration link:</p><p><a href="${params.inviteLink}">${params.inviteLink}</a></p><p>This link becomes inactive after registration is submitted.</p>`,
+        });
+
+        writeEmailLog({
+            channel: "member-invite",
+            status: "success",
+            to: params.toEmail,
+            subject,
+        });
+
+        return { sent: true as const };
+    } catch (error) {
+        writeEmailLog({
+            channel: "member-invite",
+            status: "error",
+            to: params.toEmail,
+            subject,
+            reason: error instanceof Error ? error.message : "unknown_error",
+        });
+
+        return { sent: false as const, reason: "send_failed" as const };
     }
 }
