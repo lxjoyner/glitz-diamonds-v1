@@ -83,7 +83,7 @@ export default function NewInvoicePage() {
 
     return (
         <main className="min-h-screen bg-[#f7f9fc] px-4 py-8 text-slate-950 sm:px-8">
-            <div className="mx-auto max-w-5xl">
+            <div className="mx-auto max-w-[1500px]">
                 <header className="mb-6 flex min-h-[53px] flex-wrap items-center justify-between gap-4 px-4 sm:px-6">
                     <h1 className="text-4xl font-bold tracking-tight text-white">New invoice</h1>
                     <div className="flex gap-3">
