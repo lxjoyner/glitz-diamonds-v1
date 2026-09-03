@@ -111,7 +111,7 @@ export default function InvoicesPage() {
     return (
         <main className="min-h-screen bg-[#f7f9fc] px-4 py-8 text-slate-950 sm:px-8">
             <div className="mx-auto max-w-[1500px]">
-                <header className="mb-7 flex flex-wrap items-center justify-between gap-4">
+                <header className="mb-7 flex flex-wrap items-center justify-between gap-4 px-4 sm:px-6">
                     <div>
                         <h1 className="text-4xl font-bold tracking-tight text-white">Invoices</h1>
                         <p className="mt-1 text-sm text-white">Glitz Of Diamonds invoicing dashboard</p>
