@@ -118,7 +118,7 @@ export default function InvoicesPage() {
                     </div>
                     <div className="flex gap-3">
                         <Link href="/admin/invoices/settings" className="rounded-full border border-blue-600 bg-white px-5 py-3 font-semibold text-blue-700 hover:bg-blue-50">Invoice settings</Link>
-                        <Link href="/admin/invoices/new" className="rounded-full bg-blue-700 px-6 py-3 font-semibold text-white shadow-sm hover:bg-blue-800">Create an invoice</Link>
+                        <Link href="/admin/invoices/new" className="rounded-full bg-black px-6 py-3 font-semibold text-white shadow-sm hover:bg-slate-900">Create an invoice</Link>
                     </div>
                 </header>
 
