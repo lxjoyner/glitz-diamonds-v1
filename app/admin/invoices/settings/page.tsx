@@ -69,7 +69,7 @@ export default function InvoiceSettingsPage() {
 
     return (
         <main className="min-h-screen bg-[#f7f9fc] px-4 py-8 text-slate-950 sm:px-8">
-            <div className="mx-auto max-w-4xl">
+            <div className="mx-auto max-w-[1500px]">
                 <header className="mb-6 flex items-center justify-between gap-4 px-4 sm:px-6"><div><h1 className="text-4xl font-bold text-white">Invoice settings</h1><p className="mt-1 text-sm text-white">Business details and branding shown on Glitz Of Diamonds invoices.</p></div><Link href="/admin/invoices" className="font-semibold text-white">Back to invoices</Link></header>
                 <form onSubmit={save} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
                     <div className="mb-8 flex flex-wrap items-center gap-5 rounded-xl bg-slate-50 p-5">
