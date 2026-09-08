@@ -314,7 +314,7 @@ export default function Header() {
                         {!loadingAuth && !adminUser && (
                             <Link
                                 href="/admin/login"
-                                className="btn btn-primary w-fit"
+                                className="nav-link"
                                 onClick={() => setOpen(false)}
                             >
                                 Login
@@ -325,7 +325,7 @@ export default function Header() {
                             <button
                                 type="button"
                                 onClick={handleLogout}
-                                className="rounded-lg bg-red-800 text-white px-4 py-2 hover:bg-red-600 transition"
+                                className="nav-link text-left"
                             >
                                 Logout
                             </button>
