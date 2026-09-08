@@ -118,363 +118,148 @@ export async function sendAdminPasswordResetEmail(params: {
 }) {
     if (!hasSmtpConfig()) {
         const missingSmtpKeys = getMissingSmtpConfigKeys();
-        console.warn(
-            `SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping admin password-reset email dispatch.`
-        );
-        writeEmailLog({
-            channel: "admin-password-reset",
-            status: "skipped",
-            to: params.toEmail,
-            reason: "missing_smtp_config",
-            details: { missingEnv: missingSmtpKeys },
-        });
+        console.warn(`SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping admin password-reset email dispatch.`);
+        writeEmailLog({ channel: "admin-password-reset", status: "skipped", to: params.toEmail, reason: "missing_smtp_config", details: { missingEnv: missingSmtpKeys } });
         return { sent: false as const, reason: "missing_smtp_config" as const };
     }
-
     const subject = "Reset your Glitz admin password";
-
-    writeEmailLog({
-        channel: "admin-password-reset",
-        status: "attempt",
-        to: params.toEmail,
-        subject,
-    });
-
+    writeEmailLog({ channel: "admin-password-reset", status: "attempt", to: params.toEmail, subject });
     try {
         const transporter = getSmtpTransport();
-
         await transporter.sendMail({
-            from: getFromEmailAddress(),
-            to: params.toEmail,
-            subject,
+            from: getFromEmailAddress(), to: params.toEmail, subject,
             text: `Hi ${params.username},\n\nYour admin password has reached the 60-day rotation window. Reset it using this link:\n${params.resetUrl}\n\nIf you did not request this, contact your system administrator immediately.`,
             html: `<p>Hi ${params.username},</p><p>Your admin password has reached the 60-day rotation window.</p><p>Reset it using this link:</p><p><a href="${params.resetUrl}">${params.resetUrl}</a></p><p>If you did not request this, contact your system administrator immediately.</p>`,
         });
-
-        writeEmailLog({
-            channel: "admin-password-reset",
-            status: "success",
-            to: params.toEmail,
-            subject,
-        });
+        writeEmailLog({ channel: "admin-password-reset", status: "success", to: params.toEmail, subject });
         return { sent: true as const };
     } catch (error) {
-        writeEmailLog({
-            channel: "admin-password-reset",
-            status: "error",
-            to: params.toEmail,
-            subject,
-            reason: error instanceof Error ? error.message : "unknown_error",
-        });
+        writeEmailLog({ channel: "admin-password-reset", status: "error", to: params.toEmail, subject, reason: error instanceof Error ? error.message : "unknown_error" });
         throw error;
     }
 }
 
-export async function sendAdminTemporaryPasswordEmail(params: {
-    toEmail: string;
-    username: string;
-    temporaryPassword: string;
-}) {
+export async function sendAdminTemporaryPasswordEmail(params: { toEmail: string; username: string; temporaryPassword: string; }) {
     if (!hasSmtpConfig()) {
         const missingSmtpKeys = getMissingSmtpConfigKeys();
-        console.warn(
-            `SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping admin temporary-password email dispatch.`
-        );
-        writeEmailLog({
-            channel: "admin-temporary-password",
-            status: "skipped",
-            to: params.toEmail,
-            reason: "missing_smtp_config",
-            details: { missingEnv: missingSmtpKeys },
-        });
+        console.warn(`SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping admin temporary-password email dispatch.`);
+        writeEmailLog({ channel: "admin-temporary-password", status: "skipped", to: params.toEmail, reason: "missing_smtp_config", details: { missingEnv: missingSmtpKeys } });
         return { sent: false as const, reason: "missing_smtp_config" as const };
     }
-
     const subject = "Your Glitz temporary password";
-
-    writeEmailLog({
-        channel: "admin-temporary-password",
-        status: "attempt",
-        to: params.toEmail,
-        subject,
-    });
-
+    writeEmailLog({ channel: "admin-temporary-password", status: "attempt", to: params.toEmail, subject });
     try {
         const transporter = getSmtpTransport();
-
         await transporter.sendMail({
-            from: getFromEmailAddress(),
-            to: params.toEmail,
-            subject,
+            from: getFromEmailAddress(), to: params.toEmail, subject,
             text: `Hi ${params.username},\n\nA temporary password was requested for your account.\n\nTemporary password: ${params.temporaryPassword}\n\nSign in with this temporary password, then immediately use Change Password to set a new one.`,
             html: `<p>Hi ${params.username},</p><p>A temporary password was requested for your account.</p><p><strong>Temporary password:</strong> ${params.temporaryPassword}</p><p>Sign in with this temporary password, then immediately use <strong>Change Password</strong> to set a new one.</p>`,
         });
-
-        writeEmailLog({
-            channel: "admin-temporary-password",
-            status: "success",
-            to: params.toEmail,
-            subject,
-        });
-
+        writeEmailLog({ channel: "admin-temporary-password", status: "success", to: params.toEmail, subject });
         return { sent: true as const };
     } catch (error) {
-        writeEmailLog({
-            channel: "admin-temporary-password",
-            status: "error",
-            to: params.toEmail,
-            subject,
-            reason: error instanceof Error ? error.message : "unknown_error",
-        });
+        writeEmailLog({ channel: "admin-temporary-password", status: "error", to: params.toEmail, subject, reason: error instanceof Error ? error.message : "unknown_error" });
         throw error;
     }
 }
 
-export async function sendUsernameReminderEmail(params: {
-    toEmail: string;
-    username: string;
-}) {
+export async function sendUsernameReminderEmail(params: { toEmail: string; username: string; }) {
     if (!hasSmtpConfig()) {
         const missingSmtpKeys = getMissingSmtpConfigKeys();
-        console.warn(
-            `SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping username reminder email dispatch.`
-        );
-        writeEmailLog({
-            channel: "username-reminder",
-            status: "skipped",
-            to: params.toEmail,
-            reason: "missing_smtp_config",
-            details: { missingEnv: missingSmtpKeys },
-        });
+        console.warn(`SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping username reminder email dispatch.`);
+        writeEmailLog({ channel: "username-reminder", status: "skipped", to: params.toEmail, reason: "missing_smtp_config", details: { missingEnv: missingSmtpKeys } });
         return { sent: false as const, reason: "missing_smtp_config" as const };
     }
-
     const subject = "Your Glitz username reminder";
-
-    writeEmailLog({
-        channel: "username-reminder",
-        status: "attempt",
-        to: params.toEmail,
-        subject,
-    });
-
+    writeEmailLog({ channel: "username-reminder", status: "attempt", to: params.toEmail, subject });
     try {
         const transporter = getSmtpTransport();
-
         await transporter.sendMail({
-            from: getFromEmailAddress(),
-            to: params.toEmail,
-            subject,
+            from: getFromEmailAddress(), to: params.toEmail, subject,
             text: `A request was made to recover your username.\n\nYour username is: ${params.username}\n\nIf you did not request this, you can ignore this email.`,
             html: `<p>A request was made to recover your username.</p><p><strong>Your username is: ${params.username}</strong></p><p>If you did not request this, you can ignore this email.</p>`,
         });
-
-        writeEmailLog({
-            channel: "username-reminder",
-            status: "success",
-            to: params.toEmail,
-            subject,
-        });
-
+        writeEmailLog({ channel: "username-reminder", status: "success", to: params.toEmail, subject });
         return { sent: true as const };
     } catch (error) {
-        writeEmailLog({
-            channel: "username-reminder",
-            status: "error",
-            to: params.toEmail,
-            subject,
-            reason: error instanceof Error ? error.message : "unknown_error",
-        });
+        writeEmailLog({ channel: "username-reminder", status: "error", to: params.toEmail, subject, reason: error instanceof Error ? error.message : "unknown_error" });
         throw error;
     }
 }
 
-export async function sendAdminLoginVerificationCodeEmail(params: {
-    toEmail: string;
-    username: string;
-    verificationCode: string;
-}) {
+export async function sendAdminLoginVerificationCodeEmail(params: { toEmail: string; username: string; verificationCode: string; }) {
     if (!hasSmtpConfig()) {
         const missingSmtpKeys = getMissingSmtpConfigKeys();
-        console.warn(
-            `SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping login verification code email dispatch.`
-        );
-        writeEmailLog({
-            channel: "admin-login-2fa",
-            status: "skipped",
-            to: params.toEmail,
-            reason: "missing_smtp_config",
-            details: { missingEnv: missingSmtpKeys },
-        });
+        console.warn(`SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping login verification code email dispatch.`);
+        writeEmailLog({ channel: "admin-login-2fa", status: "skipped", to: params.toEmail, reason: "missing_smtp_config", details: { missingEnv: missingSmtpKeys } });
         return { sent: false as const, reason: "missing_smtp_config" as const };
     }
-
     const subject = "Your Glitz login verification code";
-
-    writeEmailLog({
-        channel: "admin-login-2fa",
-        status: "attempt",
-        to: params.toEmail,
-        subject,
-    });
-
+    writeEmailLog({ channel: "admin-login-2fa", status: "attempt", to: params.toEmail, subject });
     try {
         const transporter = getSmtpTransport();
-
         await transporter.sendMail({
-            from: getFromEmailAddress(),
-            to: params.toEmail,
-            subject,
+            from: getFromEmailAddress(), to: params.toEmail, subject,
             text: `Hi ${params.username},\n\nYour verification code is: ${params.verificationCode}\n\nThis code expires in 10 minutes. If you did not try to sign in, ignore this email.`,
-            html: `<p>Hi ${params.username},</p><p>Your verification code is:</p><p><strong style="font-size: 22px; letter-spacing: 4px;">${params.verificationCode}</strong></p><p>This code expires in 10 minutes. If you did not try to sign in, ignore this email.</p>`,
+            html: `<p>Hi ${params.username},</p><p>Your verification code is:</p><p><strong style="font-size:22px;letter-spacing:4px;">${params.verificationCode}</strong></p><p>This code expires in 10 minutes. If you did not try to sign in, ignore this email.</p>`,
         });
-
-        writeEmailLog({
-            channel: "admin-login-2fa",
-            status: "success",
-            to: params.toEmail,
-            subject,
-        });
+        writeEmailLog({ channel: "admin-login-2fa", status: "success", to: params.toEmail, subject });
         return { sent: true as const };
     } catch (error) {
-        writeEmailLog({
-            channel: "admin-login-2fa",
-            status: "error",
-            to: params.toEmail,
-            subject,
-            reason: error instanceof Error ? error.message : "unknown_error",
-        });
+        writeEmailLog({ channel: "admin-login-2fa", status: "error", to: params.toEmail, subject, reason: error instanceof Error ? error.message : "unknown_error" });
         throw error;
     }
 }
 
-export async function sendMemberRegistrationNotification(params: {
-    toEmails: string[];
-    fullName: string;
-    username: string;
-    email: string;
-    address: string;
-    tshirtSize: string;
-    favoriteColor: string;
-    jacketSize: string;
-    gender: string;
-    birthday: string;
-}) {
+export async function sendMemberRegistrationNotification(params: { toEmails: string[]; fullName: string; username: string; email: string; address: string; tshirtSize: string; favoriteColor: string; jacketSize: string; gender: string; birthday: string; }) {
     if (!hasSmtpConfig()) {
         const missingSmtpKeys = getMissingSmtpConfigKeys();
         console.warn(`SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping member registration email dispatch.`);
-        writeEmailLog({
-            channel: "member-registration-notification",
-            status: "skipped",
-            to: params.toEmails,
-            reason: "missing_smtp_config",
-            details: { missingEnv: missingSmtpKeys },
-        });
+        writeEmailLog({ channel: "member-registration-notification", status: "skipped", to: params.toEmails, reason: "missing_smtp_config", details: { missingEnv: missingSmtpKeys } });
         return { sent: false as const, reason: "missing_smtp_config" as const };
     }
-
     if (!params.toEmails.length) {
-        writeEmailLog({
-            channel: "member-registration-notification",
-            status: "skipped",
-            reason: "missing_admin_email",
-        });
+        writeEmailLog({ channel: "member-registration-notification", status: "skipped", reason: "missing_admin_email" });
         return { sent: false as const, reason: "missing_admin_email" as const };
     }
-
     const subject = "New member registration submitted";
     const to = params.toEmails.join(", ");
-
-    writeEmailLog({
-        channel: "member-registration-notification",
-        status: "attempt",
-        to: params.toEmails,
-        subject,
-    });
-
+    writeEmailLog({ channel: "member-registration-notification", status: "attempt", to: params.toEmails, subject });
     try {
         const transporter = getSmtpTransport();
-
         await transporter.sendMail({
-            from: getFromEmailAddress(),
-            to,
-            subject,
+            from: getFromEmailAddress(), to, subject,
             text: `A new user registered as Member.\n\nName: ${params.fullName}\nUsername: ${params.username}\nEmail: ${params.email}\nAddress: ${params.address}\nT-Shirt Size: ${params.tshirtSize}\nFavorite Color: ${params.favoriteColor}\nJacket Size: ${params.jacketSize}\nGender: ${params.gender}\nBirthday (MMDD): ${params.birthday}`,
             html: `<p>A new user registered as <strong>Member</strong>.</p><ul><li><strong>Name:</strong> ${params.fullName}</li><li><strong>Username:</strong> ${params.username}</li><li><strong>Email:</strong> ${params.email}</li><li><strong>Address:</strong> ${params.address}</li><li><strong>T-Shirt Size:</strong> ${params.tshirtSize}</li><li><strong>Favorite Color:</strong> ${params.favoriteColor}</li><li><strong>Jacket Size:</strong> ${params.jacketSize}</li><li><strong>Gender:</strong> ${params.gender}</li><li><strong>Birthday (MMDD):</strong> ${params.birthday}</li></ul>`,
         });
-
-        writeEmailLog({
-            channel: "member-registration-notification",
-            status: "success",
-            to: params.toEmails,
-            subject,
-        });
-
+        writeEmailLog({ channel: "member-registration-notification", status: "success", to: params.toEmails, subject });
         return { sent: true as const };
     } catch (error) {
-        writeEmailLog({
-            channel: "member-registration-notification",
-            status: "error",
-            to: params.toEmails,
-            subject,
-            reason: error instanceof Error ? error.message : "unknown_error",
-        });
+        writeEmailLog({ channel: "member-registration-notification", status: "error", to: params.toEmails, subject, reason: error instanceof Error ? error.message : "unknown_error" });
         throw error;
     }
 }
 
-export async function sendMemberRegistrationConfirmation(params: {
-    toEmail: string;
-    fullName: string;
-}) {
+export async function sendMemberRegistrationConfirmation(params: { toEmail: string; fullName: string; }) {
     if (!hasSmtpConfig()) {
         const missingSmtpKeys = getMissingSmtpConfigKeys();
         console.warn(`SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping member registration confirmation email.`);
-        writeEmailLog({
-            channel: "member-registration-confirmation",
-            status: "skipped",
-            to: params.toEmail,
-            reason: "missing_smtp_config",
-            details: { missingEnv: missingSmtpKeys },
-        });
+        writeEmailLog({ channel: "member-registration-confirmation", status: "skipped", to: params.toEmail, reason: "missing_smtp_config", details: { missingEnv: missingSmtpKeys } });
         return { sent: false as const, reason: "missing_smtp_config" as const };
     }
-
     const subject = "Your Glitz registration is complete";
-
-    writeEmailLog({
-        channel: "member-registration-confirmation",
-        status: "attempt",
-        to: params.toEmail,
-        subject,
-    });
-
+    writeEmailLog({ channel: "member-registration-confirmation", status: "attempt", to: params.toEmail, subject });
     try {
         const transporter = getSmtpTransport();
-
         await transporter.sendMail({
-            from: getFromEmailAddress(),
-            to: params.toEmail,
-            subject,
+            from: getFromEmailAddress(), to: params.toEmail, subject,
             text: `Hi ${params.fullName},\n\nThank you for registering with Glitz of Diamonds. Your registration has been completed successfully and your member account is now active.\n\nIf you have any questions, please reply to this email.\n\n- Glitz of Diamonds`,
             html: `<p>Hi ${params.fullName},</p><p>Thank you for registering with <strong>Glitz of Diamonds</strong>. Your registration has been completed successfully and your member account is now active.</p><p>If you have any questions, please reply to this email.</p><p>- Glitz of Diamonds</p>`,
         });
-
-        writeEmailLog({
-            channel: "member-registration-confirmation",
-            status: "success",
-            to: params.toEmail,
-            subject,
-        });
+        writeEmailLog({ channel: "member-registration-confirmation", status: "success", to: params.toEmail, subject });
         return { sent: true as const };
     } catch (error) {
-        writeEmailLog({
-            channel: "member-registration-confirmation",
-            status: "error",
-            to: params.toEmail,
-            subject,
-            reason: error instanceof Error ? error.message : "unknown_error",
-        });
+        writeEmailLog({ channel: "member-registration-confirmation", status: "error", to: params.toEmail, subject, reason: error instanceof Error ? error.message : "unknown_error" });
         throw error;
     }
 }
@@ -484,57 +269,60 @@ export async function sendMemberInviteEmail(params: {
     firstName: string;
     invitedBy: string;
     inviteLink: string;
+    trackingPixelUrl?: string;
 }) {
     if (!hasSmtpConfig()) {
         const missingSmtpKeys = getMissingSmtpConfigKeys();
         console.warn(`SMTP config is incomplete (${missingSmtpKeys.join(", ")}). Skipping member invite email dispatch.`);
-        writeEmailLog({
-            channel: "member-invite",
-            status: "skipped",
-            to: params.toEmail,
-            reason: "missing_smtp_config",
-            details: { missingEnv: missingSmtpKeys },
-        });
+        writeEmailLog({ channel: "member-invite", status: "skipped", to: params.toEmail, reason: "missing_smtp_config", details: { missingEnv: missingSmtpKeys } });
         return { sent: false as const, reason: "missing_smtp_config" as const };
     }
-
     const subject = "Your Glitz of Diamonds member invite";
-
-    writeEmailLog({
-        channel: "member-invite",
-        status: "attempt",
-        to: params.toEmail,
-        subject,
-    });
-
+    writeEmailLog({ channel: "member-invite", status: "attempt", to: params.toEmail, subject });
     try {
         const transporter = getSmtpTransport();
-
+        const trackingPixel = params.trackingPixelUrl
+            ? `<img src="${params.trackingPixelUrl}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;opacity:0" />`
+            : "";
         await transporter.sendMail({
             from: getFromEmailAddress(),
             to: params.toEmail,
             subject,
             text: `Hi ${params.firstName},\n\n${params.invitedBy} invited you to register as a member at Glitz of Diamonds.\n\nUse this one-time registration link:\n${params.inviteLink}\n\nThis link becomes inactive after registration is submitted.`,
-            html: `<p>Hi ${params.firstName},</p><p><strong>${params.invitedBy}</strong> invited you to register as a member at Glitz of Diamonds.</p><p>Use this one-time registration link:</p><p><a href="${params.inviteLink}">${params.inviteLink}</a></p><p>This link becomes inactive after registration is submitted.</p>`,
+            html: `<p>Hi ${params.firstName},</p><p><strong>${params.invitedBy}</strong> invited you to register as a member at Glitz of Diamonds.</p><p>Use this one-time registration link:</p><p><a href="${params.inviteLink}">${params.inviteLink}</a></p><p>This link becomes inactive after registration is submitted.</p>${trackingPixel}`,
         });
-
-        writeEmailLog({
-            channel: "member-invite",
-            status: "success",
-            to: params.toEmail,
-            subject,
-        });
-
+        writeEmailLog({ channel: "member-invite", status: "success", to: params.toEmail, subject });
         return { sent: true as const };
     } catch (error) {
-        writeEmailLog({
-            channel: "member-invite",
-            status: "error",
+        writeEmailLog({ channel: "member-invite", status: "error", to: params.toEmail, subject, reason: error instanceof Error ? error.message : "unknown_error" });
+        return { sent: false as const, reason: "send_failed" as const };
+    }
+}
+
+export async function sendMemberInviteAdminCopyEmail(params: {
+    toEmail: string;
+    invitedBy: string;
+    inviteeName: string;
+    inviteeEmail: string;
+    inviteePhone: string;
+    inviteLink: string;
+    inviteDelivered: boolean;
+}) {
+    if (!hasSmtpConfig()) return { sent: false as const, reason: "missing_smtp_config" as const };
+    const subject = `Copy of member invite sent to ${params.inviteeName}`;
+    const deliveryText = params.inviteDelivered ? "The invite email was sent successfully." : "The invite email could not be sent automatically.";
+    try {
+        const transporter = getSmtpTransport();
+        await transporter.sendMail({
+            from: getFromEmailAddress(),
             to: params.toEmail,
             subject,
-            reason: error instanceof Error ? error.message : "unknown_error",
+            text: `Hi ${params.invitedBy},\n\n${deliveryText}\n\nInvitee: ${params.inviteeName}\nEmail: ${params.inviteeEmail}\nPhone: ${params.inviteePhone}\n\nThe invitee was sent this registration link:\n${params.inviteLink}`,
+            html: `<p>Hi ${params.invitedBy},</p><p>${deliveryText}</p><p><strong>Invitee:</strong> ${params.inviteeName}<br/><strong>Email:</strong> ${params.inviteeEmail}<br/><strong>Phone:</strong> ${params.inviteePhone}</p><p>The invitee was sent this registration link:</p><p><a href="${params.inviteLink}">${params.inviteLink}</a></p>`,
         });
-
+        return { sent: true as const };
+    } catch (error) {
+        console.error("Failed to send member invite admin copy email:", error);
         return { sent: false as const, reason: "send_failed" as const };
     }
 }
