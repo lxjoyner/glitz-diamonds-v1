@@ -6,6 +6,7 @@ import React from "react";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
 import AdminIdleLogout from "@/components/AdminIdleLogout";
 import BrowserClass from "@/components/BrowserClass";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 export const metadata: Metadata = {
     title: "Glitz Of Diamonds",
@@ -20,7 +21,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AnalyticsTracker />
         <AdminIdleLogout />
         <Header />
-        <main>{children}</main>
+        <main>
+            <Breadcrumbs />
+            {children}
+        </main>
         <Footer />
         </body>
         </html>
