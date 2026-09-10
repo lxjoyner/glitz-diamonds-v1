@@ -99,7 +99,7 @@ export default function RecurringInvoicesPage() {
 
                     {error && <p className="mb-4 rounded-lg bg-red-50 p-3 text-red-700">{error}</p>}
                     {loading ? <p className="py-12 text-center text-slate-500">Loading recurring invoices...</p> : (
-                        <div className="overflow-x-auto">
+                        <div className="overflow-x-auto overflow-y-visible pb-56">
                             <table className="w-full min-w-[1100px] border-collapse text-sm">
                                 <thead>
                                     <tr className="border-b-2 border-slate-200 text-left">
@@ -124,7 +124,7 @@ export default function RecurringInvoicesPage() {
                                             <td className="relative px-3 py-4 text-right">
                                                 <button onClick={() => setOpenMenuId(openMenuId === row.id ? null : row.id)} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-blue-600 text-blue-700 hover:bg-blue-50" aria-label={`Actions for ${row.member_name || "recurring invoice"}`}>⌄</button>
                                                 {openMenuId === row.id && (
-                                                    <div className="absolute right-3 z-20 mt-2 w-52 rounded-xl border border-slate-200 bg-white py-2 text-left shadow-lg">
+                                                    <div className="absolute right-3 z-50 mt-2 w-52 rounded-xl border border-slate-200 bg-white py-2 text-left shadow-xl">
                                                         <Link href={`/admin/invoices/recurring/${row.id}`} className="block px-4 py-2 hover:bg-slate-50">View</Link>
                                                         <Link href={`/admin/invoices/recurring/${row.id}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit</Link>
                                                         {row.status !== "ended" && <button onClick={() => endRecurring(row)} className="block w-full px-4 py-2 text-left text-red-700 hover:bg-red-50">End</button>}
