@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type RecurringInvoice = {
@@ -28,8 +28,11 @@ export default function RecurringInvoicesPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [memberFilter, setMemberFilter] = useState("all");
+    const [customerSearch, setCustomerSearch] = useState("");
+    const [customerMenuOpen, setCustomerMenuOpen] = useState(false);
     const [tab, setTab] = useState<"active" | "draft" | "all">("active");
     const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+    const customerMenuRef = useRef<HTMLDivElement>(null);
 
     async function load() {
         setError("");
@@ -52,7 +55,23 @@ export default function RecurringInvoicesPage() {
 
     useEffect(() => { load(); }, []);
 
+    useEffect(() => {
+        function closeCustomerMenu(event: MouseEvent) {
+            if (customerMenuRef.current && !customerMenuRef.current.contains(event.target as Node)) {
+                setCustomerMenuOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", closeCustomerMenu);
+        return () => document.removeEventListener("mousedown", closeCustomerMenu);
+    }, []);
+
     const members = useMemo(() => Array.from(new Map(rows.map((row) => [row.member_id, row.member_name])).entries()), [rows]);
+    const selectedMemberName = memberFilter === "all" ? "All customers" : (members.find(([id]) => String(id) === memberFilter)?.[1] || `Member #${memberFilter}`);
+    const filteredMembers = useMemo(() => {
+        const query = customerSearch.trim().toLowerCase();
+        if (!query) return members;
+        return members.filter(([id, name]) => (name || `Member #${id}`).toLowerCase().includes(query));
+    }, [members, customerSearch]);
     const activeCount = rows.filter((row) => row.status === "active").length;
     const draftCount = rows.filter((row) => row.status === "draft").length;
 
@@ -80,11 +99,53 @@ export default function RecurringInvoicesPage() {
                 </header>
 
                 <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="mb-8 max-w-sm">
-                        <select value={memberFilter} onChange={(e) => setMemberFilter(e.target.value)} className="w-full rounded-xl border border-slate-300 px-4 py-3 italic text-slate-600">
-                            <option value="all">All customers</option>
-                            {members.map(([id, name]) => <option key={id} value={id}>{name || `Member #${id}`}</option>)}
-                        </select>
+                    <div ref={customerMenuRef} className="relative mb-8 max-w-sm">
+                        <button
+                            type="button"
+                            onClick={() => setCustomerMenuOpen((current) => !current)}
+                            className="flex w-full items-center justify-between rounded-xl border border-slate-300 bg-white px-4 py-3 text-left italic text-slate-600"
+                            aria-haspopup="listbox"
+                            aria-expanded={customerMenuOpen}
+                        >
+                            <span>{selectedMemberName}</span>
+                            <span aria-hidden="true" className="text-slate-500">⌄</span>
+                        </button>
+                        {customerMenuOpen && (
+                            <div className="absolute left-0 right-0 z-40 mt-1 overflow-hidden rounded-xl border border-blue-300 bg-white shadow-xl">
+                                <div className="border-b border-slate-200 p-2">
+                                    <div className="flex items-center gap-2 rounded-lg border border-blue-200 px-3 py-2">
+                                        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-slate-500" strokeWidth="1.8"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>
+                                        <input
+                                            autoFocus
+                                            value={customerSearch}
+                                            onChange={(event) => setCustomerSearch(event.target.value)}
+                                            placeholder="Type a customer name"
+                                            className="min-w-0 flex-1 bg-transparent text-sm text-slate-900 outline-none placeholder:italic placeholder:text-slate-500"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="max-h-80 overflow-y-auto py-1" role="listbox">
+                                    <button
+                                        type="button"
+                                        onClick={() => { setMemberFilter("all"); setCustomerMenuOpen(false); setCustomerSearch(""); }}
+                                        className="block w-full px-4 py-2.5 text-left font-medium hover:bg-blue-50"
+                                    >
+                                        All customers
+                                    </button>
+                                    {filteredMembers.map(([id, name]) => (
+                                        <button
+                                            key={id}
+                                            type="button"
+                                            onClick={() => { setMemberFilter(String(id)); setCustomerMenuOpen(false); setCustomerSearch(""); }}
+                                            className="block w-full px-4 py-2.5 text-left hover:bg-blue-50"
+                                        >
+                                            {name || `Member #${id}`}
+                                        </button>
+                                    ))}
+                                    {filteredMembers.length === 0 && <p className="px-4 py-4 text-sm text-slate-500">No customers match that name.</p>}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="mb-8 flex flex-wrap justify-center gap-1 border-b border-slate-200 pb-5">
