@@ -14,9 +14,20 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
     return (
         <main className="min-h-screen bg-slate-100 px-4 py-10 text-slate-950 sm:px-8">
             <div className="mx-auto max-w-4xl rounded-2xl bg-white p-6 shadow-lg sm:p-10">
-                <div className="flex flex-wrap items-start justify-between gap-6 border-b border-slate-200 pb-6">
-                    <div>
-                        {invoice.has_logo ? <img src="/api/invoice-logo" alt="Glitz Of Diamonds logo" className="mb-4 h-20 max-w-64 object-contain" /> : null}
+                <div className="border-b border-slate-200 pb-6">
+                    <div className="flex flex-wrap items-start justify-between gap-6">
+                        <div>
+                            {invoice.has_logo ? <img src="/api/invoice-logo" alt="Glitz Of Diamonds logo" className="h-20 max-w-64 object-contain" /> : null}
+                        </div>
+                        <div className="text-right">
+                            <p className="text-sm uppercase tracking-wide text-slate-500">Invoice</p>
+                            <p className="mt-1 text-2xl font-semibold">{invoice.invoice_number}</p>
+                            <p className="mt-3 text-sm text-slate-600">Invoice date: {new Date(invoice.invoice_date).toLocaleDateString()}</p>
+                            <p className="text-sm text-slate-600">Due date: {new Date(invoice.due_date).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+
+                    <div className="mt-5">
                         <h1 className="text-3xl font-bold">{invoice.business_name || "Glitz Of Diamonds"}</h1>
                         {invoice.business_address ? <p className="mt-2 whitespace-pre-line text-sm text-slate-600">{invoice.business_address}</p> : null}
                         {invoice.business_phone ? <p className="text-sm text-slate-600">{invoice.business_phone}</p> : null}
@@ -29,12 +40,6 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
                                 Thank you for your understanding and for being a valued member of the Glitz Of Diamonds Women’s Group.
                             </p>
                         </div>
-                    </div>
-                    <div className="text-right">
-                        <p className="text-sm uppercase tracking-wide text-slate-500">Invoice</p>
-                        <p className="mt-1 text-2xl font-semibold">{invoice.invoice_number}</p>
-                        <p className="mt-3 text-sm text-slate-600">Invoice date: {new Date(invoice.invoice_date).toLocaleDateString()}</p>
-                        <p className="text-sm text-slate-600">Due date: {new Date(invoice.due_date).toLocaleDateString()}</p>
                     </div>
                 </div>
 
