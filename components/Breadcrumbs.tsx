@@ -42,6 +42,10 @@ function getBreadcrumbHref(segments: string[], index: number) {
         return "/admin/messages";
     }
 
+    if (index === 0 && segment === "invoice") {
+        return "/admin/invoices";
+    }
+
     return `/${segments.slice(0, index + 1).join("/")}`;
 }
 
