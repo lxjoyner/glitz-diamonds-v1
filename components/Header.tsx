@@ -131,7 +131,6 @@ export default function Header() {
                 </div>
             </header>
 
-            {/* Overlay */}
             {open && (
                 <div
                     className="fixed inset-0 z-40 bg-black/50"
@@ -139,7 +138,6 @@ export default function Header() {
                 />
             )}
 
-            {/* Left slide-out drawer */}
             <div
                 className={`fixed top-0 left-0 z-50 h-full w-72 max-w-[85vw] transform bg-black/95 border-r border-white/10 shadow-2xl transition-transform duration-300 ${
                     open ? "translate-x-0" : "-translate-x-full"
@@ -175,96 +173,28 @@ export default function Header() {
                 </div>
 
                 <nav className="flex flex-col gap-2 px-4 py-4">
-                    <Link
-                        href="/"
-                        className="nav-link"
-                        onClick={() => setOpen(false)}
-                    >
-                        Home
-                    </Link>
-
-                    <Link
-                        href="/about"
-                        className="nav-link"
-                        onClick={() => setOpen(false)}
-                    >
-                        About Us
-                    </Link>
-
-                    <Link
-                        href="/contact"
-                        className="nav-link"
-                        onClick={() => setOpen(false)}
-                    >
-                        Contact
-                    </Link>
-
-                    <Link
-                        href="/donate"
-                        className="nav-link"
-                        onClick={() => setOpen(false)}
-                    >
-                        Donate
-                    </Link>
+                    <Link href="/" className="nav-link" onClick={() => setOpen(false)}>Home</Link>
+                    <Link href="/about" className="nav-link" onClick={() => setOpen(false)}>About Us</Link>
+                    <Link href="/contact" className="nav-link" onClick={() => setOpen(false)}>Contact</Link>
+                    <Link href="/donate" className="nav-link" onClick={() => setOpen(false)}>Donate</Link>
 
                     {!loadingAuth && adminUser?.role === "admin" && (
-                        <Link
-                            href="/admin/membership"
-                            className="nav-link"
-                            onClick={() => setOpen(false)}
-                        >
-                            Registered Users Details
-                        </Link>
+                        <Link href="/admin/membership" className="nav-link" onClick={() => setOpen(false)}>Registered Users Details</Link>
                     )}
-
                     {!loadingAuth && adminUser?.role === "admin" && (
-                        <Link
-                            href="/admin/member-invites"
-                            className="nav-link"
-                            onClick={() => setOpen(false)}
-                        >
-                            Member Invites
-                        </Link>
+                        <Link href="/admin/member-invites" className="nav-link" onClick={() => setOpen(false)}>Member Invites</Link>
                     )}
-
                     {!loadingAuth && adminUser?.role === "admin" && (
-                        <Link
-                            href="/admin/roles-manager"
-                            className="nav-link"
-                            onClick={() => setOpen(false)}
-                        >
-                            Roles Manager
-                        </Link>
+                        <Link href="/admin/roles-manager" className="nav-link" onClick={() => setOpen(false)}>Roles Manager</Link>
                     )}
-
                     {!loadingAuth && adminUser && (
-                        <Link
-                            href="/admin/messages"
-                            className="nav-link"
-                            onClick={() => setOpen(false)}
-                        >
-                            Dashboard
-                        </Link>
+                        <Link href="/admin/messages" className="nav-link" onClick={() => setOpen(false)}>Dashboard</Link>
                     )}
-
                     {!loadingAuth && adminUser && (
-                        <Link
-                            href="/admin/ideas-activities"
-                            className="nav-link"
-                            onClick={() => setOpen(false)}
-                        >
-                            Ideas & Activities
-                        </Link>
+                        <Link href="/admin/ideas-activities" className="nav-link" onClick={() => setOpen(false)}>Ideas & Activities</Link>
                     )}
-
                     {!loadingAuth && adminUser && (
-                        <Link
-                            href="/calendar"
-                            className="nav-link"
-                            onClick={() => setOpen(false)}
-                        >
-                            Calendar
-                        </Link>
+                        <Link href="/calendar" className="nav-link" onClick={() => setOpen(false)}>Calendar</Link>
                     )}
 
                     {!loadingAuth && (adminUser?.role === "admin" || adminUser?.role === "treasurer") && (
@@ -282,28 +212,11 @@ export default function Header() {
 
                             {invoicingOpen && (
                                 <div id="invoicing-submenu" className="flex flex-col gap-1 border-t border-white/10 px-2 py-2">
-                                    <Link
-                                        href="/admin/invoices"
-                                        className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition"
-                                        onClick={() => setOpen(false)}
-                                    >
-                                        Invoices Dashboard
-                                    </Link>
-                                    <Link
-                                        href="/admin/invoices/new"
-                                        className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition"
-                                        onClick={() => setOpen(false)}
-                                    >
-                                        New Invoice
-                                    </Link>
+                                    <Link href="/admin/invoices" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>Invoices Dashboard</Link>
+                                    <Link href="/admin/invoices/new" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>New Invoice</Link>
+                                    <Link href="/admin/invoices/recurring" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>Recurring Invoices</Link>
                                     {adminUser?.role === "admin" && (
-                                        <Link
-                                            href="/admin/invoices/settings"
-                                            className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition"
-                                            onClick={() => setOpen(false)}
-                                        >
-                                            Invoice Settings
-                                        </Link>
+                                        <Link href="/admin/invoices/settings" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>Invoice Settings</Link>
                                     )}
                                 </div>
                             )}
@@ -312,23 +225,10 @@ export default function Header() {
 
                     <div className="mt-4 border-t border-white/10 pt-4">
                         {!loadingAuth && !adminUser && (
-                            <Link
-                                href="/admin/login"
-                                className="btn btn-primary w-fit"
-                                onClick={() => setOpen(false)}
-                            >
-                                Login
-                            </Link>
+                            <Link href="/admin/login" className="btn btn-primary w-fit" onClick={() => setOpen(false)}>Login</Link>
                         )}
-
                         {!loadingAuth && adminUser && (
-                            <button
-                                type="button"
-                                onClick={handleLogout}
-                                className="rounded-lg bg-red-800 text-white px-4 py-2 hover:bg-red-600 transition"
-                            >
-                                Logout
-                            </button>
+                            <button type="button" onClick={handleLogout} className="rounded-lg bg-red-800 text-white px-4 py-2 hover:bg-red-600 transition">Logout</button>
                         )}
                     </div>
                 </nav>
