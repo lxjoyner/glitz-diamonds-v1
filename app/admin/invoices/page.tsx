@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Invoice = {
@@ -21,6 +21,39 @@ type Invoice = {
 
 const money = (cents: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format((cents || 0) / 100);
 const prettyStatus = (value: string) => value.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
+
+function DateFilter({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    const openPicker = () => {
+        const input = inputRef.current;
+        if (!input) return;
+        if (typeof input.showPicker === "function") input.showPicker();
+        else input.click();
+    };
+
+    return (
+        <div className="relative flex items-center overflow-hidden rounded-xl border border-slate-300 bg-white focus-within:ring-2 focus-within:ring-blue-500">
+            <button type="button" onClick={openPicker} className="flex min-h-[48px] flex-1 items-center px-4 text-left text-sm italic text-slate-500">
+                {value ? new Date(`${value}T00:00:00`).toLocaleDateString("en-US") : label}
+            </button>
+            <button type="button" onClick={openPicker} aria-label={`Open ${label.toLowerCase()} date picker`} className="flex min-h-[48px] w-12 items-center justify-center border-l border-slate-200 bg-slate-100 text-slate-600 hover:bg-slate-200">
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current" strokeWidth="1.8">
+                    <rect x="3" y="5" width="18" height="16" rx="2" />
+                    <path d="M16 3v4M8 3v4M3 10h18" />
+                </svg>
+            </button>
+            <input
+                ref={inputRef}
+                type="date"
+                value={value}
+                onChange={(event) => onChange(event.target.value)}
+                aria-label={`${label} date`}
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            />
+        </div>
+    );
+}
 
 export default function InvoicesPage() {
     const router = useRouter();
@@ -136,14 +169,8 @@ export default function InvoicesPage() {
                     <div className="grid gap-3 lg:grid-cols-5">
                         <select value={memberFilter} onChange={(e) => setMemberFilter(e.target.value)} className="rounded-xl border border-slate-300 px-4 py-3"><option value="all">All members</option>{members.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select>
                         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-xl border border-slate-300 px-4 py-3"><option value="all">All statuses</option><option value="draft">Draft</option><option value="due">Due</option><option value="past_due">Past due</option><option value="partially_paid">Partially paid</option><option value="paid">Paid</option><option value="void">Void</option></select>
-                        <label className="relative block">
-                            <span className={`pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm italic ${fromDate ? "text-transparent" : "text-slate-500"}`}>From</span>
-                            <input aria-label="From date" type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className={`w-full rounded-xl border border-slate-300 px-4 py-3 ${fromDate ? "text-slate-950" : "text-transparent"}`} />
-                        </label>
-                        <label className="relative block">
-                            <span className={`pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm italic ${toDate ? "text-transparent" : "text-slate-500"}`}>To</span>
-                            <input aria-label="To date" type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className={`w-full rounded-xl border border-slate-300 px-4 py-3 ${toDate ? "text-slate-950" : "text-transparent"}`} />
-                        </label>
+                        <DateFilter label="From" value={fromDate} onChange={setFromDate} />
+                        <DateFilter label="To" value={toDate} onChange={setToDate} />
                         <input value={numberFilter} onChange={(e) => setNumberFilter(e.target.value)} placeholder="Enter invoice #" className="rounded-xl border border-slate-300 px-4 py-3" />
                     </div>
 
