@@ -35,6 +35,16 @@ function toLabel(segment: string) {
         .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+function getBreadcrumbHref(segments: string[], index: number) {
+    const segment = segments[index];
+
+    if (index === 0 && segment === "admin") {
+        return "/admin/messages";
+    }
+
+    return `/${segments.slice(0, index + 1).join("/")}`;
+}
+
 export default function Breadcrumbs() {
     const pathname = usePathname();
 
@@ -42,7 +52,7 @@ export default function Breadcrumbs() {
 
     const segments = pathname.split("/").filter(Boolean);
     const crumbs = segments.map((segment, index) => ({
-        href: `/${segments.slice(0, index + 1).join("/")}`,
+        href: getBreadcrumbHref(segments, index),
         label: toLabel(segment),
         isLast: index === segments.length - 1,
     }));
