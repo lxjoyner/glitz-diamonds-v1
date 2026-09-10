@@ -21,6 +21,14 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
                         {invoice.business_address ? <p className="mt-2 whitespace-pre-line text-sm text-slate-600">{invoice.business_address}</p> : null}
                         {invoice.business_phone ? <p className="text-sm text-slate-600">{invoice.business_phone}</p> : null}
                         {invoice.business_email ? <p className="text-sm text-slate-600">{invoice.business_email}</p> : null}
+                        <div className="mt-5 max-w-2xl rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-slate-700">
+                            <p>
+                                Please be advised that if your account becomes three (3) payments past due, your membership will be temporarily deactivated. Membership privileges will be restored once all outstanding payments have been received and your account is brought current.
+                            </p>
+                            <p className="mt-3">
+                                Thank you for your understanding and for being a valued member of the Glitz Of Diamonds Women’s Group.
+                            </p>
+                        </div>
                     </div>
                     <div className="text-right">
                         <p className="text-sm uppercase tracking-wide text-slate-500">Invoice</p>
