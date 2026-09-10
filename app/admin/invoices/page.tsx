@@ -136,8 +136,14 @@ export default function InvoicesPage() {
                     <div className="grid gap-3 lg:grid-cols-5">
                         <select value={memberFilter} onChange={(e) => setMemberFilter(e.target.value)} className="rounded-xl border border-slate-300 px-4 py-3"><option value="all">All members</option>{members.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select>
                         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-xl border border-slate-300 px-4 py-3"><option value="all">All statuses</option><option value="draft">Draft</option><option value="due">Due</option><option value="past_due">Past due</option><option value="partially_paid">Partially paid</option><option value="paid">Paid</option><option value="void">Void</option></select>
-                        <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="rounded-xl border border-slate-300 px-4 py-3" />
-                        <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="rounded-xl border border-slate-300 px-4 py-3" />
+                        <label className="relative block">
+                            <span className={`pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm italic ${fromDate ? "text-transparent" : "text-slate-500"}`}>From</span>
+                            <input aria-label="From date" type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className={`w-full rounded-xl border border-slate-300 px-4 py-3 ${fromDate ? "text-slate-950" : "text-transparent"}`} />
+                        </label>
+                        <label className="relative block">
+                            <span className={`pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm italic ${toDate ? "text-transparent" : "text-slate-500"}`}>To</span>
+                            <input aria-label="To date" type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className={`w-full rounded-xl border border-slate-300 px-4 py-3 ${toDate ? "text-slate-950" : "text-transparent"}`} />
+                        </label>
                         <input value={numberFilter} onChange={(e) => setNumberFilter(e.target.value)} placeholder="Enter invoice #" className="rounded-xl border border-slate-300 px-4 py-3" />
                     </div>
 
