@@ -32,21 +32,20 @@ function toDisplayDate(value: string) {
 function toIsoDate(value: string) {
     const match = value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (!match) return null;
-
     const month = Number(match[1]);
     const day = Number(match[2]);
     const year = Number(match[3]);
     const date = new Date(year, month - 1, day);
-
-    if (
-        date.getFullYear() !== year ||
-        date.getMonth() !== month - 1 ||
-        date.getDate() !== day
-    ) {
-        return null;
-    }
-
+    if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
     return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function daysPastDue(value: string) {
+    const due = new Date(`${String(value).slice(0, 10)}T00:00:00`);
+    const today = new Date();
+    const startToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const diff = Math.floor((startToday.getTime() - due.getTime()) / 86400000);
+    return Math.max(0, diff);
 }
 
 function DateFilter({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
@@ -72,7 +71,6 @@ function DateFilter({ label, value, onChange }: { label: string; value: string; 
             setInvalid(false);
             return;
         }
-
         const parsed = toIsoDate(textValue);
         if (parsed) {
             onChange(parsed);
@@ -85,45 +83,11 @@ function DateFilter({ label, value, onChange }: { label: string; value: string; 
 
     return (
         <div className={`relative flex items-center overflow-hidden rounded-xl border bg-white focus-within:ring-2 focus-within:ring-blue-500 ${invalid ? "border-red-500" : "border-slate-300"}`}>
-            <input
-                type="text"
-                inputMode="numeric"
-                value={textValue}
-                onChange={(event) => {
-                    setTextValue(event.target.value);
-                    setInvalid(false);
-                }}
-                onBlur={commitTypedDate}
-                onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                        event.preventDefault();
-                        commitTypedDate();
-                    }
-                }}
-                placeholder={label}
-                aria-label={`${label} date in MM/DD/YYYY format`}
-                title={invalid ? "Enter a valid date in MM/DD/YYYY format" : "Enter MM/DD/YYYY or use the calendar"}
-                className="min-h-[48px] min-w-0 flex-1 px-4 py-3 text-sm text-slate-950 outline-none placeholder:italic placeholder:text-slate-500"
-            />
+            <input type="text" inputMode="numeric" value={textValue} onChange={(e) => { setTextValue(e.target.value); setInvalid(false); }} onBlur={commitTypedDate} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitTypedDate(); } }} placeholder={label} aria-label={`${label} date in MM/DD/YYYY format`} title={invalid ? "Enter a valid date in MM/DD/YYYY format" : "Enter MM/DD/YYYY or use the calendar"} className="min-h-[48px] min-w-0 flex-1 px-4 py-3 text-sm text-slate-950 outline-none placeholder:italic placeholder:text-slate-500" />
             <button type="button" onClick={openPicker} aria-label={`Open ${label.toLowerCase()} date picker`} className="flex min-h-[48px] w-12 shrink-0 items-center justify-center border-l border-slate-200 bg-slate-100 text-slate-600 hover:bg-slate-200">
-                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current" strokeWidth="1.8">
-                    <rect x="3" y="5" width="18" height="16" rx="2" />
-                    <path d="M16 3v4M8 3v4M3 10h18" />
-                </svg>
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current" strokeWidth="1.8"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" /></svg>
             </button>
-            <input
-                ref={pickerRef}
-                type="date"
-                value={value}
-                onChange={(event) => {
-                    onChange(event.target.value);
-                    setTextValue(toDisplayDate(event.target.value));
-                    setInvalid(false);
-                }}
-                aria-hidden="true"
-                tabIndex={-1}
-                className="pointer-events-none absolute h-px w-px opacity-0"
-            />
+            <input ref={pickerRef} type="date" value={value} onChange={(e) => { onChange(e.target.value); setTextValue(toDisplayDate(e.target.value)); setInvalid(false); }} aria-hidden="true" tabIndex={-1} className="pointer-events-none absolute h-px w-px opacity-0" />
         </div>
     );
 }
@@ -141,6 +105,7 @@ export default function InvoicesPage() {
     const [toDate, setToDate] = useState("");
     const [numberFilter, setNumberFilter] = useState("");
     const [tab, setTab] = useState("unpaid");
+    const [openActionId, setOpenActionId] = useState<number | null>(null);
 
     async function loadInvoices() {
         const res = await fetch("/api/admin/invoices", { cache: "no-store" });
@@ -166,7 +131,7 @@ export default function InvoicesPage() {
         load();
     }, [router]);
 
-    async function sendInvoice(invoice: Invoice) {
+    async function sendInvoice(invoice: Invoice, isReminder = false) {
         setError("");
         setNotice("");
         setSendingId(invoice.id);
@@ -174,7 +139,8 @@ export default function InvoicesPage() {
             const response = await fetch(`/api/admin/invoices/${invoice.id}/send`, { method: "POST" });
             const data = await response.json();
             if (!response.ok) throw new Error(data?.error || "Failed to send invoice.");
-            setNotice(`${invoice.invoice_number} was sent to ${invoice.member_email || invoice.member_name}.`);
+            setNotice(`${isReminder ? "Reminder for" : invoice.sent_at ? "Invoice" : "Invoice"} ${invoice.invoice_number} was sent to ${invoice.member_email || invoice.member_name}.`);
+            setOpenActionId(null);
             await loadInvoices();
         } catch (e) {
             setError(e instanceof Error ? e.message : "Failed to send invoice.");
@@ -219,82 +185,65 @@ export default function InvoicesPage() {
         <main className="min-h-screen bg-[#f7f9fc] px-4 py-8 text-slate-950 sm:px-8">
             <div className="mx-auto max-w-[1500px]">
                 <header className="mb-7 flex flex-wrap items-center justify-between gap-4 px-4 sm:px-6">
-                    <div>
-                        <h1 className="text-4xl font-bold tracking-tight text-white">Invoices</h1>
-                        <p className="mt-1 text-sm text-white">Glitz Of Diamonds invoicing dashboard</p>
-                    </div>
-                    <div className="flex gap-3">
-                        <Link href="/admin/invoices/settings" className="rounded-full border border-blue-600 bg-white px-5 py-3 font-semibold text-blue-700 hover:bg-blue-50">Invoice settings</Link>
-                        <Link href="/admin/invoices/new" className="rounded-full bg-black px-6 py-3 font-semibold text-white shadow-sm hover:bg-slate-900">Create an invoice</Link>
-                    </div>
+                    <div><h1 className="text-4xl font-bold tracking-tight text-white">Invoices</h1><p className="mt-1 text-sm text-white">Glitz Of Diamonds invoicing dashboard</p></div>
+                    <div className="flex gap-3"><Link href="/admin/invoices/settings" className="rounded-full border border-blue-600 bg-white px-5 py-3 font-semibold text-blue-700 hover:bg-blue-50">Invoice settings</Link><Link href="/admin/invoices/new" className="rounded-full bg-black px-6 py-3 font-semibold text-white shadow-sm hover:bg-slate-900">Create an invoice</Link></div>
                 </header>
 
                 <section className="mb-8 grid gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:grid-cols-4">
-                    {[
-                        ["Past due", money(summary.overdue), `${counts.pastDue} invoices`],
-                        ["Due within next 30 days", money(summary.due30), "Open invoices"],
-                        ["Paid this month", money(summary.paidMonth), `${counts.paid} paid total`],
-                        ["Outstanding", money(summary.outstanding), `${counts.unpaid} unpaid invoices`],
-                    ].map(([label, value, sub]) => <div key={label}><p className="text-sm font-semibold text-slate-600">{label}</p><p className="mt-2 text-3xl font-medium">{value}</p><p className="mt-2 text-sm text-slate-400">{sub}</p></div>)}
+                    {[["Past due", money(summary.overdue), `${counts.pastDue} invoices`],["Due within next 30 days", money(summary.due30), "Open invoices"],["Paid this month", money(summary.paidMonth), `${counts.paid} paid total`],["Outstanding", money(summary.outstanding), `${counts.unpaid} unpaid invoices`]].map(([label, value, sub]) => <div key={label}><p className="text-sm font-semibold text-slate-600">{label}</p><p className="mt-2 text-3xl font-medium">{value}</p><p className="mt-2 text-sm text-slate-400">{sub}</p></div>)}
                 </section>
 
                 <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div className="grid gap-3 lg:grid-cols-5">
                         <select value={memberFilter} onChange={(e) => setMemberFilter(e.target.value)} className="rounded-xl border border-slate-300 px-4 py-3"><option value="all">All members</option>{members.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select>
                         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-xl border border-slate-300 px-4 py-3"><option value="all">All statuses</option><option value="draft">Draft</option><option value="due">Due</option><option value="past_due">Past due</option><option value="partially_paid">Partially paid</option><option value="paid">Paid</option><option value="void">Void</option></select>
-                        <DateFilter label="From" value={fromDate} onChange={setFromDate} />
-                        <DateFilter label="To" value={toDate} onChange={setToDate} />
+                        <DateFilter label="From" value={fromDate} onChange={setFromDate} /><DateFilter label="To" value={toDate} onChange={setToDate} />
                         <input value={numberFilter} onChange={(e) => setNumberFilter(e.target.value)} placeholder="Enter invoice #" className="rounded-xl border border-slate-300 px-4 py-3" />
                     </div>
 
                     <div className="my-7 flex flex-wrap justify-center gap-1 border-b border-slate-200 pb-5">
-                        <button onClick={() => setTab("unpaid")} className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold ${tab === "unpaid" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}>
-                            <span>Unpaid</span>
-                            <span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-red-600 px-2 text-sm font-bold leading-none text-white">{counts.unpaid}</span>
-                        </button>
-                        <button onClick={() => setTab("past_due")} className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold ${tab === "past_due" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}>
-                            <span>Past Due</span>
-                            <span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-red-600 px-2 text-sm font-bold leading-none text-white">{counts.pastDue}</span>
-                        </button>
-                        <button onClick={() => setTab("draft")} className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold ${tab === "draft" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}>
-                            <span>Draft</span>
-                            <span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-yellow-400 px-2 text-sm font-bold leading-none text-black">{counts.draft}</span>
-                        </button>
-                        <button onClick={() => setTab("paid")} className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold ${tab === "paid" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}>
-                            <span>Paid</span>
-                            <span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-green-600 px-2 text-sm font-bold leading-none text-white">{counts.paid}</span>
-                        </button>
+                        <button onClick={() => setTab("unpaid")} className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold ${tab === "unpaid" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}><span>Unpaid</span><span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-red-600 px-2 text-sm font-bold leading-none text-white">{counts.unpaid}</span></button>
+                        <button onClick={() => setTab("past_due")} className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold ${tab === "past_due" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}><span>Past Due</span><span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-red-600 px-2 text-sm font-bold leading-none text-white">{counts.pastDue}</span></button>
+                        <button onClick={() => setTab("draft")} className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold ${tab === "draft" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}><span>Draft</span><span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-yellow-400 px-2 text-sm font-bold leading-none text-black">{counts.draft}</span></button>
+                        <button onClick={() => setTab("paid")} className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold ${tab === "paid" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}><span>Paid</span><span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-green-600 px-2 text-sm font-bold leading-none text-white">{counts.paid}</span></button>
                         <button onClick={() => setTab("all")} className={`rounded-xl px-5 py-2.5 font-semibold ${tab === "all" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}>All invoices</button>
                     </div>
 
                     {notice && <p className="mb-4 rounded-lg bg-emerald-50 p-3 text-emerald-700">{notice}</p>}
                     {error && <p className="mb-4 rounded-lg bg-red-50 p-3 text-red-700">{error}</p>}
                     {loading ? <p className="py-12 text-center text-slate-500">Loading invoices...</p> : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full min-w-[1150px] border-collapse text-sm">
+                        <div className="overflow-x-auto overflow-y-visible pb-48">
+                            <table className="w-full min-w-[1220px] border-collapse text-sm">
                                 <thead><tr className="border-b-2 border-slate-200 text-left"><th className="px-3 py-3">Status</th><th className="px-3 py-3">Due</th><th className="px-3 py-3">Date</th><th className="px-3 py-3">Number</th><th className="px-3 py-3">Member</th><th className="px-3 py-3 text-right">Amount</th><th className="px-3 py-3 text-right">Paid</th><th className="px-3 py-3 text-right">Balance</th><th className="px-3 py-3 text-right">Actions</th></tr></thead>
                                 <tbody>{filtered.map((invoice) => {
                                     const balance = Math.max(0, invoice.total_cents - invoice.amount_paid_cents);
                                     const overdue = invoice.display_status === "past_due";
+                                    const overdueDays = overdue ? daysPastDue(invoice.due_date) : 0;
                                     const canSend = !["paid", "void"].includes(invoice.display_status);
                                     const invoiceHref = invoice.public_token ? `/invoice/${invoice.public_token}` : null;
-                                    return <tr
-                                        key={invoice.id}
-                                        onClick={() => {
-                                            if (invoiceHref) router.push(invoiceHref);
-                                        }}
-                                        onKeyDown={(event) => {
-                                            if (!invoiceHref) return;
-                                            if (event.key === "Enter" || event.key === " ") {
-                                                event.preventDefault();
-                                                router.push(invoiceHref);
-                                            }
-                                        }}
-                                        role={invoiceHref ? "link" : undefined}
-                                        tabIndex={invoiceHref ? 0 : undefined}
-                                        aria-label={invoiceHref ? `Open invoice ${invoice.invoice_number}` : undefined}
-                                        className={`border-b border-slate-100 hover:bg-slate-50 ${invoiceHref ? "cursor-pointer focus:bg-slate-50 focus:outline-none" : ""}`}
-                                    ><td className="px-3 py-4"><span className={`rounded-md px-2.5 py-1 text-xs font-bold ${invoice.display_status === "paid" ? "bg-emerald-100 text-emerald-800" : overdue ? "bg-red-100 text-red-700" : invoice.display_status === "draft" ? "bg-slate-200 text-slate-700" : "bg-amber-100 text-amber-800"}`}>{prettyStatus(invoice.display_status)}</span></td><td className={`px-3 py-4 ${overdue ? "font-semibold text-red-600" : ""}`}>{new Date(invoice.due_date).toLocaleDateString()}</td><td className="px-3 py-4">{new Date(invoice.invoice_date).toLocaleDateString()}</td><td className="px-3 py-4 font-semibold text-blue-700">{invoice.invoice_number}</td><td className="px-3 py-4"><div>{invoice.member_name || `Member #${invoice.member_id}`}</div><div className="text-xs text-slate-400">{invoice.member_email || "No email"}</div></td><td className="px-3 py-4 text-right">{money(invoice.total_cents)}</td><td className="px-3 py-4 text-right">{money(invoice.amount_paid_cents)}</td><td className="px-3 py-4 text-right font-semibold">{money(balance)}</td><td className="px-3 py-4 text-right">{canSend ? <button type="button" onClick={(event) => { event.stopPropagation(); sendInvoice(invoice); }} onKeyDown={(event) => event.stopPropagation()} disabled={sendingId === invoice.id || !invoice.member_email} className="font-semibold text-blue-700 disabled:cursor-not-allowed disabled:opacity-40">{sendingId === invoice.id ? "Sending..." : invoice.sent_at ? "Resend" : "Send invoice"}</button> : <span className="text-slate-400">Complete</span>}</td></tr>;
+                                    return <tr key={invoice.id} onClick={() => { if (invoiceHref) router.push(invoiceHref); }} onKeyDown={(event) => { if (!invoiceHref) return; if (event.key === "Enter" || event.key === " ") { event.preventDefault(); router.push(invoiceHref); } }} role={invoiceHref ? "link" : undefined} tabIndex={invoiceHref ? 0 : undefined} aria-label={invoiceHref ? `Open invoice ${invoice.invoice_number}` : undefined} className={`border-b border-slate-100 hover:bg-slate-50 ${invoiceHref ? "cursor-pointer focus:bg-slate-50 focus:outline-none" : ""}`}>
+                                        <td className="px-3 py-4"><span className={`rounded-md px-2.5 py-1 text-xs font-bold ${invoice.display_status === "paid" ? "bg-emerald-100 text-emerald-800" : overdue ? "bg-red-100 text-red-700" : invoice.display_status === "draft" ? "bg-slate-200 text-slate-700" : "bg-amber-100 text-amber-800"}`}>{prettyStatus(invoice.display_status)}</span></td>
+                                        <td className={`px-3 py-4 ${overdue ? "font-semibold text-red-600" : ""}`}>{overdue && overdueDays > 1 ? `${overdueDays} days ago` : new Date(invoice.due_date).toLocaleDateString()}</td>
+                                        <td className="px-3 py-4">{new Date(invoice.invoice_date).toLocaleDateString()}</td>
+                                        <td className="px-3 py-4 font-semibold text-blue-700">{invoice.invoice_number}</td>
+                                        <td className="px-3 py-4"><div>{invoice.member_name || `Member #${invoice.member_id}`}</div><div className="text-xs text-slate-400">{invoice.member_email || "No email"}</div></td>
+                                        <td className="px-3 py-4 text-right">{money(invoice.total_cents)}</td><td className="px-3 py-4 text-right">{money(invoice.amount_paid_cents)}</td><td className="px-3 py-4 text-right font-semibold">{money(balance)}</td>
+                                        <td className="relative px-3 py-4 text-right" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                                            {canSend ? <div className="inline-flex items-center gap-2">
+                                                <button type="button" onClick={() => sendInvoice(invoice, Boolean(invoice.sent_at))} disabled={sendingId === invoice.id || !invoice.member_email} className="font-semibold text-blue-700 disabled:cursor-not-allowed disabled:opacity-40">{sendingId === invoice.id ? "Sending..." : invoice.sent_at ? "Send reminder" : "Send invoice"}</button>
+                                                <button type="button" onClick={() => setOpenActionId(openActionId === invoice.id ? null : invoice.id)} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-blue-600 text-blue-700 hover:bg-blue-50" aria-label={`Actions for invoice ${invoice.invoice_number}`}>⌄</button>
+                                            </div> : <span className="text-slate-400">Complete</span>}
+                                            {openActionId === invoice.id && <div className="absolute right-3 z-50 mt-2 w-52 rounded-xl border border-slate-200 bg-white py-2 text-left shadow-xl">
+                                                {invoiceHref && <Link href={invoiceHref} className="block px-4 py-2 hover:bg-slate-50">View</Link>}
+                                                <Link href={`/admin/invoices/${invoice.id}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit</Link>
+                                                <Link href={`/admin/invoices/new?duplicate=${invoice.id}`} className="block px-4 py-2 hover:bg-slate-50">Duplicate</Link>
+                                                <button type="button" disabled className="block w-full cursor-not-allowed px-4 py-2 text-left text-slate-400">Record payment</button>
+                                                <button type="button" onClick={() => sendInvoice(invoice, true)} disabled={!invoice.member_email || sendingId === invoice.id} className="block w-full px-4 py-2 text-left hover:bg-slate-50 disabled:text-slate-400">Resend invoice</button>
+                                                {invoiceHref && <Link href={invoiceHref} target="_blank" className="block px-4 py-2 hover:bg-slate-50">Print / Export as PDF</Link>}
+                                                <button type="button" disabled className="block w-full cursor-not-allowed px-4 py-2 text-left text-red-300">Delete</button>
+                                            </div>}
+                                        </td>
+                                    </tr>;
                                 })}</tbody>
                             </table>
                             {filtered.length === 0 && <p className="py-10 text-center text-slate-400">No invoices match the selected filters.</p>}
