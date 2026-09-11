@@ -17,6 +17,7 @@ export type InvoiceInput = {
     referenceNumber?: string;
     notes?: string;
     terms?: string;
+    footerText?: string;
     discountCents?: number;
     taxCents?: number;
     items: InvoiceItemInput[];
@@ -39,6 +40,7 @@ export type InvoiceRecord = RowDataPacket & {
     amount_paid_cents: number;
     notes: string | null;
     terms: string | null;
+    footer_text: string | null;
     public_token: string | null;
     sent_at: string | null;
     viewed_at: string | null;
@@ -64,7 +66,7 @@ export type PublicInvoiceRecord = InvoiceRecord & {
     business_address: string | null;
     business_phone: string | null;
     business_email: string | null;
-    footer_text: string | null;
+    default_footer_text: string | null;
     has_logo: number | boolean;
 };
 
@@ -108,6 +110,7 @@ export async function ensureInvoiceSchema() {
             amount_paid_cents INT NOT NULL DEFAULT 0,
             notes TEXT NULL,
             terms TEXT NULL,
+            footer_text TEXT NULL,
             public_token VARCHAR(96) UNIQUE NULL,
             sent_at DATETIME NULL,
             viewed_at DATETIME NULL,
@@ -122,6 +125,7 @@ export async function ensureInvoiceSchema() {
 
     const [columns] = await pool.query<RowDataPacket[]>(`SHOW COLUMNS FROM invoices`);
     const columnNames = new Set(columns.map((column) => String(column.Field)));
+    if (!columnNames.has("footer_text")) await pool.query(`ALTER TABLE invoices ADD COLUMN footer_text TEXT NULL`);
     if (!columnNames.has("public_token")) await pool.query(`ALTER TABLE invoices ADD COLUMN public_token VARCHAR(96) UNIQUE NULL`);
     if (!columnNames.has("sent_at")) await pool.query(`ALTER TABLE invoices ADD COLUMN sent_at DATETIME NULL`);
     if (!columnNames.has("viewed_at")) await pool.query(`ALTER TABLE invoices ADD COLUMN viewed_at DATETIME NULL`);
@@ -260,7 +264,7 @@ export async function updateInvoice(invoiceId: number, input: InvoiceInput) {
         await connection.execute(`
             UPDATE invoices
             SET member_id = ?, invoice_date = ?, due_date = ?, reference_number = ?,
-                subtotal_cents = ?, discount_cents = ?, tax_cents = ?, total_cents = ?, notes = ?, terms = ?
+                subtotal_cents = ?, discount_cents = ?, tax_cents = ?, total_cents = ?, notes = ?, terms = ?, footer_text = ?
             WHERE id = ?
         `, [
             input.memberId,
@@ -273,6 +277,7 @@ export async function updateInvoice(invoiceId: number, input: InvoiceInput) {
             totalCents,
             input.notes || null,
             input.terms || null,
+            input.footerText || null,
             invoiceId,
         ]);
         await connection.execute(`DELETE FROM invoice_items WHERE invoice_id = ?`, [invoiceId]);
@@ -298,7 +303,8 @@ export async function getInvoiceByPublicToken(token: string): Promise<PublicInvo
     await ensureInvoiceSchema();
     const [rows] = await pool.query<PublicInvoiceRecord[]>(`
         SELECT i.*, u.full_name AS member_name, u.email AS member_email,
-               s.business_name, s.business_address, s.business_phone, s.business_email, s.footer_text,
+               s.business_name, s.business_address, s.business_phone, s.business_email,
+               s.footer_text AS default_footer_text,
                s.logo_data IS NOT NULL AS has_logo
         FROM invoices i
         LEFT JOIN users u ON u.id = i.member_id
@@ -308,6 +314,7 @@ export async function getInvoiceByPublicToken(token: string): Promise<PublicInvo
     `, [token]);
     if (!rows[0]) return null;
     const row = rows[0];
+    if (!row.footer_text) row.footer_text = row.default_footer_text;
     const [items] = await pool.query<PublicInvoiceItem[]>(`
         SELECT description, quantity, unit_price_cents, line_total_cents
         FROM invoice_items WHERE invoice_id = ? ORDER BY sort_order, id
@@ -346,8 +353,8 @@ export async function createInvoice(input: InvoiceInput) {
         const [result] = await connection.execute<ResultSetHeader>(`
             INSERT INTO invoices (
                 member_id, invoice_date, due_date, reference_number, status,
-                subtotal_cents, discount_cents, tax_cents, total_cents, notes, terms, public_token
-            ) VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?)
+                subtotal_cents, discount_cents, tax_cents, total_cents, notes, terms, footer_text, public_token
+            ) VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             input.memberId,
             input.invoiceDate,
@@ -359,6 +366,7 @@ export async function createInvoice(input: InvoiceInput) {
             totalCents,
             input.notes || null,
             input.terms || null,
+            input.footerText || null,
             publicToken,
         ]);
 
