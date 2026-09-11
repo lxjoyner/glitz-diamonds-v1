@@ -41,11 +41,17 @@ function toIsoDate(value: string) {
 }
 
 function daysPastDue(value: string) {
-    const due = new Date(`${String(value).slice(0, 10)}T00:00:00`);
+    const dueDate = String(value || "").slice(0, 10);
+    const [yearText, monthText, dayText] = dueDate.split("-");
+    const year = Number(yearText);
+    const month = Number(monthText);
+    const day = Number(dayText);
+    if (!year || !month || !day) return 0;
+
     const today = new Date();
-    const startToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const diff = Math.floor((startToday.getTime() - due.getTime()) / 86400000);
-    return Math.max(0, diff);
+    const todayUtc = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+    const dueUtc = Date.UTC(year, month - 1, day);
+    return Math.max(0, Math.round((todayUtc - dueUtc) / 86400000));
 }
 
 function DateFilter({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
@@ -237,8 +243,8 @@ export default function InvoicesPage() {
                                 <thead><tr className="border-b-2 border-slate-200 text-left"><th className="px-3 py-3">Status</th><th className="px-3 py-3">Due</th><th className="px-3 py-3">Date</th><th className="px-3 py-3">Number</th><th className="px-3 py-3">Member</th><th className="px-3 py-3 text-right">Amount</th><th className="px-3 py-3 text-right">Paid</th><th className="px-3 py-3 text-right">Balance</th><th className="px-3 py-3 text-right">Actions</th></tr></thead>
                                 <tbody>{filtered.map((invoice) => {
                                     const balance = Math.max(0, invoice.total_cents - invoice.amount_paid_cents);
-                                    const overdue = invoice.display_status === "past_due";
-                                    const overdueDays = overdue ? daysPastDue(invoice.due_date) : 0;
+                                    const overdueDays = daysPastDue(invoice.due_date);
+                                    const overdue = !["paid", "void", "draft"].includes(invoice.display_status) && overdueDays > 0;
                                     const canSend = !["paid", "void"].includes(invoice.display_status);
                                     const invoiceHref = invoice.public_token ? `/invoice/${invoice.public_token}` : null;
                                     const dueDisplay = overdue ? `${overdueDays} ${overdueDays === 1 ? "day" : "days"} ago` : new Date(invoice.due_date).toLocaleDateString();
