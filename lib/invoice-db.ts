@@ -55,6 +55,10 @@ export type PublicInvoiceItem = RowDataPacket & {
     line_total_cents: number;
 };
 
+export type InvoiceEditRecord = InvoiceWithDisplayStatus & {
+    items: PublicInvoiceItem[];
+};
+
 export type PublicInvoiceRecord = InvoiceRecord & {
     business_name: string | null;
     business_address: string | null;
@@ -230,6 +234,64 @@ export async function getInvoiceById(invoiceId: number): Promise<InvoiceWithDisp
         row.public_token = token;
     }
     return { ...row, display_status: computedStatus(row) };
+}
+
+export async function getInvoiceForEdit(invoiceId: number): Promise<InvoiceEditRecord | null> {
+    const invoice = await getInvoiceById(invoiceId);
+    if (!invoice) return null;
+    const [items] = await pool.query<PublicInvoiceItem[]>(`
+        SELECT description, quantity, unit_price_cents, line_total_cents
+        FROM invoice_items
+        WHERE invoice_id = ?
+        ORDER BY sort_order, id
+    `, [invoiceId]);
+    return { ...invoice, items };
+}
+
+export async function updateInvoice(invoiceId: number, input: InvoiceInput) {
+    await ensureInvoiceSchema();
+    const subtotalCents = input.items.reduce((sum, item) => sum + Math.round(item.quantity * item.unitPriceCents), 0);
+    const discountCents = Math.max(0, Math.round(input.discountCents || 0));
+    const taxCents = Math.max(0, Math.round(input.taxCents || 0));
+    const totalCents = Math.max(0, subtotalCents - discountCents + taxCents);
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+        await connection.execute(`
+            UPDATE invoices
+            SET member_id = ?, invoice_date = ?, due_date = ?, reference_number = ?,
+                subtotal_cents = ?, discount_cents = ?, tax_cents = ?, total_cents = ?, notes = ?, terms = ?
+            WHERE id = ?
+        `, [
+            input.memberId,
+            input.invoiceDate,
+            input.dueDate,
+            input.referenceNumber || null,
+            subtotalCents,
+            discountCents,
+            taxCents,
+            totalCents,
+            input.notes || null,
+            input.terms || null,
+            invoiceId,
+        ]);
+        await connection.execute(`DELETE FROM invoice_items WHERE invoice_id = ?`, [invoiceId]);
+        for (let index = 0; index < input.items.length; index += 1) {
+            const item = input.items[index];
+            const lineTotal = Math.round(item.quantity * item.unitPriceCents);
+            await connection.execute(`
+                INSERT INTO invoice_items (invoice_id, description, quantity, unit_price_cents, line_total_cents, sort_order)
+                VALUES (?, ?, ?, ?, ?, ?)
+            `, [invoiceId, item.description, item.quantity, item.unitPriceCents, lineTotal, index]);
+        }
+        await connection.commit();
+        return getInvoiceForEdit(invoiceId);
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
 }
 
 export async function getInvoiceByPublicToken(token: string): Promise<PublicInvoice | null> {
