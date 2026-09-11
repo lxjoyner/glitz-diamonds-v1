@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import InvoiceDatePicker from "@/components/InvoiceDatePicker";
 
 type Member = {
     id: number;
@@ -155,7 +156,7 @@ export default function NewRecurringInvoicePage() {
                             <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">Payment due</span><select value={paymentDue} onChange={(e) => setPaymentDue(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2"><option value="on_receipt">On Receipt</option><option value="7">Within 7 days</option><option value="15">Within 15 days</option><option value="30">Within 30 days</option></select></label>
                             <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">Status</span><select value={status} onChange={(e) => setStatus(e.target.value as "active" | "draft")} className="rounded-lg border border-slate-300 px-3 py-2"><option value="active">Active</option><option value="draft">Draft</option></select></label>
                             <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">Repeat monthly on</span><input type="number" min="1" max="28" value={repeatDay} onChange={(e) => setRepeatDay(Number(e.target.value))} className="rounded-lg border border-slate-300 px-3 py-2" /></label>
-                            <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">First invoice</span><input type="date" value={firstInvoiceDate} onChange={(e) => { setFirstInvoiceDate(e.target.value); setNextInvoiceDate(e.target.value); }} className="rounded-lg border border-slate-300 px-3 py-2" /></label>
+                            <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">First invoice</span><InvoiceDatePicker value={firstInvoiceDate} onChange={(value) => { setFirstInvoiceDate(value); setNextInvoiceDate(value); }} ariaLabel="First invoice date" /></label>
                         </div>
                     </div>
 
