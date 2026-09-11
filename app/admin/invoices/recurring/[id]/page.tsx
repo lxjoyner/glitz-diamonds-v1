@@ -176,7 +176,7 @@ export default function RecurringInvoiceDetailsPage() {
     return (
         <main className="min-h-screen bg-[#f7f9fc] px-4 py-8 text-slate-950 sm:px-8">
             <div className="mx-auto max-w-[1500px]">
-                <header className="mb-6 flex flex-wrap items-center justify-between gap-4 px-4 sm:px-6"><h1 className="text-4xl font-bold tracking-tight text-white">Recurring invoice</h1><div className="flex gap-3"><button type="button" className="rounded-full border border-blue-600 bg-white px-5 py-2.5 font-semibold text-blue-700">More actions⌄</button><Link href="/admin/invoices/recurring/new" className="rounded-full border border-blue-600 bg-white px-5 py-2.5 font-semibold text-blue-700">Create another recurring invoice</Link></div></header>
+                <header className="mb-6 flex min-h-[108px] flex-wrap items-center justify-between gap-5 px-4 py-5 sm:px-6 sm:py-6"><h1 className="text-4xl font-bold tracking-tight leading-tight text-white">Recurring invoice</h1><div className="flex flex-wrap items-center gap-3"><button type="button" className="rounded-full border border-blue-600 bg-white px-5 py-3 font-semibold text-blue-700">More actions⌄</button><Link href="/admin/invoices/recurring/new" className="rounded-full border border-blue-600 bg-white px-5 py-3 font-semibold text-blue-700">Create another recurring invoice</Link></div></header>
                 {error ? <p className="mb-4 rounded-lg bg-red-50 p-3 text-red-700">{error}</p> : null}
                 {notice ? <p className="mb-4 rounded-lg bg-emerald-50 p-3 text-emerald-700">{notice}</p> : null}
                 {!invoice ? <p className="rounded-lg bg-white p-6 text-slate-500 shadow-sm">Loading...</p> : <div className="space-y-5">
