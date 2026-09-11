@@ -184,9 +184,9 @@ export default function InvoicesPage() {
     return (
         <main className="min-h-screen bg-[#f7f9fc] px-4 py-8 text-slate-950 sm:px-8">
             <div className="mx-auto max-w-[1500px]">
-                <header className="mb-7 flex flex-wrap items-center justify-between gap-4 px-4 sm:px-6">
-                    <div><h1 className="text-4xl font-bold tracking-tight text-white">Invoices</h1><p className="mt-1 text-sm text-white">Glitz Of Diamonds invoicing dashboard</p></div>
-                    <div className="flex gap-3"><Link href="/admin/invoices/settings" className="rounded-full border border-blue-600 bg-white px-5 py-3 font-semibold text-blue-700 hover:bg-blue-50">Invoice settings</Link><Link href="/admin/invoices/new" className="rounded-full bg-black px-6 py-3 font-semibold text-white shadow-sm hover:bg-slate-900">Create an invoice</Link></div>
+                <header className="mb-7 flex min-h-[108px] flex-wrap items-center justify-between gap-5 px-4 py-5 sm:px-6 sm:py-6">
+                    <div><h1 className="text-4xl font-bold tracking-tight leading-tight text-white">Invoices</h1><p className="mt-1 text-sm text-white">Glitz Of Diamonds invoicing dashboard</p></div>
+                    <div className="flex flex-wrap items-center gap-3"><Link href="/admin/invoices/settings" className="rounded-full border border-blue-600 bg-white px-5 py-3 font-semibold text-blue-700 hover:bg-blue-50">Invoice settings</Link><Link href="/admin/invoices/new" className="rounded-full bg-black px-6 py-3 font-semibold text-white shadow-sm hover:bg-slate-900">Create an invoice</Link></div>
                 </header>
 
                 <section className="mb-8 grid gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:grid-cols-4">
