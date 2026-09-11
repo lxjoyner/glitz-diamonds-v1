@@ -4,6 +4,7 @@ import {
     claimRecurringRun,
     completeRecurringRun,
     failRecurringRun,
+    getRecurringInvoiceById,
     listDueRecurringInvoices,
     type RecurringFrequency,
     type RecurringInvoiceRecord,
@@ -52,7 +53,7 @@ function nextOccurrence(row: RecurringInvoiceRecord, scheduledFor: string) {
     if (frequency === "yearly") {
         const month = Math.min(Math.max(Number(row.yearly_month || current.getUTCMonth() + 1), 1), 12) - 1;
         const targetDay = Math.min(Math.max(Number(row.repeat_day || 1), 1), 31);
-        let candidate = new Date(Date.UTC(current.getUTCFullYear() + 1, month, 1));
+        const candidate = new Date(Date.UTC(current.getUTCFullYear() + 1, month, 1));
         const lastDay = new Date(Date.UTC(candidate.getUTCFullYear(), candidate.getUTCMonth() + 1, 0)).getUTCDate();
         candidate.setUTCDate(Math.min(targetDay, lastDay));
         return toIsoDate(candidate);
@@ -80,6 +81,45 @@ function dueDateFor(invoiceDate: string) {
 function baseUrl() {
     const configured = process.env.APP_BASE_URL?.trim();
     return (configured || "https://www.glitzofdiamonds.com").replace(/\/$/, "");
+}
+
+export async function runRecurringInvoiceTestSend(recurringInvoiceId: number) {
+    const row = await getRecurringInvoiceById(recurringInvoiceId);
+    if (!row) throw new Error("RECURRING_NOT_FOUND");
+    if (!row.member_email) throw new Error("MISSING_MEMBER_EMAIL");
+
+    const testDate = new Date().toISOString().slice(0, 10);
+    const invoiceResult = await createInvoice({
+        memberId: row.member_id,
+        invoiceDate: testDate,
+        dueDate: dueDateFor(testDate),
+        notes: row.notes || "",
+        terms: "On Receipt",
+        items: [{ description: "Dues", quantity: 1, unitPriceCents: Number(row.amount_cents) }],
+    });
+
+    const invoice = await getInvoiceById(invoiceResult.id);
+    if (!invoice) throw new Error("Generated test invoice could not be loaded.");
+
+    const invoiceUrl = `${baseUrl()}/invoice/${invoice.public_token}`;
+    await sendInvoiceEmail({
+        toEmail: row.member_email,
+        memberName: row.member_name || "Member",
+        invoiceNumber: invoice.invoice_number,
+        amountDueCents: Math.max(0, invoice.total_cents - invoice.amount_paid_cents),
+        dueDate: String(invoice.due_date),
+        invoiceUrl,
+    });
+    await markInvoiceSent(invoice.id);
+
+    return {
+        recurringInvoiceId: row.id,
+        invoiceId: invoice.id,
+        invoiceNumber: invoice.invoice_number,
+        sentTo: row.member_email,
+        invoiceUrl,
+        message: "Test invoice created and emailed. The recurring schedule was not advanced.",
+    };
 }
 
 export async function runRecurringInvoiceScheduler(todayIso = new Date().toISOString().slice(0, 10)) {
