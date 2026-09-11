@@ -189,7 +189,7 @@ export default function RecurringInvoicesPage() {
                                                         <Link href={`/admin/invoices/recurring/${row.id}`} className="block px-4 py-2 hover:bg-slate-50">View</Link>
                                                         <Link href={`/admin/invoices/recurring/${row.id}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit</Link>
                                                         {row.status !== "ended" && <button onClick={() => endRecurring(row)} className="block w-full px-4 py-2 text-left text-red-700 hover:bg-red-50">End</button>}
-                                                        <Link href={`/admin/invoices/recurring/${row.id}/created`} className="block px-4 py-2 hover:bg-slate-50">View created invoices</Link>
+                                                        <Link href="/admin/invoices" className="block px-4 py-2 hover:bg-slate-50">View created invoices</Link>
                                                         <Link href={`/admin/invoices/recurring/${row.id}/duplicate`} className="block px-4 py-2 hover:bg-slate-50">Duplicate</Link>
                                                     </div>
                                                 )}
