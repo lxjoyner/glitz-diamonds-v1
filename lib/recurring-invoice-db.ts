@@ -27,6 +27,7 @@ export type RecurringInvoiceRecord = RowDataPacket & {
     time_zone: string;
     amount_cents: number;
     notes: string | null;
+    footer_text: string | null;
     generated_count: number;
     last_generated_at: string | null;
     created_at: string;
@@ -41,6 +42,7 @@ export type RecurringInvoiceInput = {
     nextInvoiceDate: string;
     amountCents: number;
     notes?: string;
+    footerText?: string;
     frequency?: RecurringFrequency;
     weeklyDay?: string;
     yearlyMonth?: number;
@@ -74,6 +76,7 @@ export async function ensureRecurringInvoiceSchema() {
             time_zone VARCHAR(80) NOT NULL DEFAULT 'US/Central',
             amount_cents INT NOT NULL DEFAULT 0,
             notes TEXT NULL,
+            footer_text TEXT NULL,
             generated_count INT NOT NULL DEFAULT 0,
             last_generated_at DATETIME NULL,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -97,6 +100,7 @@ export async function ensureRecurringInvoiceSchema() {
     await add("end_mode", "end_mode VARCHAR(20) NOT NULL DEFAULT 'never'");
     await add("end_after_count", "end_after_count INT NULL");
     await add("time_zone", "time_zone VARCHAR(80) NOT NULL DEFAULT 'US/Central'");
+    await add("footer_text", "footer_text TEXT NULL");
     await add("generated_count", "generated_count INT NOT NULL DEFAULT 0");
     await add("last_generated_at", "last_generated_at DATETIME NULL");
 
@@ -145,8 +149,8 @@ export async function createRecurringInvoice(input: RecurringInvoiceInput) {
         INSERT INTO recurring_invoices (
             member_id, status, cadence, frequency, repeat_day, weekly_day, yearly_month,
             custom_every, custom_unit, first_invoice_date, next_invoice_date,
-            end_mode, end_after_count, end_date, time_zone, amount_cents, notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            end_mode, end_after_count, end_date, time_zone, amount_cents, notes, footer_text
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
         input.memberId,
         input.status || "active",
@@ -165,6 +169,7 @@ export async function createRecurringInvoice(input: RecurringInvoiceInput) {
         input.timeZone || "US/Central",
         input.amountCents,
         input.notes || null,
+        input.footerText || null,
     ]);
     return getRecurringInvoiceById(result.insertId);
 }
@@ -175,7 +180,7 @@ export async function updateRecurringInvoice(id: number, input: RecurringInvoice
         UPDATE recurring_invoices
         SET member_id = ?, status = ?, cadence = ?, frequency = ?, repeat_day = ?, weekly_day = ?, yearly_month = ?,
             custom_every = ?, custom_unit = ?, first_invoice_date = ?, next_invoice_date = ?,
-            end_mode = ?, end_after_count = ?, end_date = ?, time_zone = ?, amount_cents = ?, notes = ?
+            end_mode = ?, end_after_count = ?, end_date = ?, time_zone = ?, amount_cents = ?, notes = ?, footer_text = ?
         WHERE id = ?
     `, [
         input.memberId,
@@ -195,6 +200,7 @@ export async function updateRecurringInvoice(id: number, input: RecurringInvoice
         input.timeZone || "US/Central",
         input.amountCents,
         input.notes || null,
+        input.footerText || null,
         id,
     ]);
     return getRecurringInvoiceById(id);
