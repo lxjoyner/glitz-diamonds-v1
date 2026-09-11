@@ -13,6 +13,7 @@ type InvoiceSettings = {
     business_phone?: string;
     business_email?: string;
     has_logo?: boolean | number;
+    footer_text?: string;
 };
 
 type RecurringInvoice = {
@@ -24,6 +25,7 @@ type RecurringInvoice = {
     next_invoice_date: string;
     amount_cents: number;
     notes: string | null;
+    footer_text?: string | null;
 };
 
 function dateOnly(value: string) {
@@ -45,6 +47,7 @@ export default function EditRecurringInvoicePage() {
     const [paymentDue, setPaymentDue] = useState("on_receipt");
     const [items, setItems] = useState<LineItem[]>([{ description: "Dues", quantity: 1, unitPrice: 0 }]);
     const [notes, setNotes] = useState("");
+    const [footerText, setFooterText] = useState("");
     const [invoiceSettings, setInvoiceSettings] = useState<InvoiceSettings>({ business_name: "Glitz Of Diamonds" });
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState("");
@@ -64,9 +67,13 @@ export default function EditRecurringInvoicePage() {
             const users = await usersRes.json();
             if (usersRes.ok) setMembers((users.users || []).filter((user: Member) => user.email));
 
+            let defaultFooter = "";
             if (settingsRes.ok) {
                 const settingsData = await settingsRes.json();
-                if (settingsData?.settings) setInvoiceSettings(settingsData.settings);
+                if (settingsData?.settings) {
+                    setInvoiceSettings(settingsData.settings);
+                    defaultFooter = settingsData.settings.footer_text || "";
+                }
             }
 
             const recurringData = await recurringRes.json();
@@ -79,6 +86,7 @@ export default function EditRecurringInvoicePage() {
             setNextInvoiceDate(dateOnly(recurring.next_invoice_date));
             setItems([{ description: "Dues", quantity: 1, unitPrice: Number(recurring.amount_cents) / 100 }]);
             setNotes(recurring.notes || "");
+            setFooterText(recurring.footer_text || defaultFooter);
         }
         load();
     }, [params.id, router]);
@@ -100,7 +108,7 @@ export default function EditRecurringInvoicePage() {
             const res = await fetch(`/api/admin/recurring-invoices/${params.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ memberId, status, repeatDay, firstInvoiceDate, nextInvoiceDate, amount: total, notes, referenceNumber, paymentDue }),
+                body: JSON.stringify({ memberId, status, repeatDay, firstInvoiceDate, nextInvoiceDate, amount: total, notes, footerText, referenceNumber, paymentDue }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data?.error || "Failed to update recurring invoice.");
@@ -195,8 +203,13 @@ export default function EditRecurringInvoicePage() {
                     {message && <p className="mx-6 mb-6 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">{message}</p>}
                 </section>
 
-                <details className="mt-5 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-                    <summary className="cursor-pointer font-semibold">Footer</summary>
+                <details className="mt-5 rounded-xl border border-slate-200 bg-white shadow-sm">
+                    <summary className="cursor-pointer px-5 py-4 font-semibold">Footer</summary>
+                    <div className="border-t border-slate-200 p-5">
+                        <label className="block text-sm font-semibold">Footer text</label>
+                        <textarea value={footerText} onChange={(e) => setFooterText(e.target.value)} rows={4} placeholder="Enter the footer text shown on invoices created from this recurring invoice" className="mt-2 w-full rounded-xl border border-slate-300 p-3" />
+                        <p className="mt-2 text-xs text-slate-500">This footer is saved with the recurring invoice template so it can be changed independently of the default invoice footer.</p>
+                    </div>
                 </details>
 
                 <div className="mt-5 flex justify-end gap-3">

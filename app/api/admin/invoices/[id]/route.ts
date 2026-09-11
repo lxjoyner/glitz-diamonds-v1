@@ -40,6 +40,7 @@ function normalizeInvoiceInput(body: Record<string, unknown>) {
         referenceNumber: String(body.referenceNumber || ""),
         notes: String(body.notes || ""),
         terms: String(body.terms || ""),
+        footerText: String(body.footerText || ""),
         discountCents: Math.round(Number(body.discount || 0) * 100),
         taxCents: Math.round(Number(body.tax || 0) * 100),
         items: normalizedItems,
