@@ -6,6 +6,13 @@ import { useParams, useRouter } from "next/navigation";
 
 type Member = { id: number; full_name: string; email: string; address?: string };
 type LineItem = { description: string; quantity: number; unitPrice: number };
+type InvoiceSettings = {
+    business_name?: string;
+    business_address?: string;
+    business_phone?: string;
+    business_email?: string;
+    has_logo?: boolean | number;
+};
 
 type RecurringInvoice = {
     id: number;
@@ -37,6 +44,7 @@ export default function EditRecurringInvoicePage() {
     const [paymentDue, setPaymentDue] = useState("on_receipt");
     const [items, setItems] = useState<LineItem[]>([{ description: "Dues", quantity: 1, unitPrice: 0 }]);
     const [notes, setNotes] = useState("");
+    const [invoiceSettings, setInvoiceSettings] = useState<InvoiceSettings>({ business_name: "Glitz Of Diamonds" });
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState("");
 
@@ -47,12 +55,18 @@ export default function EditRecurringInvoicePage() {
             if (!me?.authenticated) return router.push("/admin/login");
             if (!["admin", "treasurer"].includes(me.user?.role)) return setMessage("Only admins and treasurers can edit recurring invoices.");
 
-            const [usersRes, recurringRes] = await Promise.all([
+            const [usersRes, recurringRes, settingsRes] = await Promise.all([
                 fetch("/api/admin/users", { cache: "no-store" }),
                 fetch(`/api/admin/recurring-invoices/${params.id}`, { cache: "no-store" }),
+                fetch("/api/admin/invoice-settings", { cache: "no-store" }),
             ]);
             const users = await usersRes.json();
             if (usersRes.ok) setMembers((users.users || []).filter((user: Member) => user.email));
+
+            if (settingsRes.ok) {
+                const settingsData = await settingsRes.json();
+                if (settingsData?.settings) setInvoiceSettings(settingsData.settings);
+            }
 
             const recurringData = await recurringRes.json();
             if (!recurringRes.ok) return setMessage(recurringData?.error || "Failed to load recurring invoice.");
@@ -109,8 +123,29 @@ export default function EditRecurringInvoicePage() {
                     </div>
                 </header>
 
-                <details className="mb-6 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-                    <summary className="cursor-pointer font-semibold">Business address and contact details, title, summary, and logo</summary>
+                <details className="mb-6 overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm">
+                    <summary className="cursor-pointer bg-slate-100 px-5 py-4 font-semibold">Business address and contact details, title, summary, and logo</summary>
+                    <div className="grid gap-8 border-t border-slate-200 p-5 md:grid-cols-[1fr_1.4fr] md:p-6">
+                        <div>
+                            {invoiceSettings.has_logo ? (
+                                <img src="/api/invoice-logo" alt="Invoice logo" className="h-52 w-auto max-w-full object-contain" />
+                            ) : (
+                                <div className="flex h-40 max-w-xs items-center justify-center rounded-lg border border-dashed border-slate-300 text-sm text-slate-400">No invoice logo uploaded</div>
+                            )}
+                            <Link href="/admin/invoices/settings" className="mt-3 inline-block font-semibold text-blue-700 hover:underline">Edit invoice settings</Link>
+                        </div>
+                        <div className="flex flex-col items-stretch gap-3 md:items-end md:text-right">
+                            <div className="w-full rounded-xl border border-blue-200 px-4 py-2 text-3xl font-light md:max-w-xl">Invoice</div>
+                            <div className="w-full rounded-xl border border-blue-200 px-4 py-2 text-sm italic text-slate-500 md:max-w-xl">Summary (e.g. project name, description of invoice)</div>
+                            <div className="pt-2 text-sm text-slate-700">
+                                <p className="font-bold text-slate-950">{invoiceSettings.business_name || "Glitz Of Diamonds"}</p>
+                                {invoiceSettings.business_address ? <p className="whitespace-pre-line">{invoiceSettings.business_address}</p> : null}
+                                {invoiceSettings.business_phone ? <p>{invoiceSettings.business_phone}</p> : null}
+                                {invoiceSettings.business_email ? <p>{invoiceSettings.business_email}</p> : null}
+                            </div>
+                            <Link href="/admin/invoices/settings" className="font-semibold text-blue-700 hover:underline">Edit business info</Link>
+                        </div>
+                    </div>
                 </details>
 
                 <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50">
