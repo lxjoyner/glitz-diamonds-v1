@@ -50,6 +50,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
         const nextInvoiceDate = String(body?.nextInvoiceDate ?? existing.next_invoice_date ?? firstInvoiceDate).slice(0, 10);
         const status = body?.status === "draft" ? "draft" : body?.status === "ended" ? "ended" : "active";
         const notes = String(body?.notes ?? existing.notes ?? "").trim();
+        const footerText = String(body?.footerText ?? existing.footer_text ?? "").trim();
         const requestedFrequency = String(body?.frequency ?? existing.frequency ?? existing.cadence ?? "monthly").toLowerCase() as RecurringFrequency;
         const frequency = VALID_FREQUENCIES.has(requestedFrequency) ? requestedFrequency : "monthly";
         const requestedEndMode = String(body?.endMode ?? existing.end_mode ?? "never").toLowerCase() as RecurringEndMode;
@@ -78,6 +79,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
             nextInvoiceDate,
             amountCents,
             notes,
+            footerText,
             status,
             frequency,
             weeklyDay,
