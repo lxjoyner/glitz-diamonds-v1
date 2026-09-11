@@ -93,9 +93,9 @@ export default function RecurringInvoicesPage() {
     return (
         <main className="min-h-screen bg-[#f7f9fc] px-4 py-8 text-slate-950 sm:px-8">
             <div className="mx-auto max-w-[1500px]">
-                <header className="mb-7 flex flex-wrap items-center justify-between gap-4 px-4 sm:px-6">
+                <header className="mb-7 flex min-h-[108px] flex-wrap items-center justify-between gap-4 px-4 py-6 sm:px-6">
                     <h1 className="text-4xl font-bold tracking-tight text-white">Recurring invoices</h1>
-                    <Link href="/admin/invoices/recurring/new" className="rounded-full bg-black px-6 py-3 font-semibold text-white hover:bg-slate-900">Create a recurring invoice</Link>
+                    <Link href="/admin/invoices/recurring/new" className="rounded-full bg-black px-6 py-3.5 font-semibold text-white hover:bg-slate-900">Create a recurring invoice</Link>
                 </header>
 
                 <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
