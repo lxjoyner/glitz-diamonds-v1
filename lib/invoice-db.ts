@@ -263,6 +263,13 @@ export async function markInvoiceViewed(token: string) {
     await pool.query(`UPDATE invoices SET status = IF(status IN ('sent','draft'), 'viewed', status), viewed_at = COALESCE(viewed_at, NOW()) WHERE public_token = ?`, [token]);
 }
 
+export async function deleteInvoice(invoiceId: number) {
+    await ensureInvoiceSchema();
+    await pool.query(`UPDATE recurring_invoice_runs SET invoice_id = NULL WHERE invoice_id = ?`, [invoiceId]);
+    const [result] = await pool.execute<ResultSetHeader>(`DELETE FROM invoices WHERE id = ?`, [invoiceId]);
+    return result.affectedRows === 1;
+}
+
 export async function createInvoice(input: InvoiceInput) {
     await ensureInvoiceSchema();
     const subtotalCents = input.items.reduce((sum, item) => sum + Math.round(item.quantity * item.unitPriceCents), 0);
