@@ -70,7 +70,7 @@ export default function InvoiceSettingsPage() {
     return (
         <main className="min-h-screen bg-[#f7f9fc] px-4 py-8 text-slate-950 sm:px-8">
             <div className="mx-auto max-w-[1500px]">
-                <header className="mb-6 flex items-center justify-between gap-4 px-4 sm:px-6"><div><h1 className="text-4xl font-bold text-white">Invoice settings</h1><p className="mt-1 text-sm text-white">Business details and branding shown on Glitz Of Diamonds invoices.</p></div><Link href="/admin/invoices" className="font-semibold text-white">Back to invoices</Link></header>
+                <header className="mb-6 flex min-h-[108px] flex-wrap items-center justify-between gap-5 px-4 py-5 sm:px-6 sm:py-6"><div><h1 className="text-4xl font-bold leading-tight text-white">Invoice settings</h1><p className="mt-1 text-sm text-white">Business details and branding shown on Glitz Of Diamonds invoices.</p></div><Link href="/admin/invoices" className="rounded-full border border-white/60 bg-white/10 px-5 py-3 font-semibold text-white hover:bg-white/20">Back to invoices</Link></header>
                 <form onSubmit={save} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
                     <div className="mb-8 flex flex-wrap items-center gap-5 rounded-xl bg-slate-50 p-5">
                         {hasLogo ? <img src={`/api/invoice-logo?v=${Date.now()}`} alt="Invoice logo" className="h-24 max-w-64 rounded bg-white object-contain p-2" /> : <div className="flex h-24 w-44 items-center justify-center rounded-lg border border-dashed border-slate-300 text-sm text-slate-400">No logo uploaded</div>}
