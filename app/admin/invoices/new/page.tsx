@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import InvoiceDatePicker from "@/components/InvoiceDatePicker";
 
 type Member = { id: number; full_name: string; email: string };
 type LineItem = { description: string; quantity: number; unitPrice: number };
@@ -116,8 +117,8 @@ export default function NewInvoicePage() {
                         <div className="space-y-4">
                             <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">Invoice number</span><input value="Auto-generated" disabled className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-500" /></label>
                             <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">P.O./Reference</span><input value={referenceNumber} onChange={(e) => setReferenceNumber(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2" /></label>
-                            <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">Invoice date</span><input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2" /></label>
-                            <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">Payment due</span><input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2" /></label>
+                            <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">Invoice date</span><InvoiceDatePicker value={invoiceDate} onChange={setInvoiceDate} ariaLabel="Invoice date" /></label>
+                            <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">Payment due</span><InvoiceDatePicker value={dueDate} onChange={setDueDate} ariaLabel="Payment due date" /></label>
                         </div>
                     </div>
 
