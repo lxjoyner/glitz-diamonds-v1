@@ -99,6 +99,7 @@ export default function InvoicesPage() {
     const [error, setError] = useState("");
     const [notice, setNotice] = useState("");
     const [sendingId, setSendingId] = useState<number | null>(null);
+    const [deletingId, setDeletingId] = useState<number | null>(null);
     const [memberFilter, setMemberFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("all");
     const [fromDate, setFromDate] = useState("");
@@ -146,6 +147,25 @@ export default function InvoicesPage() {
             setError(e instanceof Error ? e.message : "Failed to send invoice.");
         } finally {
             setSendingId(null);
+        }
+    }
+
+    async function deleteInvoice(invoice: Invoice) {
+        if (!window.confirm(`Delete invoice ${invoice.invoice_number}? This permanently removes the invoice and its line items and cannot be undone.`)) return;
+        setError("");
+        setNotice("");
+        setDeletingId(invoice.id);
+        try {
+            const response = await fetch(`/api/admin/invoices/${invoice.id}`, { method: "DELETE" });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data?.error || "Failed to delete invoice.");
+            setNotice(`Invoice ${data.invoiceNumber || invoice.invoice_number} was deleted.`);
+            setOpenActionId(null);
+            await loadInvoices();
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Failed to delete invoice.");
+        } finally {
+            setDeletingId(null);
         }
     }
 
@@ -240,7 +260,7 @@ export default function InvoicesPage() {
                                                 <button type="button" disabled className="block w-full cursor-not-allowed px-4 py-2 text-left text-slate-400">Record payment</button>
                                                 <button type="button" onClick={() => sendInvoice(invoice, true)} disabled={!invoice.member_email || sendingId === invoice.id} className="block w-full px-4 py-2 text-left hover:bg-slate-50 disabled:text-slate-400">Resend invoice</button>
                                                 {invoiceHref && <Link href={invoiceHref} target="_blank" className="block px-4 py-2 hover:bg-slate-50">Print / Export as PDF</Link>}
-                                                <button type="button" disabled className="block w-full cursor-not-allowed px-4 py-2 text-left text-red-300">Delete</button>
+                                                <button type="button" onClick={() => deleteInvoice(invoice)} disabled={deletingId === invoice.id} className="block w-full px-4 py-2 text-left font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">{deletingId === invoice.id ? "Deleting..." : "Delete"}</button>
                                             </div>}
                                         </td>
                                     </tr>;
