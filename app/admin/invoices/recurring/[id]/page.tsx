@@ -73,6 +73,8 @@ export default function RecurringInvoiceDetailsPage() {
     const [notice, setNotice] = useState("");
     const [savingSchedule, setSavingSchedule] = useState(false);
     const [testingSend, setTestingSend] = useState(false);
+    const [moreActionsOpen, setMoreActionsOpen] = useState(false);
+    const [endingRecurring, setEndingRecurring] = useState(false);
     const [frequency, setFrequency] = useState<Frequency>("monthly");
     const [weeklyDay, setWeeklyDay] = useState("Thursday");
     const [monthlyDay, setMonthlyDay] = useState("First");
@@ -173,10 +175,45 @@ export default function RecurringInvoiceDetailsPage() {
         }
     }
 
+    async function endRecurringInvoice() {
+        if (!invoice || invoice.status === "ended") return;
+        if (!window.confirm(`End recurring invoices for ${invoice.member_name || "this member"}?`)) return;
+        setError("");
+        setNotice("");
+        setEndingRecurring(true);
+        try {
+            const response = await fetch(`/api/admin/recurring-invoices/${invoice.id}`, { method: "DELETE" });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data?.error || "Failed to end recurring invoice.");
+            setInvoice(data.recurringInvoice || { ...invoice, status: "ended" });
+            setMoreActionsOpen(false);
+            setNotice("Recurring invoice ended.");
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Failed to end recurring invoice.");
+        } finally {
+            setEndingRecurring(false);
+        }
+    }
+
     return (
         <main className="min-h-screen bg-[#f7f9fc] px-4 py-8 text-slate-950 sm:px-8">
             <div className="mx-auto max-w-[1500px]">
-                <header className="mb-6 flex min-h-[108px] flex-wrap items-center justify-between gap-5 px-4 py-5 sm:px-6 sm:py-6"><h1 className="text-4xl font-bold tracking-tight leading-tight text-white">Recurring invoice</h1><div className="flex flex-wrap items-center gap-3"><button type="button" className="rounded-full border border-blue-600 bg-white px-5 py-3 font-semibold text-blue-700">More actions⌄</button><Link href="/admin/invoices/recurring/new" className="rounded-full border border-blue-600 bg-white px-5 py-3 font-semibold text-blue-700">Create another recurring invoice</Link></div></header>
+                <header className="mb-6 flex min-h-[108px] flex-wrap items-center justify-between gap-5 px-4 py-5 sm:px-6 sm:py-6">
+                    <h1 className="text-4xl font-bold tracking-tight leading-tight text-white">Recurring invoice</h1>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="relative">
+                            <button type="button" onClick={() => setMoreActionsOpen((open) => !open)} className="rounded-full border border-blue-600 bg-white px-5 py-3 font-semibold text-blue-700">More actions⌄</button>
+                            {moreActionsOpen && invoice ? (
+                                <div className="absolute right-0 z-50 mt-2 w-56 rounded-xl border border-slate-200 bg-white py-2 text-left shadow-xl">
+                                    <Link href="/admin/invoices" onClick={() => setMoreActionsOpen(false)} className="block px-4 py-2 hover:bg-slate-50">View created invoices</Link>
+                                    {invoice.status !== "ended" ? <button type="button" onClick={endRecurringInvoice} disabled={endingRecurring} className="block w-full px-4 py-2 text-left text-red-700 hover:bg-red-50 disabled:opacity-50">{endingRecurring ? "Ending..." : "End"}</button> : null}
+                                    <Link href={`/admin/invoices/recurring/${invoice.id}/duplicate`} onClick={() => setMoreActionsOpen(false)} className="block px-4 py-2 hover:bg-slate-50">Duplicate</Link>
+                                </div>
+                            ) : null}
+                        </div>
+                        <Link href="/admin/invoices/recurring/new" className="rounded-full border border-blue-600 bg-white px-5 py-3 font-semibold text-blue-700">Create another recurring invoice</Link>
+                    </div>
+                </header>
                 {error ? <p className="mb-4 rounded-lg bg-red-50 p-3 text-red-700">{error}</p> : null}
                 {notice ? <p className="mb-4 rounded-lg bg-emerald-50 p-3 text-emerald-700">{notice}</p> : null}
                 {!invoice ? <p className="rounded-lg bg-white p-6 text-slate-500 shadow-sm">Loading...</p> : <div className="space-y-5">
