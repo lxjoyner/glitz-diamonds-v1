@@ -89,11 +89,11 @@ export default function NewRecurringInvoicePage() {
     return (
         <main className="min-h-screen bg-[#f7f9fc] px-4 py-8 text-slate-950 sm:px-8">
             <div className="mx-auto max-w-[1500px]">
-                <header className="mb-6 flex min-h-[53px] flex-wrap items-center justify-between gap-4 px-4 sm:px-6">
-                    <h1 className="text-4xl font-bold tracking-tight text-white">New recurring invoice</h1>
-                    <div className="flex gap-3">
-                        <button type="button" onClick={() => window.print()} className="rounded-full border border-blue-600 bg-white px-5 py-2.5 font-semibold text-blue-700">Preview</button>
-                        <button type="button" onClick={save} disabled={saving} className="rounded-full bg-black px-6 py-2.5 font-semibold text-white hover:bg-slate-900 disabled:opacity-60">{saving ? "Saving..." : "Save and continue"}</button>
+                <header className="mb-6 flex min-h-[108px] flex-wrap items-center justify-between gap-5 px-4 py-5 sm:px-6 sm:py-6">
+                    <h1 className="text-4xl font-bold tracking-tight leading-tight text-white">New recurring invoice</h1>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <button type="button" onClick={() => window.print()} className="rounded-full border border-blue-600 bg-white px-5 py-3 font-semibold text-blue-700">Preview</button>
+                        <button type="button" onClick={save} disabled={saving} className="rounded-full bg-black px-6 py-3 font-semibold text-white hover:bg-slate-900 disabled:opacity-60">{saving ? "Saving..." : "Save and continue"}</button>
                     </div>
                 </header>
 
