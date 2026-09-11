@@ -20,6 +20,7 @@ type InvoiceData = {
     tax_cents: number;
     notes: string | null;
     terms: string | null;
+    footer_text: string | null;
     items: Array<{ description: string; quantity: number | string; unit_price_cents: number }>;
 };
 
@@ -50,6 +51,7 @@ export default function EditInvoicePage() {
     const [tax, setTax] = useState(0);
     const [notes, setNotes] = useState("");
     const [terms, setTerms] = useState("");
+    const [footerText, setFooterText] = useState("");
     const [settings, setSettings] = useState<InvoiceSettings>({ business_name: "Glitz Of Diamonds" });
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState("");
@@ -91,7 +93,14 @@ export default function EditInvoicePage() {
                 }
                 if (settingsRes?.ok) {
                     const settingsData = await settingsRes.json();
-                    if (settingsData?.settings) setSettings(settingsData.settings);
+                    if (settingsData?.settings) {
+                        setSettings(settingsData.settings);
+                        setFooterText(record.footer_text || settingsData.settings.footer_text || "");
+                    } else {
+                        setFooterText(record.footer_text || "");
+                    }
+                } else {
+                    setFooterText(record.footer_text || "");
                 }
             } catch (error) {
                 setMessage(error instanceof Error ? error.message : "Failed to load invoice.");
@@ -124,7 +133,7 @@ export default function EditInvoicePage() {
             const response = await fetch(`/api/admin/invoices/${params.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ memberId, invoiceDate, dueDate, referenceNumber, items, discount, tax, notes, terms }),
+                body: JSON.stringify({ memberId, invoiceDate, dueDate, referenceNumber, items, discount, tax, notes, terms, footerText }),
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data?.error || "Failed to update invoice.");
@@ -215,7 +224,14 @@ export default function EditInvoicePage() {
                     {message ? <p className="mx-6 mb-6 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">{message}</p> : null}
                 </section>
 
-                <details className="mt-5 rounded-xl border border-slate-300 bg-white px-5 py-4 shadow-sm"><summary className="cursor-pointer font-semibold">Footer</summary><div className="mt-4 text-sm text-slate-600">{settings.footer_text || "No footer text configured."}</div></details>
+                <details className="mt-5 rounded-xl border border-slate-300 bg-white shadow-sm">
+                    <summary className="cursor-pointer px-5 py-4 font-semibold">Footer</summary>
+                    <div className="border-t border-slate-200 p-5">
+                        <label className="block text-sm font-semibold">Footer text</label>
+                        <textarea value={footerText} onChange={(e) => setFooterText(e.target.value)} rows={4} placeholder="Enter the footer text shown on this invoice" className="mt-2 w-full rounded-xl border border-slate-300 p-3" />
+                        <p className="mt-2 text-xs text-slate-500">Modify the footer for this invoice without changing the default footer in Invoice settings.</p>
+                    </div>
+                </details>
 
                 <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h2 className="text-xl font-semibold">Attachments</h2>
