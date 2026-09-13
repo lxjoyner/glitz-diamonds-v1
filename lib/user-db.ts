@@ -54,6 +54,17 @@ export async function ensureUsersTable() {
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(16) NOT NULL DEFAULT ''`);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday CHAR(8) NOT NULL DEFAULT ''`);
 
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS user_password_history (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            password_hash VARCHAR(255) NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_user_password_history_user (user_id, created_at),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    `);
+
     bootstrapped = true;
 }
 
@@ -92,7 +103,11 @@ export async function createRegisteredUser(params: {
         ]
     );
 
-    return Number((result as { insertId?: number }).insertId || 0);
+    const userId = Number((result as { insertId?: number }).insertId || 0);
+    if (userId > 0) {
+        await pool.query(`INSERT INTO user_password_history (user_id, password_hash) VALUES (?, ?)`, [userId, params.passwordHash]);
+    }
+    return userId;
 }
 
 export async function getUserByUsername(username: string): Promise<SiteUser | null> {
@@ -149,17 +164,29 @@ export async function getUserById(userId: number): Promise<SiteUser | null> {
     return (rows as SiteUser[])[0] ?? null;
 }
 
+export async function getUserPasswordHistory(userId: number, limit = 10): Promise<string[]> {
+    await ensureUsersTable();
+    const [rows] = await pool.query(
+        `SELECT password_hash FROM user_password_history WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT ?`,
+        [userId, limit]
+    );
+    return (rows as Array<{ password_hash: string }>).map((row) => row.password_hash);
+}
+
 export async function updateUserPassword(userId: number, passwordHash: string) {
     await ensureUsersTable();
-
-    await pool.query(
-        `
-        UPDATE users
-        SET password_hash = ?
-        WHERE id = ?
-        `,
-        [passwordHash, userId]
-    );
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+        await connection.query(`UPDATE users SET password_hash = ? WHERE id = ?`, [passwordHash, userId]);
+        await connection.query(`INSERT INTO user_password_history (user_id, password_hash) VALUES (?, ?)`, [userId, passwordHash]);
+        await connection.commit();
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
 }
 
 export async function updateMemberProfile(userId: number, input: {

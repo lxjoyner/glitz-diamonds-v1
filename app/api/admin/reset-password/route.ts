@@ -1,9 +1,16 @@
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
-import { consumePasswordResetToken, updateAdminPassword } from "@/lib/admin-db";
+import { consumePasswordResetToken, getAdminById, getAdminPasswordHistory, updateAdminPassword } from "@/lib/admin-db";
 
 function isStrongEnough(password: string) {
     return password.length >= 12;
+}
+
+async function passwordWasUsed(password: string, hashes: string[]) {
+    for (const hash of hashes) {
+        if (await bcrypt.compare(password, hash)) return true;
+    }
+    return false;
 }
 
 export async function POST(req: Request) {
@@ -21,19 +28,31 @@ export async function POST(req: Request) {
 
         if (!isStrongEnough(cleanPassword)) {
             return NextResponse.json(
-                {
-                    success: false,
-                    error: "Password must be at least 12 characters.",
-                },
+                { success: false, error: "Password must be at least 12 characters." },
                 { status: 400 }
             );
         }
 
         const resetToken = await consumePasswordResetToken(cleanToken);
-
         if (!resetToken) {
             return NextResponse.json(
                 { success: false, error: "Invalid or expired reset token." },
+                { status: 400 }
+            );
+        }
+
+        const admin = await getAdminById(resetToken.admin_id);
+        if (!admin) {
+            return NextResponse.json(
+                { success: false, error: "Admin account was not found." },
+                { status: 404 }
+            );
+        }
+
+        const history = [admin.password_hash, ...(await getAdminPasswordHistory(resetToken.admin_id, 10))];
+        if (await passwordWasUsed(cleanPassword, history)) {
+            return NextResponse.json(
+                { success: false, error: "You cannot reuse your current password or any of your last 10 passwords." },
                 { status: 400 }
             );
         }
@@ -44,7 +63,6 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Reset password error:", error);
-
         return NextResponse.json(
             { success: false, error: "Failed to reset password." },
             { status: 500 }
