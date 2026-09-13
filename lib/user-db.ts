@@ -54,16 +54,20 @@ export async function ensureUsersTable() {
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(16) NOT NULL DEFAULT ''`);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday CHAR(8) NOT NULL DEFAULT ''`);
 
-    await pool.query(`
-        CREATE TABLE IF NOT EXISTS user_password_history (
-            id BIGINT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT NOT NULL,
-            password_hash VARCHAR(255) NOT NULL,
-            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_user_password_history_user (user_id, created_at),
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        )
-    `);
+    try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS user_password_history (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                password_hash VARCHAR(255) NOT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_user_password_history_user (user_id, created_at),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        `);
+    } catch (error) {
+        console.error("User password history table initialization failed; login will continue without blocking:", error);
+    }
 
     bootstrapped = true;
 }
@@ -105,7 +109,11 @@ export async function createRegisteredUser(params: {
 
     const userId = Number((result as { insertId?: number }).insertId || 0);
     if (userId > 0) {
-        await pool.query(`INSERT INTO user_password_history (user_id, password_hash) VALUES (?, ?)`, [userId, params.passwordHash]);
+        try {
+            await pool.query(`INSERT INTO user_password_history (user_id, password_hash) VALUES (?, ?)`, [userId, params.passwordHash]);
+        } catch (error) {
+            console.error("Unable to record initial user password history:", error);
+        }
     }
     return userId;
 }
@@ -166,11 +174,16 @@ export async function getUserById(userId: number): Promise<SiteUser | null> {
 
 export async function getUserPasswordHistory(userId: number, limit = 10): Promise<string[]> {
     await ensureUsersTable();
-    const [rows] = await pool.query(
-        `SELECT password_hash FROM user_password_history WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT ?`,
-        [userId, limit]
-    );
-    return (rows as Array<{ password_hash: string }>).map((row) => row.password_hash);
+    try {
+        const [rows] = await pool.query(
+            `SELECT password_hash FROM user_password_history WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT ?`,
+            [userId, limit]
+        );
+        return (rows as Array<{ password_hash: string }>).map((row) => row.password_hash);
+    } catch (error) {
+        console.error("Unable to read user password history:", error);
+        return [];
+    }
 }
 
 export async function updateUserPassword(userId: number, passwordHash: string) {
@@ -179,7 +192,11 @@ export async function updateUserPassword(userId: number, passwordHash: string) {
     try {
         await connection.beginTransaction();
         await connection.query(`UPDATE users SET password_hash = ? WHERE id = ?`, [passwordHash, userId]);
-        await connection.query(`INSERT INTO user_password_history (user_id, password_hash) VALUES (?, ?)`, [userId, passwordHash]);
+        try {
+            await connection.query(`INSERT INTO user_password_history (user_id, password_hash) VALUES (?, ?)`, [userId, passwordHash]);
+        } catch (error) {
+            console.error("Unable to record user password history:", error);
+        }
         await connection.commit();
     } catch (error) {
         await connection.rollback();
