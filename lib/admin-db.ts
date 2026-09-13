@@ -123,6 +123,20 @@ export async function getAdminByUsername(username: string): Promise<AdminUser | 
     return (rows as AdminUser[])[0] ?? null;
 }
 
+export async function getAdminById(adminId: number): Promise<AdminUser | null> {
+    await ensureAdminSecurityTables();
+    const [rows] = await pool.query(`
+        SELECT a.id, a.username,
+               COALESCE(NULLIF(TRIM(s.reset_email), ''), NULLIF(TRIM(u.email), '')) AS email,
+               a.password_hash, a.role, a.is_active, a.created_at
+        FROM admins a
+        LEFT JOIN admin_security s ON s.admin_id = a.id
+        LEFT JOIN users u ON u.username = a.username
+        WHERE a.id = ? LIMIT 1
+    `, [adminId]);
+    return (rows as AdminUser[])[0] ?? null;
+}
+
 export async function getAdminByEmail(email: string): Promise<AdminUser | null> {
     await ensureAdminSecurityTables();
     const [rows] = await pool.query(`
