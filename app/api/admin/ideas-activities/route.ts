@@ -5,6 +5,9 @@ import {
     getIdeasAndActivities,
     getScheduledEvents,
 } from "@/lib/ideas-activities-db";
+import { getAdminSettings } from "@/lib/admin-settings-db";
+import { parseBirthday } from "@/lib/birthdays";
+import { getActiveBirthdayUsers } from "@/lib/user-db";
 
 const ALLOWED_ROLES = new Set(["member", "secretary", "treasurer", "admin"]);
 const ALLOWED_UPLOAD_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"]);
@@ -37,10 +40,21 @@ export async function GET(req: NextRequest) {
     const auth = requireLoggedInUser(req);
     if ("error" in auth) return auth.error;
 
-    const [ideas, scheduledEvents] = await Promise.all([
+    const [ideas, scheduledEvents, settings, birthdayUsers] = await Promise.all([
         getIdeasAndActivities(auth.user.id),
         getScheduledEvents(),
+        getAdminSettings(),
+        getActiveBirthdayUsers(),
     ]);
+
+    const excludedIds = new Set(settings.birthday_excluded_user_ids);
+    const birthdayMembers = settings.birthdays_on_calendar
+        ? birthdayUsers.flatMap((member) => {
+            const birthday = parseBirthday(member.birthday);
+            if (!birthday || excludedIds.has(member.id)) return [];
+            return [{ member_id: member.id, name: member.full_name, ...birthday }];
+        })
+        : [];
 
     const categoryMap = new Map<string, number>();
     for (const idea of ideas) {
@@ -57,6 +71,7 @@ export async function GET(req: NextRequest) {
         success: true,
         ideas,
         scheduledEvents,
+        birthdayMembers,
         popularCategory: popularCategory || null,
         smartRecommendation,
     });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth";
-import { getAdminSettings, updateAdminSettings } from "@/lib/admin-settings-db";
+import { getAdminSettings, normalizeExcludedUserIds, updateAdminSettings } from "@/lib/admin-settings-db";
 
 function requireRole(req: NextRequest, allowedRoles: string[]) {
     const token = req.cookies.get("glitz_token")?.value;
@@ -38,10 +38,19 @@ export async function PATCH(req: NextRequest) {
     const timezone = String(body.timezone || "").trim();
     const dateFormat = String(body.dateFormat || "").trim();
     const timeFormat = String(body.timeFormat || "").trim();
+    const birthdaysOnCalendar = body.birthdaysOnCalendar;
+    const birthdayExcludedUserIds = body.birthdayExcludedUserIds;
 
     if (!timezone || !dateFormat || !timeFormat) {
         return NextResponse.json(
             { success: false, error: "timezone, dateFormat, and timeFormat are required." },
+            { status: 400 }
+        );
+    }
+
+    if (typeof birthdaysOnCalendar !== "boolean" || !Array.isArray(birthdayExcludedUserIds)) {
+        return NextResponse.json(
+            { success: false, error: "Birthday calendar settings are invalid." },
             { status: 400 }
         );
     }
@@ -52,6 +61,12 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ success: false, error: "Invalid timezone." }, { status: 400 });
     }
 
-    const settings = await updateAdminSettings({ timezone, dateFormat, timeFormat });
+    const settings = await updateAdminSettings({
+        timezone,
+        dateFormat,
+        timeFormat,
+        birthdaysOnCalendar,
+        birthdayExcludedUserIds: normalizeExcludedUserIds(birthdayExcludedUserIds),
+    });
     return NextResponse.json({ success: true, settings });
 }

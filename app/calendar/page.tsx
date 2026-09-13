@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { birthdayDateForYear } from "@/lib/birthdays";
 
 type ScheduledEvent = {
     id: number;
@@ -12,10 +13,36 @@ type ScheduledEvent = {
     location_text: string;
 };
 
+type BirthdayMember = {
+    member_id: number;
+    name: string;
+    month: number;
+    day: number;
+};
+
+type CalendarEvent = ScheduledEvent & {
+    event_type?: "scheduled";
+    draggable?: true;
+};
+
+type BirthdayEvent = {
+    id: string;
+    member_id: number;
+    title: string;
+    start_date: string;
+    end_date: string;
+    location_text: string;
+    event_type: "birthday";
+    draggable: false;
+};
+
 type AuthUser = { id: string; username: string; role: string };
 
 function toIsoDate(value: Date) {
-    return value.toISOString().slice(0, 10);
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
 }
 
 function parseDate(value: string) {
@@ -41,6 +68,7 @@ export default function CalendarPage() {
     const [loading, setLoading] = useState(true);
     const [statusMessage, setStatusMessage] = useState("");
     const [scheduledEvents, setScheduledEvents] = useState<ScheduledEvent[]>([]);
+    const [birthdayMembers, setBirthdayMembers] = useState<BirthdayMember[]>([]);
     const [visibleMonth, setVisibleMonth] = useState(() => {
         const now = new Date();
         return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -66,6 +94,7 @@ export default function CalendarPage() {
         }
 
         setScheduledEvents(eventsData.scheduledEvents || []);
+        setBirthdayMembers(eventsData.birthdayMembers || []);
         setLoading(false);
     };
 
@@ -86,16 +115,36 @@ export default function CalendarPage() {
         return days;
     }, [visibleMonth]);
 
+    const birthdayEvents = useMemo<BirthdayEvent[]>(() => {
+        const years = [...new Set(monthDays.map((day) => day.getFullYear()))];
+        return birthdayMembers.flatMap((member) =>
+            years.map((year) => {
+                const date = birthdayDateForYear(member, year);
+                const dateString = toIsoDate(date);
+                return {
+                    id: `birthday-${member.member_id}-${year}`,
+                    member_id: member.member_id,
+                    title: `🎂 ${member.name}'s Birthday`,
+                    start_date: dateString,
+                    end_date: dateString,
+                    location_text: "",
+                    event_type: "birthday" as const,
+                    draggable: false as const,
+                };
+            })
+        );
+    }, [birthdayMembers, monthDays]);
+
     const eventsByDay = useMemo(() => {
-        const map = new Map<string, ScheduledEvent[]>();
-        for (const event of scheduledEvents) {
+        const map = new Map<string, Array<CalendarEvent | BirthdayEvent>>();
+        for (const event of [...scheduledEvents, ...birthdayEvents]) {
             const key = event.start_date.slice(0, 10);
             const existing = map.get(key) || [];
             existing.push(event);
             map.set(key, existing);
         }
         return map;
-    }, [scheduledEvents]);
+    }, [birthdayEvents, scheduledEvents]);
 
     const moveEvent = async (eventId: number, newStartDate: string) => {
         const original = scheduledEvents.find((event) => event.id === eventId);
@@ -132,7 +181,7 @@ export default function CalendarPage() {
             <section className="rounded-2xl border border-white/10 bg-[#2B193D]/70 p-6 shadow-xl">
                 <h1 className="text-3xl font-semibold text-[#f7d7ff]">📅 Calendar</h1>
                 <p className="mt-2 text-sm text-slate-200">
-                    This calendar shows events scheduled from Ideas & Activities. Drag and drop an event to any date, including different months.
+                    This calendar shows events scheduled from Ideas & Activities and active member birthdays. Scheduled events can be dragged to another date; birthdays stay fixed to their month and day.
                 </p>
                 {statusMessage && <p className="mt-3 rounded-lg bg-black/30 px-3 py-2 text-sm text-[#ffe8f6]">{statusMessage}</p>}
             </section>
@@ -187,15 +236,19 @@ export default function CalendarPage() {
                                     {items.map((item) => (
                                         <div
                                             key={item.id}
-                                            draggable={canMoveEvent}
+                                            draggable={item.event_type !== "birthday" && canMoveEvent}
                                             onDragStart={(event) => {
+                                                if (item.event_type === "birthday") {
+                                                    event.preventDefault();
+                                                    return;
+                                                }
                                                 event.dataTransfer.setData("text/event-id", String(item.id));
                                             }}
-                                            className={`rounded-md px-2 py-1 text-xs ${canMoveEvent ? "cursor-move bg-purple-700/80" : "bg-purple-700/40"}`}
-                                            title={`${item.title} • ${item.start_date.slice(0, 10)} to ${item.end_date.slice(0, 10)} • ${item.location_text}`}
+                                            className={`rounded-md px-2 py-1 text-xs ${item.event_type === "birthday" ? "border border-pink-300/30 bg-pink-700/50" : canMoveEvent ? "cursor-move bg-purple-700/80" : "bg-purple-700/40"}`}
+                                            title={item.event_type === "birthday" ? item.title : `${item.title} • ${item.start_date.slice(0, 10)} to ${item.end_date.slice(0, 10)} • ${item.location_text}`}
                                         >
                                             <p className="font-medium">{item.title}</p>
-                                            <p className="mt-0.5 text-[11px] text-purple-100/90">{item.location_text}</p>
+                                            {item.location_text && <p className="mt-0.5 text-[11px] text-purple-100/90">{item.location_text}</p>}
                                         </div>
                                     ))}
                                 </div>

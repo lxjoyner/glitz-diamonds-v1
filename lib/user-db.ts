@@ -174,6 +174,21 @@ export async function getAllUsers(): Promise<Array<Pick<SiteUser, "id" | "userna
     return rows as Array<Pick<SiteUser, "id" | "username" | "email" | "full_name" | "address" | "tshirt_size" | "favorite_color" | "hat_size" | "gender" | "birthday" | "role" | "is_active" | "created_at">>;
 }
 
+export async function getActiveBirthdayUsers(): Promise<Array<Pick<SiteUser, "id" | "full_name" | "birthday">>> {
+    await ensureUsersTable();
+
+    const [rows] = await pool.query(`
+        SELECT id, full_name, birthday
+        FROM users
+        WHERE is_active = 1
+          AND birthday IS NOT NULL
+          AND TRIM(birthday) <> ''
+        ORDER BY full_name ASC
+    `);
+
+    return rows as Array<Pick<SiteUser, "id" | "full_name" | "birthday">>;
+}
+
 export async function setUserRole(userId: number, role: UserRole | null) {
     await ensureUsersTable();
 
