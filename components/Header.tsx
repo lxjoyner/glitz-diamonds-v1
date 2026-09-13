@@ -79,49 +79,29 @@ export default function Header() {
             <header className="sticky top-0 z-50">
                 <div className="w-full px-0">
                     <div className="grid grid-cols-[auto_1fr_auto] items-center py-2">
-                        {/* Left section: Hamburger + Logo */}
                         <div className="flex items-center pl-0 ml-0">
                             <button
                                 aria-label="Toggle navigation"
                                 className="mr-3 p-2 rounded-lg hover:bg-white/10 transition"
                                 onClick={() => setOpen(true)}
                             >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 24 24"
-                                    fill="currentColor"
-                                    className="w-7 h-7"
-                                >
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7">
                                     <path d="M3.75 5.25h16.5v1.5H3.75zM3.75 11.25h16.5v1.5H3.75zM3.75 17.25h16.5v1.5H3.75z" />
                                 </svg>
                             </button>
 
                             <Link href="/" className="flex items-center gap-3 shrink-0">
-                                <Image
-                                    src="/GlitzOfDiamond_Logo.png"
-                                    alt="Glitz Of Diamonds logo"
-                                    width={160}
-                                    height={40}
-                                    className="h-12 w-auto"
-                                    priority
-                                />
+                                <Image src="/GlitzOfDiamond_Logo.png" alt="Glitz Of Diamonds logo" width={160} height={40} className="h-12 w-auto" priority />
                             </Link>
                         </div>
 
-                        {/* Center title */}
                         <div className="flex justify-center px-2">
-                            <h1 className="text-lg md:text-3xl font-semibold text-white tracking-wide drop-shadow text-center whitespace-nowrap">
-                                Glitz Of Diamonds
-                            </h1>
+                            <h1 className="text-lg md:text-3xl font-semibold text-white tracking-wide drop-shadow text-center whitespace-nowrap">Glitz Of Diamonds</h1>
                         </div>
 
                         <div className="flex items-center justify-end pr-3 min-w-[6rem]">
                             {!loadingAuth && adminUser && (
-                                <Link
-                                    href="/admin/messages"
-                                    className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/30 px-3 py-1.5 text-sm text-white hover:bg-white/10 transition"
-                                    aria-label="Open dashboard"
-                                >
+                                <Link href="/profile" className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/30 px-3 py-1.5 text-sm text-white hover:bg-white/10 transition" aria-label="Open profile">
                                     <span className="text-base leading-none" aria-hidden="true">👤</span>
                                     <span className="max-w-[10rem] truncate">{displayName}</span>
                                 </Link>
@@ -131,44 +111,15 @@ export default function Header() {
                 </div>
             </header>
 
-            {open && (
-                <div
-                    className="fixed inset-0 z-40 bg-black/50"
-                    onClick={() => setOpen(false)}
-                />
-            )}
+            {open && <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setOpen(false)} />}
 
-            <div
-                className={`fixed top-0 left-0 z-50 h-full w-72 max-w-[85vw] transform bg-black/95 border-r border-white/10 shadow-2xl transition-transform duration-300 ${
-                    open ? "translate-x-0" : "-translate-x-full"
-                }`}
-            >
+            <div className={`fixed top-0 left-0 z-50 h-full w-72 max-w-[85vw] transform bg-black/95 border-r border-white/10 shadow-2xl transition-transform duration-300 ${open ? "translate-x-0" : "-translate-x-full"}`}>
                 <div className="flex items-center justify-between px-4 py-4 border-b border-white/10">
                     <div className="flex items-center gap-3">
-                        <Image
-                            src="/GlitzOfDiamond_Logo.png"
-                            alt="Glitz Of Diamonds logo"
-                            width={120}
-                            height={32}
-                            className="h-10 w-auto"
-                        />
+                        <Image src="/GlitzOfDiamond_Logo.png" alt="Glitz Of Diamonds logo" width={120} height={32} className="h-10 w-auto" />
                     </div>
-
-                    <button
-                        aria-label="Close navigation"
-                        className="p-2 rounded-lg hover:bg-white/10 transition"
-                        onClick={() => setOpen(false)}
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            className="w-6 h-6"
-                        >
-                            <path d="M6 6l12 12M18 6L6 18" />
-                        </svg>
+                    <button aria-label="Close navigation" className="p-2 rounded-lg hover:bg-white/10 transition" onClick={() => setOpen(false)}>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6"><path d="M6 6l12 12M18 6L6 18" /></svg>
                     </button>
                 </div>
 
@@ -178,58 +129,33 @@ export default function Header() {
                     <Link href="/contact" className="nav-link" onClick={() => setOpen(false)}>Contact</Link>
                     <Link href="/donate" className="nav-link" onClick={() => setOpen(false)}>Donate</Link>
 
-                    {!loadingAuth && adminUser?.role === "admin" && (
-                        <Link href="/admin/membership" className="nav-link" onClick={() => setOpen(false)}>Registered Users Details</Link>
-                    )}
-                    {!loadingAuth && adminUser?.role === "admin" && (
-                        <Link href="/admin/member-invites" className="nav-link" onClick={() => setOpen(false)}>Member Invites</Link>
-                    )}
-                    {!loadingAuth && adminUser?.role === "admin" && (
-                        <Link href="/admin/roles-manager" className="nav-link" onClick={() => setOpen(false)}>Roles Manager</Link>
-                    )}
-                    {!loadingAuth && adminUser && (
-                        <Link href="/admin/messages" className="nav-link" onClick={() => setOpen(false)}>Dashboard</Link>
-                    )}
-                    {!loadingAuth && adminUser && (
-                        <Link href="/admin/ideas-activities" className="nav-link" onClick={() => setOpen(false)}>Ideas & Activities</Link>
-                    )}
-                    {!loadingAuth && adminUser && (
-                        <Link href="/calendar" className="nav-link" onClick={() => setOpen(false)}>Calendar</Link>
-                    )}
+                    {!loadingAuth && adminUser && <Link href="/profile" className="nav-link" onClick={() => setOpen(false)}>My Profile</Link>}
+                    {!loadingAuth && adminUser?.role === "admin" && <Link href="/admin/membership" className="nav-link" onClick={() => setOpen(false)}>Registered Users Details</Link>}
+                    {!loadingAuth && adminUser?.role === "admin" && <Link href="/admin/member-invites" className="nav-link" onClick={() => setOpen(false)}>Member Invites</Link>}
+                    {!loadingAuth && adminUser?.role === "admin" && <Link href="/admin/roles-manager" className="nav-link" onClick={() => setOpen(false)}>Roles Manager</Link>}
+                    {!loadingAuth && adminUser && <Link href="/admin/messages" className="nav-link" onClick={() => setOpen(false)}>Dashboard</Link>}
+                    {!loadingAuth && adminUser && <Link href="/admin/ideas-activities" className="nav-link" onClick={() => setOpen(false)}>Ideas & Activities</Link>}
+                    {!loadingAuth && adminUser && <Link href="/calendar" className="nav-link" onClick={() => setOpen(false)}>Calendar</Link>}
 
                     {!loadingAuth && (adminUser?.role === "admin" || adminUser?.role === "treasurer") && (
                         <div className="rounded-lg border border-white/10 bg-white/[0.03]">
-                            <button
-                                type="button"
-                                onClick={() => setInvoicingOpen((current) => !current)}
-                                className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-white hover:bg-white/10 transition"
-                                aria-expanded={invoicingOpen}
-                                aria-controls="invoicing-submenu"
-                            >
-                                <span>Invoicing</span>
-                                <span className={`text-sm transition-transform ${invoicingOpen ? "rotate-180" : ""}`} aria-hidden="true">⌄</span>
+                            <button type="button" onClick={() => setInvoicingOpen((current) => !current)} className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-white hover:bg-white/10 transition" aria-expanded={invoicingOpen} aria-controls="invoicing-submenu">
+                                <span>Invoicing</span><span className={`text-sm transition-transform ${invoicingOpen ? "rotate-180" : ""}`} aria-hidden="true">⌄</span>
                             </button>
-
                             {invoicingOpen && (
                                 <div id="invoicing-submenu" className="flex flex-col gap-1 border-t border-white/10 px-2 py-2">
                                     <Link href="/admin/invoices" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>Invoices Dashboard</Link>
                                     <Link href="/admin/invoices/new" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>New Invoice</Link>
                                     <Link href="/admin/invoices/recurring" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>Recurring Invoices</Link>
-                                    {adminUser?.role === "admin" && (
-                                        <Link href="/admin/invoices/settings" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>Invoice Settings</Link>
-                                    )}
+                                    {adminUser?.role === "admin" && <Link href="/admin/invoices/settings" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>Invoice Settings</Link>}
                                 </div>
                             )}
                         </div>
                     )}
 
                     <div className="mt-4 border-t border-white/10 pt-4">
-                        {!loadingAuth && !adminUser && (
-                            <Link href="/admin/login" className="btn btn-primary w-fit" onClick={() => setOpen(false)}>Login</Link>
-                        )}
-                        {!loadingAuth && adminUser && (
-                            <button type="button" onClick={handleLogout} className="rounded-lg bg-red-800 text-white px-4 py-2 hover:bg-red-600 transition">Logout</button>
-                        )}
+                        {!loadingAuth && !adminUser && <Link href="/admin/login" className="btn btn-primary w-fit" onClick={() => setOpen(false)}>Login</Link>}
+                        {!loadingAuth && adminUser && <button type="button" onClick={handleLogout} className="rounded-lg bg-red-800 text-white px-4 py-2 hover:bg-red-600 transition">Logout</button>}
                     </div>
                 </nav>
             </div>
