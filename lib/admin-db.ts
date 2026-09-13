@@ -90,16 +90,20 @@ async function ensureAdminSecurityTables() {
         )
     `);
 
-    await pool.query(`
-        CREATE TABLE IF NOT EXISTS admin_password_history (
-            id BIGINT AUTO_INCREMENT PRIMARY KEY,
-            admin_id INT NOT NULL,
-            password_hash VARCHAR(255) NOT NULL,
-            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_admin_password_history (admin_id, created_at),
-            FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE
-        )
-    `);
+    try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS admin_password_history (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                admin_id INT NOT NULL,
+                password_hash VARCHAR(255) NOT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_admin_password_history (admin_id, created_at),
+                FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE
+            )
+        `);
+    } catch (error) {
+        console.error("Admin password history table initialization failed; login will continue without blocking:", error);
+    }
 
     bootstrapped = true;
 }
@@ -201,8 +205,13 @@ export async function setAdminTemporaryPassword(adminId: number, passwordHash: s
 
 export async function getAdminPasswordHistory(adminId: number, limit = 10): Promise<string[]> {
     await ensureAdminSecurityTables();
-    const [rows] = await pool.query(`SELECT password_hash FROM admin_password_history WHERE admin_id = ? ORDER BY created_at DESC, id DESC LIMIT ?`, [adminId, limit]);
-    return (rows as Array<{ password_hash: string }>).map((row) => row.password_hash);
+    try {
+        const [rows] = await pool.query(`SELECT password_hash FROM admin_password_history WHERE admin_id = ? ORDER BY created_at DESC, id DESC LIMIT ?`, [adminId, limit]);
+        return (rows as Array<{ password_hash: string }>).map((row) => row.password_hash);
+    } catch (error) {
+        console.error("Unable to read admin password history:", error);
+        return [];
+    }
 }
 
 export async function updateAdminPassword(adminId: number, passwordHash: string) {
@@ -211,7 +220,11 @@ export async function updateAdminPassword(adminId: number, passwordHash: string)
     try {
         await connection.beginTransaction();
         await connection.query(`UPDATE admins SET password_hash = ? WHERE id = ?`, [passwordHash, adminId]);
-        await connection.query(`INSERT INTO admin_password_history (admin_id, password_hash) VALUES (?, ?)`, [adminId, passwordHash]);
+        try {
+            await connection.query(`INSERT INTO admin_password_history (admin_id, password_hash) VALUES (?, ?)`, [adminId, passwordHash]);
+        } catch (error) {
+            console.error("Unable to record admin password history:", error);
+        }
         await connection.query(`UPDATE admin_security SET password_changed_at = NOW(), reset_required = 0, last_reset_email_sent_at = NULL WHERE admin_id = ?`, [adminId]);
         await connection.commit();
     } catch (error) {
