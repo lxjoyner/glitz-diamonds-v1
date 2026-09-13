@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { formatBirthdayMonthDay } from "@/lib/birthdays";
 
 type AuthUser = {
     id: string;
@@ -35,6 +36,7 @@ type SiteUser = {
     full_name: string;
     role: string | null;
     is_active: number;
+    birthday: string;
     created_at: string;
 };
 
@@ -53,6 +55,8 @@ type DashboardSettings = {
     timezone: string;
     date_format: string;
     time_format: string;
+    birthdays_on_calendar: boolean;
+    birthday_excluded_user_ids: number[];
 };
 
 type RawDashboardSettings = {
@@ -61,6 +65,10 @@ type RawDashboardSettings = {
     time_format?: string;
     dateFormat?: string;
     timeFormat?: string;
+    birthdays_on_calendar?: number | boolean;
+    birthday_excluded_user_ids?: unknown;
+    birthdaysOnCalendar?: boolean;
+    birthdayExcludedUserIds?: unknown;
 };
 
 const DATE_FORMAT_OPTIONS = ["MMM d, yyyy", "MM/dd/yyyy", "yyyy-MM-dd"];
@@ -129,10 +137,17 @@ function toIntlOptions(dateFormat: string, timeFormat: string): Intl.DateTimeFor
 }
 
 function normalizeSettings(raw?: RawDashboardSettings): DashboardSettings {
+    const rawExcludedIds = raw?.birthday_excluded_user_ids ?? raw?.birthdayExcludedUserIds;
+    const excludedIds = Array.isArray(rawExcludedIds)
+        ? [...new Set(rawExcludedIds.map(Number).filter((id) => Number.isInteger(id) && id > 0))]
+        : [];
+
     return {
         timezone: raw?.timezone || "America/Chicago",
         date_format: raw?.date_format || raw?.dateFormat || "MMM d, yyyy",
         time_format: raw?.time_format || raw?.timeFormat || "h:mm a",
+        birthdays_on_calendar: Boolean(raw?.birthdays_on_calendar ?? raw?.birthdaysOnCalendar ?? true),
+        birthday_excluded_user_ids: excludedIds,
     };
 }
 
@@ -221,11 +236,20 @@ export default function AdminMessagesPage() {
             timezone: "America/Chicago",
             date_format: "MMM d, yyyy",
             time_format: "h:mm a",
+            birthdays_on_calendar: true,
+            birthday_excluded_user_ids: [],
         })
     );
     const [settingsMessage, setSettingsMessage] = useState("");
     const timezoneOptions = useMemo(() => getTimezoneOptions(), []);
     const userDisplayName = useMemo(() => toDisplayName(user?.username || ""), [user?.username]);
+    const birthdayUsers = useMemo(
+        () => siteUsers.flatMap((siteUser) => {
+            const birthdayLabel = formatBirthdayMonthDay(siteUser.birthday);
+            return birthdayLabel ? [{ ...siteUser, birthdayLabel }] : [];
+        }),
+        [siteUsers]
+    );
 
     const canManageUsers = user?.role === "admin";
     const canManageGallery = user?.role === "admin" || user?.role === "secretary";
@@ -329,6 +353,8 @@ export default function AdminMessagesPage() {
                 timezone: settings.timezone,
                 dateFormat: settings.date_format,
                 timeFormat: settings.time_format,
+                birthdaysOnCalendar: settings.birthdays_on_calendar,
+                birthdayExcludedUserIds: settings.birthday_excluded_user_ids,
             }),
         });
 
@@ -341,6 +367,19 @@ export default function AdminMessagesPage() {
 
         setSettings(normalizeSettings(data.settings));
         setSettingsMessage("Settings saved.");
+    };
+
+    const toggleBirthdayExclusion = (userId: number) => {
+        setSettings((prev) => {
+            const isExcluded = prev.birthday_excluded_user_ids.includes(userId);
+            return {
+                ...prev,
+                birthday_excluded_user_ids: isExcluded
+                    ? prev.birthday_excluded_user_ids.filter((id) => id !== userId)
+                    : [...prev.birthday_excluded_user_ids, userId],
+            };
+        });
+        setSettingsMessage("Birthday visibility changed. Select Save settings to apply it.");
     };
 
     const handleSyncStripeDonations = async () => {
@@ -644,6 +683,49 @@ export default function AdminMessagesPage() {
                                     </option>
                                 ))}
                             </select>
+                        </div>
+
+                        <div className="mt-6 border-t border-white/10 pt-5">
+                            <h3 className="text-xl font-semibold text-[#ffdef7]">Birthday Calendar</h3>
+                            <label className="mt-3 flex cursor-pointer items-center gap-3 rounded-lg border border-white/10 bg-black/20 p-3">
+                                <input
+                                    type="checkbox"
+                                    checked={settings.birthdays_on_calendar}
+                                    onChange={(event) => setSettings((prev) => ({ ...prev, birthdays_on_calendar: event.target.checked }))}
+                                    className="h-4 w-4 accent-fuchsia-500"
+                                />
+                                <span className="text-sm">Automatically show active member birthdays on Calendar</span>
+                            </label>
+
+                            <div className="mt-5">
+                                <h4 className="font-medium">Birthday Calendar Members</h4>
+                                <p className="mt-1 text-xs text-slate-400">Hiding a birthday does not change the member profile. Changes apply when you save settings.</p>
+                                <div className="mt-3 divide-y divide-white/10 overflow-hidden rounded-lg border border-white/10">
+                                    {birthdayUsers.map((birthdayUser) => {
+                                        const isExcluded = settings.birthday_excluded_user_ids.includes(birthdayUser.id);
+                                        const isActive = birthdayUser.is_active === 1;
+                                        const isShown = settings.birthdays_on_calendar && isActive && !isExcluded;
+                                        return (
+                                            <div key={birthdayUser.id} className="grid gap-2 bg-black/20 px-4 py-3 text-sm sm:grid-cols-[1fr_auto_auto_auto] sm:items-center">
+                                                <span className="font-medium">{birthdayUser.full_name}</span>
+                                                <span className="text-slate-300">{birthdayUser.birthdayLabel}</span>
+                                                <span className={isActive ? "text-emerald-300" : "text-slate-400"}>{isActive ? "Active" : "Inactive"}</span>
+                                                <div className="flex items-center gap-3 sm:justify-end">
+                                                    <span className="text-xs text-slate-400">{isShown ? "Shown" : "Not shown"}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleBirthdayExclusion(birthdayUser.id)}
+                                                        className="min-w-16 rounded-md border border-fuchsia-300/30 px-2 py-1 text-xs hover:bg-fuchsia-500/20"
+                                                    >
+                                                        {isExcluded ? "Show" : "Hide"}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                    {birthdayUsers.length === 0 && <p className="bg-black/20 px-4 py-3 text-sm text-slate-400">No members have a valid birthday.</p>}
+                                </div>
+                            </div>
                         </div>
 
                         <div className="mt-3 flex items-center gap-3">
