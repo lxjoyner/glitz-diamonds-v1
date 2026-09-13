@@ -174,19 +174,34 @@ export default function RecurringInvoicesPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filtered.map((row) => (
-                                        <tr key={row.id} className="border-b border-slate-100 hover:bg-slate-50">
+                                    {filtered.map((row) => {
+                                        const viewHref = `/admin/invoices/recurring/${row.id}`;
+                                        return (
+                                        <tr
+                                            key={row.id}
+                                            onClick={() => router.push(viewHref)}
+                                            onKeyDown={(event) => {
+                                                if (event.key === "Enter" || event.key === " ") {
+                                                    event.preventDefault();
+                                                    router.push(viewHref);
+                                                }
+                                            }}
+                                            role="link"
+                                            tabIndex={0}
+                                            aria-label={`Open recurring invoice for ${row.member_name || `member ${row.member_id}`}`}
+                                            className="cursor-pointer border-b border-slate-100 hover:bg-slate-50 focus:bg-slate-50 focus:outline-none"
+                                        >
                                             <td className="px-3 py-4"><span className={`rounded-md px-2.5 py-1 text-xs font-bold ${row.status === "active" ? "bg-emerald-100 text-emerald-800" : row.status === "draft" ? "bg-yellow-200 text-black" : "bg-slate-200 text-slate-700"}`}>{row.status === "active" ? "Active" : row.status === "draft" ? "Draft" : "Ended"}</span></td>
                                             <td className="px-3 py-4 font-medium">{row.member_name || `Member #${row.member_id}`}</td>
                                             <td className="px-3 py-4"><div>Repeat monthly on the {row.repeat_day}{row.repeat_day === 1 ? "st" : row.repeat_day === 2 ? "nd" : row.repeat_day === 3 ? "rd" : "th"}</div><div className="text-xs text-slate-500">First invoice: {displayDate(row.first_invoice_date)}, Ends: {row.end_date ? displayDate(row.end_date) : "Never"}</div></td>
                                             <td className="px-3 py-4">{displayDate(row.previous_invoice_date)}</td>
                                             <td className="px-3 py-4">{displayDate(row.next_invoice_date)}</td>
                                             <td className="px-3 py-4 text-right">{money(row.amount_cents)}</td>
-                                            <td className="relative px-3 py-4 text-right">
+                                            <td className="relative px-3 py-4 text-right" onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
                                                 <button onClick={() => setOpenMenuId(openMenuId === row.id ? null : row.id)} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-blue-600 text-blue-700 hover:bg-blue-50" aria-label={`Actions for ${row.member_name || "recurring invoice"}`}>⌄</button>
                                                 {openMenuId === row.id && (
                                                     <div className="absolute right-3 z-50 mt-2 w-52 rounded-xl border border-slate-200 bg-white py-2 text-left shadow-xl">
-                                                        <Link href={`/admin/invoices/recurring/${row.id}`} className="block px-4 py-2 hover:bg-slate-50">View</Link>
+                                                        <Link href={viewHref} className="block px-4 py-2 hover:bg-slate-50">View</Link>
                                                         <Link href={`/admin/invoices/recurring/${row.id}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit</Link>
                                                         {row.status !== "ended" && <button onClick={() => endRecurring(row)} className="block w-full px-4 py-2 text-left text-red-700 hover:bg-red-50">End</button>}
                                                         <Link href="/admin/invoices" className="block px-4 py-2 hover:bg-slate-50">View created invoices</Link>
@@ -195,7 +210,8 @@ export default function RecurringInvoicesPage() {
                                                 )}
                                             </td>
                                         </tr>
-                                    ))}
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                             {filtered.length === 0 && <p className="py-10 text-center text-slate-400">No recurring invoices match the selected filters.</p>}
