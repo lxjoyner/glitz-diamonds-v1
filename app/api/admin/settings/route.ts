@@ -35,9 +35,16 @@ export async function PATCH(req: NextRequest) {
     if ("error" in auth) return auth.error;
 
     const body = await req.json();
-    const timezone = String(body.timezone || "").trim();
-    const dateFormat = String(body.dateFormat || "").trim();
-    const timeFormat = String(body.timeFormat || "").trim();
+    const current = await getAdminSettings();
+    const timezone = String(body.timezone ?? current.timezone).trim();
+    const dateFormat = String(body.dateFormat ?? current.date_format).trim();
+    const timeFormat = String(body.timeFormat ?? current.time_format).trim();
+    const birthdaysOnCalendar = body.birthdaysOnCalendar === undefined
+        ? Boolean(current.birthdays_on_calendar)
+        : Boolean(body.birthdaysOnCalendar);
+    const excludedBirthdayUserIds = Array.isArray(body.excludedBirthdayUserIds)
+        ? body.excludedBirthdayUserIds.map(Number).filter((id: number) => Number.isInteger(id) && id > 0)
+        : current.excluded_birthday_user_ids;
 
     if (!timezone || !dateFormat || !timeFormat) {
         return NextResponse.json(
@@ -52,6 +59,12 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ success: false, error: "Invalid timezone." }, { status: 400 });
     }
 
-    const settings = await updateAdminSettings({ timezone, dateFormat, timeFormat });
+    const settings = await updateAdminSettings({
+        timezone,
+        dateFormat,
+        timeFormat,
+        birthdaysOnCalendar,
+        excludedBirthdayUserIds,
+    });
     return NextResponse.json({ success: true, settings });
 }
