@@ -162,6 +162,40 @@ export async function updateUserPassword(userId: number, passwordHash: string) {
     );
 }
 
+export async function updateMemberProfile(userId: number, input: {
+    fullName: string;
+    email: string;
+    address: string;
+    tshirtSize: string;
+    favoriteColor: string;
+    hatSize: string;
+    gender: string;
+    birthday: string;
+}) {
+    await ensureUsersTable();
+
+    await pool.query(
+        `
+        UPDATE users
+        SET full_name = ?, email = ?, address = ?, tshirt_size = ?, favorite_color = ?, hat_size = ?, gender = ?, birthday = ?
+        WHERE id = ?
+        `,
+        [
+            input.fullName,
+            input.email,
+            input.address,
+            input.tshirtSize,
+            input.favoriteColor,
+            input.hatSize,
+            input.gender,
+            input.birthday,
+            userId,
+        ]
+    );
+
+    return getUserById(userId);
+}
+
 export async function getAllUsers(): Promise<Array<Pick<SiteUser, "id" | "username" | "email" | "full_name" | "address" | "tshirt_size" | "favorite_color" | "hat_size" | "gender" | "birthday" | "role" | "is_active" | "created_at">>> {
     await ensureUsersTable();
 
