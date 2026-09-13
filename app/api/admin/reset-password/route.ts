@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
-import { consumePasswordResetToken, getAdminByUsername, getAdminPasswordHistory, updateAdminPassword } from "@/lib/admin-db";
+import { consumePasswordResetToken, getAdminById, getAdminPasswordHistory, updateAdminPassword } from "@/lib/admin-db";
 
 function isStrongEnough(password: string) {
     return password.length >= 12;
@@ -41,10 +41,15 @@ export async function POST(req: Request) {
             );
         }
 
-        const admin = await getAdminByUsername(String(resetToken.admin_id));
-        const history = await getAdminPasswordHistory(resetToken.admin_id, 10);
-        if (admin?.password_hash) history.unshift(admin.password_hash);
+        const admin = await getAdminById(resetToken.admin_id);
+        if (!admin) {
+            return NextResponse.json(
+                { success: false, error: "Admin account was not found." },
+                { status: 404 }
+            );
+        }
 
+        const history = [admin.password_hash, ...(await getAdminPasswordHistory(resetToken.admin_id, 10))];
         if (await passwordWasUsed(cleanPassword, history)) {
             return NextResponse.json(
                 { success: false, error: "You cannot reuse your current password or any of your last 10 passwords." },
