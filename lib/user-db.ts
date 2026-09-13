@@ -97,123 +97,60 @@ export async function createRegisteredUser(params: {
 
 export async function getUserByUsername(username: string): Promise<SiteUser | null> {
     await ensureUsersTable();
-
-    const [rows] = await pool.query(
-        `
-        SELECT
-            id, username, email, full_name, password_hash, address, tshirt_size, favorite_color, hat_size, gender, birthday,
-            role, is_active, created_at, updated_at
-        FROM users
-        WHERE username = ?
-        LIMIT 1
-        `,
-        [username]
-    );
-
+    const [rows] = await pool.query(`SELECT id, username, email, full_name, password_hash, address, tshirt_size, favorite_color, hat_size, gender, birthday, role, is_active, created_at, updated_at FROM users WHERE username = ? LIMIT 1`, [username]);
     return (rows as SiteUser[])[0] ?? null;
 }
 
 export async function getUserByEmail(email: string): Promise<SiteUser | null> {
     await ensureUsersTable();
-
-    const [rows] = await pool.query(
-        `
-        SELECT
-            id, username, email, full_name, password_hash, address, tshirt_size, favorite_color, hat_size, gender, birthday,
-            role, is_active, created_at, updated_at
-        FROM users
-        WHERE email = ?
-        LIMIT 1
-        `,
-        [email]
-    );
-
+    const [rows] = await pool.query(`SELECT id, username, email, full_name, password_hash, address, tshirt_size, favorite_color, hat_size, gender, birthday, role, is_active, created_at, updated_at FROM users WHERE email = ? LIMIT 1`, [email]);
     return (rows as SiteUser[])[0] ?? null;
 }
 
 export async function getUserById(userId: number): Promise<SiteUser | null> {
     await ensureUsersTable();
-
-    const [rows] = await pool.query(
-        `
-        SELECT
-            id, username, email, full_name, password_hash, address, tshirt_size, favorite_color, hat_size, gender, birthday,
-            role, is_active, created_at, updated_at
-        FROM users
-        WHERE id = ?
-        LIMIT 1
-        `,
-        [userId]
-    );
-
+    const [rows] = await pool.query(`SELECT id, username, email, full_name, password_hash, address, tshirt_size, favorite_color, hat_size, gender, birthday, role, is_active, created_at, updated_at FROM users WHERE id = ? LIMIT 1`, [userId]);
     return (rows as SiteUser[])[0] ?? null;
 }
 
 export async function updateUserPassword(userId: number, passwordHash: string) {
     await ensureUsersTable();
-
-    await pool.query(
-        `
-        UPDATE users
-        SET password_hash = ?
-        WHERE id = ?
-        `,
-        [passwordHash, userId]
-    );
+    await pool.query(`UPDATE users SET password_hash = ? WHERE id = ?`, [passwordHash, userId]);
 }
 
 export async function getAllUsers(): Promise<Array<Pick<SiteUser, "id" | "username" | "email" | "full_name" | "address" | "tshirt_size" | "favorite_color" | "hat_size" | "gender" | "birthday" | "role" | "is_active" | "created_at">>> {
     await ensureUsersTable();
-
-    const [rows] = await pool.query(`
-        SELECT id, username, email, full_name, address, tshirt_size, favorite_color, hat_size, gender, birthday, role, is_active, created_at
-        FROM users
-        ORDER BY created_at DESC
-    `);
-
+    const [rows] = await pool.query(`SELECT id, username, email, full_name, address, tshirt_size, favorite_color, hat_size, gender, birthday, role, is_active, created_at FROM users ORDER BY created_at DESC`);
     return rows as Array<Pick<SiteUser, "id" | "username" | "email" | "full_name" | "address" | "tshirt_size" | "favorite_color" | "hat_size" | "gender" | "birthday" | "role" | "is_active" | "created_at">>;
+}
+
+export async function getActiveBirthdayUsers(): Promise<Array<Pick<SiteUser, "id" | "full_name" | "birthday">>> {
+    await ensureUsersTable();
+    const [rows] = await pool.query(`
+        SELECT id, full_name, birthday
+        FROM users
+        WHERE is_active = 1
+          AND birthday IS NOT NULL
+          AND TRIM(birthday) <> ''
+        ORDER BY full_name ASC
+    `);
+    return rows as Array<Pick<SiteUser, "id" | "full_name" | "birthday">>;
 }
 
 export async function setUserRole(userId: number, role: UserRole | null) {
     await ensureUsersTable();
-
-    await pool.query(
-        `
-        UPDATE users
-        SET role = ?
-        WHERE id = ?
-        `,
-        [role, userId]
-    );
+    await pool.query(`UPDATE users SET role = ? WHERE id = ?`, [role, userId]);
 }
 
 export async function deleteUserById(userId: number) {
     await ensureUsersTable();
-
-    const [result] = await pool.query(
-        `
-        DELETE FROM users
-        WHERE id = ?
-        `,
-        [userId]
-    );
-
+    const [result] = await pool.query(`DELETE FROM users WHERE id = ?`, [userId]);
     return Number((result as { affectedRows?: number }).affectedRows || 0);
 }
 
 export async function getUserForAdminSync(userId: number): Promise<Pick<SiteUser, "id" | "username" | "password_hash" | "is_active"> | null> {
     await ensureUsersTable();
-
-    const [rows] = await pool.query(
-        `
-        SELECT id, username, password_hash, is_active
-        FROM users
-        WHERE id = ?
-        LIMIT 1
-        `,
-        [userId]
-    );
-
+    const [rows] = await pool.query(`SELECT id, username, password_hash, is_active FROM users WHERE id = ? LIMIT 1`, [userId]);
     return ((rows as Array<Pick<SiteUser, "id" | "username" | "password_hash" | "is_active">>)[0]) ?? null;
 }
 
@@ -230,6 +167,5 @@ export async function getActiveUsersForPollEmails(): Promise<Array<Pick<SiteUser
         ORDER BY full_name ASC
         `
     );
-
     return rows as Array<Pick<SiteUser, "id" | "email" | "full_name" | "role">>;
 }
