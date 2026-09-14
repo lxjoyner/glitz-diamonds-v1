@@ -113,6 +113,27 @@ export default function InvoicesPage() {
     const [numberFilter, setNumberFilter] = useState("");
     const [tab, setTab] = useState("unpaid");
     const [openActionId, setOpenActionId] = useState<number | null>(null);
+    const actionsMenuRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        if (openActionId === null) return;
+
+        const handleClickAway = (event: MouseEvent) => {
+            if (actionsMenuRef.current && !actionsMenuRef.current.contains(event.target as Node)) {
+                setOpenActionId(null);
+            }
+        };
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === "Escape") setOpenActionId(null);
+        };
+
+        document.addEventListener("mousedown", handleClickAway);
+        document.addEventListener("keydown", handleKeyDown);
+        return () => {
+            document.removeEventListener("mousedown", handleClickAway);
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [openActionId]);
 
     async function loadInvoices() {
         const res = await fetch("/api/admin/invoices", { cache: "no-store" });
@@ -259,17 +280,19 @@ export default function InvoicesPage() {
                                         <td className="relative px-3 py-4 text-right" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                                             {canSend ? <div className="inline-flex items-center gap-2">
                                                 <button type="button" onClick={() => sendInvoice(invoice, Boolean(invoice.sent_at))} disabled={sendingId === invoice.id || !invoice.member_email} className="font-semibold text-blue-700 disabled:cursor-not-allowed disabled:opacity-40">{sendingId === invoice.id ? "Sending..." : invoice.sent_at ? "Send reminder" : "Send invoice"}</button>
-                                                <button type="button" onClick={() => setOpenActionId(openActionId === invoice.id ? null : invoice.id)} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-blue-600 text-blue-700 hover:bg-blue-50" aria-label={`Actions for invoice ${invoice.invoice_number}`}>⌄</button>
+                                                <div ref={openActionId === invoice.id ? actionsMenuRef : null} className="relative inline-block">
+                                                    <button type="button" onClick={() => setOpenActionId(openActionId === invoice.id ? null : invoice.id)} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-blue-600 text-blue-700 hover:bg-blue-50" aria-label={`Actions for invoice ${invoice.invoice_number}`} aria-expanded={openActionId === invoice.id}>⌄</button>
+                                                    {openActionId === invoice.id && <div className="absolute right-0 z-50 mt-2 w-52 rounded-xl border border-slate-200 bg-white py-2 text-left shadow-xl">
+                                                        {invoiceHref && <Link href={invoiceHref} className="block px-4 py-2 hover:bg-slate-50">View</Link>}
+                                                        <Link href={`/admin/invoices/${invoice.id}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit</Link>
+                                                        <Link href={`/admin/invoices/new?duplicate=${invoice.id}`} className="block px-4 py-2 hover:bg-slate-50">Duplicate</Link>
+                                                        <button type="button" disabled className="block w-full cursor-not-allowed px-4 py-2 text-left text-slate-400">Record payment</button>
+                                                        <button type="button" onClick={() => sendInvoice(invoice, true)} disabled={!invoice.member_email || sendingId === invoice.id} className="block w-full px-4 py-2 text-left hover:bg-slate-50 disabled:text-slate-400">Resend invoice</button>
+                                                        {printHref && <Link href={printHref} target="_blank" rel="noreferrer" className="block px-4 py-2 hover:bg-slate-50">Print / Export as PDF</Link>}
+                                                        <button type="button" onClick={() => deleteInvoice(invoice)} disabled={deletingId === invoice.id} className="block w-full px-4 py-2 text-left font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">{deletingId === invoice.id ? "Deleting..." : "Delete"}</button>
+                                                    </div>}
+                                                </div>
                                             </div> : <span className="text-slate-400">Complete</span>}
-                                            {openActionId === invoice.id && <div className="absolute right-3 z-50 mt-2 w-52 rounded-xl border border-slate-200 bg-white py-2 text-left shadow-xl">
-                                                {invoiceHref && <Link href={invoiceHref} className="block px-4 py-2 hover:bg-slate-50">View</Link>}
-                                                <Link href={`/admin/invoices/${invoice.id}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit</Link>
-                                                <Link href={`/admin/invoices/new?duplicate=${invoice.id}`} className="block px-4 py-2 hover:bg-slate-50">Duplicate</Link>
-                                                <button type="button" disabled className="block w-full cursor-not-allowed px-4 py-2 text-left text-slate-400">Record payment</button>
-                                                <button type="button" onClick={() => sendInvoice(invoice, true)} disabled={!invoice.member_email || sendingId === invoice.id} className="block w-full px-4 py-2 text-left hover:bg-slate-50 disabled:text-slate-400">Resend invoice</button>
-                                                {printHref && <Link href={printHref} target="_blank" rel="noreferrer" className="block px-4 py-2 hover:bg-slate-50">Print / Export as PDF</Link>}
-                                                <button type="button" onClick={() => deleteInvoice(invoice)} disabled={deletingId === invoice.id} className="block w-full px-4 py-2 text-left font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">{deletingId === invoice.id ? "Deleting..." : "Delete"}</button>
-                                            </div>}
                                         </td>
                                     </tr>;
                                 })}</tbody>
