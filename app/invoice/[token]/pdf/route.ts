@@ -1,8 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getInvoiceByPublicToken } from "@/lib/invoice-db";
 
+function toPdfSafeText(value: string) {
+    return value
+        .normalize("NFKD")
+        .replace(/[\u2018\u2019]/g, "'")
+        .replace(/[\u201C\u201D]/g, '"')
+        .replace(/[\u2013\u2014]/g, "-")
+        .replace(/[\u2026]/g, "...")
+        .replace(/[^\x20-\x7E]/g, "?");
+}
+
 function escapePdfText(value: string) {
-    return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+    return toPdfSafeText(value).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+}
+
+function wrapText(value: string, maxChars = 82) {
+    const words = String(value || "").split(/\s+/).filter(Boolean);
+    if (words.length === 0) return [""];
+
+    const lines: string[] = [];
+    let current = "";
+
+    for (const word of words) {
+        if (word.length > maxChars) {
+            if (current) {
+                lines.push(current);
+                current = "";
+            }
+            for (let index = 0; index < word.length; index += maxChars) {
+                lines.push(word.slice(index, index + maxChars));
+            }
+            continue;
+        }
+
+        const candidate = current ? `${current} ${word}` : word;
+        if (candidate.length > maxChars) {
+            if (current) lines.push(current);
+            current = word;
+        } else {
+            current = candidate;
+        }
+    }
+
+    if (current) lines.push(current);
+    return lines;
 }
 
 function money(cents: number) {
@@ -10,6 +52,7 @@ function money(cents: number) {
 }
 
 function buildPdf(lines: string[]) {
+    const wrappedLines = lines.flatMap((line) => line === "" ? [""] : wrapText(line));
     const objects: string[] = [];
     const addObject = (body: string) => {
         objects.push(body);
@@ -21,32 +64,33 @@ function buildPdf(lines: string[]) {
     addObject("<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
     addObject("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>");
 
+    const visibleLines = wrappedLines.slice(0, 49);
     const contentLines = [
         "BT",
         "/F1 11 Tf",
         "50 750 Td",
         "14 TL",
-        ...lines.flatMap((line, index) => index === 0 ? [`(${escapePdfText(line)}) Tj`] : ["T*", `(${escapePdfText(line)}) Tj`]),
+        ...visibleLines.flatMap((line, index) => index === 0 ? [`(${escapePdfText(line)}) Tj`] : ["T*", `(${escapePdfText(line)}) Tj`]),
         "ET",
     ];
     const content = contentLines.join("\n");
-    addObject(`<< /Length ${Buffer.byteLength(content, "utf8")} >>\nstream\n${content}\nendstream`);
-    addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+    addObject(`<< /Length ${Buffer.byteLength(content, "latin1")} >>\nstream\n${content}\nendstream`);
+    addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
 
     let pdf = "%PDF-1.4\n";
     const offsets = [0];
     objects.forEach((body, index) => {
-        offsets.push(Buffer.byteLength(pdf, "utf8"));
+        offsets.push(Buffer.byteLength(pdf, "latin1"));
         pdf += `${index + 1} 0 obj\n${body}\nendobj\n`;
     });
-    const xrefOffset = Buffer.byteLength(pdf, "utf8");
+    const xrefOffset = Buffer.byteLength(pdf, "latin1");
     pdf += `xref\n0 ${objects.length + 1}\n`;
     pdf += "0000000000 65535 f \n";
     for (let i = 1; i <= objects.length; i += 1) {
         pdf += `${String(offsets[i]).padStart(10, "0")} 00000 n \n`;
     }
     pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
-    return Buffer.from(pdf, "utf8");
+    return Buffer.from(pdf, "latin1");
 }
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
@@ -67,7 +111,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tok
         `Bill to: ${invoice.member_name}`,
         invoice.member_email || "",
         "",
-        ...invoice.items.map((item) => `${item.description}  Qty ${Number(item.quantity)}  ${money(Number(item.line_total_cents))}`),
+        ...invoice.items.flatMap((item) => [
+            `${item.description}`,
+            `Qty ${Number(item.quantity)}  Price ${money(Number(item.unit_price_cents))}  Amount ${money(Number(item.line_total_cents))}`,
+        ]),
         "",
         `Subtotal: ${money(Number(invoice.subtotal_cents))}`,
         `Discount: -${money(Number(invoice.discount_cents))}`,
@@ -77,7 +124,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tok
         invoice.notes ? `Notes: ${invoice.notes}` : "",
         invoice.terms ? `Payment terms: ${invoice.terms}` : "",
         invoice.footer_text || "",
-    ].filter((line) => line !== "");
+    ].filter((line) => line !== "" || true);
 
     const pdf = buildPdf(lines);
     const filename = `${invoice.invoice_number || "invoice"}.pdf`.replace(/[^a-zA-Z0-9._-]/g, "_");
