@@ -1,5 +1,7 @@
 import pool from "@/lib/db";
 
+export type PasswordExpirationUnit = "days" | "months" | "years";
+
 export type AdminSettings = {
     id: number;
     timezone: string;
@@ -7,6 +9,8 @@ export type AdminSettings = {
     time_format: string;
     birthdays_on_calendar: number;
     birthday_excluded_user_ids: number[];
+    password_expiration_value: number;
+    password_expiration_unit: PasswordExpirationUnit;
     updated_at: string;
 };
 
@@ -16,6 +20,8 @@ type UpdateAdminSettingsInput = {
     timeFormat: string;
     birthdaysOnCalendar: boolean;
     birthdayExcludedUserIds: number[];
+    passwordExpirationValue: number;
+    passwordExpirationUnit: PasswordExpirationUnit;
 };
 
 let initialized = false;
@@ -31,6 +37,8 @@ async function ensureSettingsTable() {
             time_format VARCHAR(20) NOT NULL DEFAULT 'h:mm a',
             birthdays_on_calendar TINYINT(1) NOT NULL DEFAULT 1,
             birthday_excluded_user_ids TEXT NULL,
+            password_expiration_value INT NOT NULL DEFAULT 60,
+            password_expiration_unit VARCHAR(10) NOT NULL DEFAULT 'days',
             updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             CHECK (id = 1)
         )
@@ -38,6 +46,8 @@ async function ensureSettingsTable() {
 
     await pool.query(`ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS birthdays_on_calendar TINYINT(1) NOT NULL DEFAULT 1`);
     await pool.query(`ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS birthday_excluded_user_ids TEXT NULL`);
+    await pool.query(`ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS password_expiration_value INT NOT NULL DEFAULT 60`);
+    await pool.query(`ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS password_expiration_unit VARCHAR(10) NOT NULL DEFAULT 'days'`);
 
     await pool.query(`
         INSERT INTO admin_settings (id, timezone, date_format, time_format)
@@ -53,14 +63,18 @@ export async function getAdminSettings(): Promise<AdminSettings> {
 
     const [rows] = await pool.query(
         `
-        SELECT id, timezone, date_format, time_format, birthdays_on_calendar, birthday_excluded_user_ids, updated_at
+        SELECT id, timezone, date_format, time_format, birthdays_on_calendar, birthday_excluded_user_ids,
+               password_expiration_value, password_expiration_unit, updated_at
         FROM admin_settings
         WHERE id = 1
         LIMIT 1
         `
     );
 
-    const row = (rows as Array<Omit<AdminSettings, "birthday_excluded_user_ids"> & { birthday_excluded_user_ids: string | null }>)[0];
+    const row = (rows as Array<Omit<AdminSettings, "birthday_excluded_user_ids" | "password_expiration_unit"> & {
+        birthday_excluded_user_ids: string | null;
+        password_expiration_unit: string | null;
+    }>)[0];
     let excludedIds: number[] = [];
     try {
         const parsed: unknown = JSON.parse(row.birthday_excluded_user_ids || "[]");
@@ -69,7 +83,19 @@ export async function getAdminSettings(): Promise<AdminSettings> {
         excludedIds = [];
     }
 
-    return { ...row, birthday_excluded_user_ids: excludedIds };
+    const unit: PasswordExpirationUnit = row.password_expiration_unit === "months" || row.password_expiration_unit === "years"
+        ? row.password_expiration_unit
+        : "days";
+    const value = Number.isInteger(Number(row.password_expiration_value)) && Number(row.password_expiration_value) > 0
+        ? Number(row.password_expiration_value)
+        : 60;
+
+    return {
+        ...row,
+        birthday_excluded_user_ids: excludedIds,
+        password_expiration_value: value,
+        password_expiration_unit: unit,
+    };
 }
 
 export function normalizeExcludedUserIds(values: unknown[]): number[] {
@@ -93,7 +119,8 @@ export async function updateAdminSettings(
     await pool.query(
         `
         UPDATE admin_settings
-        SET timezone = ?, date_format = ?, time_format = ?, birthdays_on_calendar = ?, birthday_excluded_user_ids = ?
+        SET timezone = ?, date_format = ?, time_format = ?, birthdays_on_calendar = ?, birthday_excluded_user_ids = ?,
+            password_expiration_value = ?, password_expiration_unit = ?
         WHERE id = 1
         `,
         [
@@ -102,6 +129,8 @@ export async function updateAdminSettings(
             input.timeFormat,
             input.birthdaysOnCalendar ? 1 : 0,
             JSON.stringify(normalizeExcludedUserIds(input.birthdayExcludedUserIds)),
+            input.passwordExpirationValue,
+            input.passwordExpirationUnit,
         ]
     );
 
