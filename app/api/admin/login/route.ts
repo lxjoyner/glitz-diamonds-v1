@@ -7,11 +7,20 @@ import {
     getAdminSecurityState,
     markResetEmailSent,
 } from "@/lib/admin-db";
+import { getAdminSettings } from "@/lib/admin-settings-db";
 import { sendAdminLoginVerificationCodeEmail, sendAdminPasswordResetEmail } from "@/lib/mailer";
 import { getUserByUsername } from "@/lib/user-db";
 
-function getPasswordResetIntervalDays() {
-    return Number(process.env.PASSWORD_RESET_INTERVAL_DAYS || 60);
+function addExpirationInterval(changedAt: Date, value: number, unit: "days" | "months" | "years") {
+    const expiresAt = new Date(changedAt);
+    if (unit === "months") {
+        expiresAt.setMonth(expiresAt.getMonth() + value);
+    } else if (unit === "years") {
+        expiresAt.setFullYear(expiresAt.getFullYear() + value);
+    } else {
+        expiresAt.setDate(expiresAt.getDate() + value);
+    }
+    return expiresAt;
 }
 
 function getAppBaseUrl(req: Request) {
@@ -66,7 +75,10 @@ export async function POST(req: Request) {
                 );
             }
 
-            const securityState = await getAdminSecurityState(admin.id);
+            const [securityState, adminSettings] = await Promise.all([
+                getAdminSecurityState(admin.id),
+                getAdminSettings(),
+            ]);
 
             if (securityState.reset_required) {
                 return NextResponse.json(
@@ -79,9 +91,13 @@ export async function POST(req: Request) {
                 );
             }
 
-            const intervalMs = getPasswordResetIntervalDays() * 24 * 60 * 60 * 1000;
-            const changedAtMs = new Date(securityState.password_changed_at).getTime();
-            const passwordExpired = Date.now() - changedAtMs >= intervalMs;
+            const changedAt = new Date(securityState.password_changed_at);
+            const expirationDate = addExpirationInterval(
+                changedAt,
+                adminSettings.password_expiration_value,
+                adminSettings.password_expiration_unit
+            );
+            const passwordExpired = Number.isNaN(changedAt.getTime()) || Date.now() >= expirationDate.getTime();
 
             if (passwordExpired) {
                 if (!admin.email) {
