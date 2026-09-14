@@ -247,6 +247,7 @@ export default function InvoicesPage() {
                                     const overdue = !["paid", "void", "draft"].includes(invoice.display_status) && overdueDays > 0;
                                     const canSend = !["paid", "void"].includes(invoice.display_status);
                                     const invoiceHref = invoice.public_token ? `/invoice/${invoice.public_token}` : null;
+                                    const printHref = invoice.public_token ? `/invoice/${invoice.public_token}/print` : null;
                                     const dueDisplay = overdue ? `${overdueDays} ${overdueDays === 1 ? "day" : "days"} ago` : new Date(invoice.due_date).toLocaleDateString();
                                     return <tr key={invoice.id} onClick={() => { if (invoiceHref) router.push(invoiceHref); }} onKeyDown={(event) => { if (!invoiceHref) return; if (event.key === "Enter" || event.key === " ") { event.preventDefault(); router.push(invoiceHref); } }} role={invoiceHref ? "link" : undefined} tabIndex={invoiceHref ? 0 : undefined} aria-label={invoiceHref ? `Open invoice ${invoice.invoice_number}` : undefined} className={`border-b border-slate-100 hover:bg-slate-50 ${invoiceHref ? "cursor-pointer focus:bg-slate-50 focus:outline-none" : ""}`}>
                                         <td className="px-3 py-4"><span className={`rounded-md px-2.5 py-1 text-xs font-bold ${invoice.display_status === "paid" ? "bg-emerald-100 text-emerald-800" : overdue ? "bg-red-100 text-red-700" : invoice.display_status === "draft" ? "bg-slate-200 text-slate-700" : "bg-amber-100 text-amber-800"}`}>{prettyStatus(invoice.display_status)}</span></td>
@@ -266,7 +267,7 @@ export default function InvoicesPage() {
                                                 <Link href={`/admin/invoices/new?duplicate=${invoice.id}`} className="block px-4 py-2 hover:bg-slate-50">Duplicate</Link>
                                                 <button type="button" disabled className="block w-full cursor-not-allowed px-4 py-2 text-left text-slate-400">Record payment</button>
                                                 <button type="button" onClick={() => sendInvoice(invoice, true)} disabled={!invoice.member_email || sendingId === invoice.id} className="block w-full px-4 py-2 text-left hover:bg-slate-50 disabled:text-slate-400">Resend invoice</button>
-                                                {invoiceHref && <Link href={invoiceHref} target="_blank" className="block px-4 py-2 hover:bg-slate-50">Print / Export as PDF</Link>}
+                                                {printHref && <Link href={printHref} target="_blank" rel="noreferrer" className="block px-4 py-2 hover:bg-slate-50">Print / Export as PDF</Link>}
                                                 <button type="button" onClick={() => deleteInvoice(invoice)} disabled={deletingId === invoice.id} className="block w-full px-4 py-2 text-left font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">{deletingId === invoice.id ? "Deleting..." : "Delete"}</button>
                                             </div>}
                                         </td>
