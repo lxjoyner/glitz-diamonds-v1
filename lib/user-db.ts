@@ -8,6 +8,7 @@ export type SiteUser = {
     email: string;
     full_name: string;
     password_hash: string;
+    password_changed_at: string;
     address: string;
     tshirt_size: string;
     favorite_color: string;
@@ -32,6 +33,7 @@ export async function ensureUsersTable() {
             email VARCHAR(255) NOT NULL UNIQUE,
             full_name VARCHAR(120) NOT NULL,
             password_hash VARCHAR(255) NOT NULL,
+            password_changed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             address VARCHAR(255) NOT NULL DEFAULT '',
             tshirt_size VARCHAR(8) NOT NULL DEFAULT 'MD',
             favorite_color VARCHAR(64) NOT NULL DEFAULT '',
@@ -47,6 +49,7 @@ export async function ensureUsersTable() {
         )
     `);
 
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_changed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS address VARCHAR(255) NOT NULL DEFAULT ''`);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS tshirt_size VARCHAR(8) NOT NULL DEFAULT 'MD'`);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS favorite_color VARCHAR(64) NOT NULL DEFAULT ''`);
@@ -89,9 +92,9 @@ export async function createRegisteredUser(params: {
     const [result] = await pool.query(
         `
         INSERT INTO users (
-            username, email, full_name, password_hash, address, tshirt_size, favorite_color, hat_size, gender, birthday, role, is_active
+            username, email, full_name, password_hash, password_changed_at, address, tshirt_size, favorite_color, hat_size, gender, birthday, role, is_active
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'member', 1)
+        VALUES (?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, 'member', 1)
         `,
         [
             params.username,
@@ -124,7 +127,7 @@ export async function getUserByUsername(username: string): Promise<SiteUser | nu
     const [rows] = await pool.query(
         `
         SELECT
-            id, username, email, full_name, password_hash, address, tshirt_size, favorite_color, hat_size, gender, birthday,
+            id, username, email, full_name, password_hash, password_changed_at, address, tshirt_size, favorite_color, hat_size, gender, birthday,
             role, is_active, created_at, updated_at
         FROM users
         WHERE username = ?
@@ -142,7 +145,7 @@ export async function getUserByEmail(email: string): Promise<SiteUser | null> {
     const [rows] = await pool.query(
         `
         SELECT
-            id, username, email, full_name, password_hash, address, tshirt_size, favorite_color, hat_size, gender, birthday,
+            id, username, email, full_name, password_hash, password_changed_at, address, tshirt_size, favorite_color, hat_size, gender, birthday,
             role, is_active, created_at, updated_at
         FROM users
         WHERE email = ?
@@ -160,7 +163,7 @@ export async function getUserById(userId: number): Promise<SiteUser | null> {
     const [rows] = await pool.query(
         `
         SELECT
-            id, username, email, full_name, password_hash, address, tshirt_size, favorite_color, hat_size, gender, birthday,
+            id, username, email, full_name, password_hash, password_changed_at, address, tshirt_size, favorite_color, hat_size, gender, birthday,
             role, is_active, created_at, updated_at
         FROM users
         WHERE id = ?
@@ -191,7 +194,7 @@ export async function updateUserPassword(userId: number, passwordHash: string) {
     const connection = await pool.getConnection();
     try {
         await connection.beginTransaction();
-        await connection.query(`UPDATE users SET password_hash = ? WHERE id = ?`, [passwordHash, userId]);
+        await connection.query(`UPDATE users SET password_hash = ?, password_changed_at = NOW() WHERE id = ?`, [passwordHash, userId]);
         try {
             await connection.query(`INSERT INTO user_password_history (user_id, password_hash) VALUES (?, ?)`, [userId, passwordHash]);
         } catch (error) {
