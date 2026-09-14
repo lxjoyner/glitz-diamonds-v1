@@ -51,12 +51,16 @@ type DonationRecord = {
     created_at: string;
 };
 
+type PasswordExpirationUnit = "days" | "months" | "years";
+
 type DashboardSettings = {
     timezone: string;
     date_format: string;
     time_format: string;
     birthdays_on_calendar: boolean;
     birthday_excluded_user_ids: number[];
+    password_expiration_value: number;
+    password_expiration_unit: PasswordExpirationUnit;
 };
 
 type RawDashboardSettings = {
@@ -69,6 +73,10 @@ type RawDashboardSettings = {
     birthday_excluded_user_ids?: unknown;
     birthdaysOnCalendar?: boolean;
     birthdayExcludedUserIds?: unknown;
+    password_expiration_value?: number;
+    password_expiration_unit?: string;
+    passwordExpirationValue?: number;
+    passwordExpirationUnit?: string;
 };
 
 const DATE_FORMAT_OPTIONS = ["MMM d, yyyy", "MM/dd/yyyy", "yyyy-MM-dd"];
@@ -81,12 +89,6 @@ const FALLBACK_TIMEZONE_OPTIONS = [
     "UTC",
 ];
 
-/**
- * Set this to true if plain MySQL DATETIME values in your DB are stored as UTC.
- * Example stored value: 2026-04-22 18:30:00  (meant to represent UTC time)
- *
- * Set this to false if plain MySQL DATETIME values are stored as local/server time.
- */
 const MYSQL_DATETIME_IS_UTC = false;
 
 function getTimezoneOptions() {
@@ -141,6 +143,9 @@ function normalizeSettings(raw?: RawDashboardSettings): DashboardSettings {
     const excludedIds = Array.isArray(rawExcludedIds)
         ? [...new Set(rawExcludedIds.map(Number).filter((id) => Number.isInteger(id) && id > 0))]
         : [];
+    const rawUnit = String(raw?.password_expiration_unit ?? raw?.passwordExpirationUnit ?? "days");
+    const expirationUnit: PasswordExpirationUnit = rawUnit === "months" || rawUnit === "years" ? rawUnit : "days";
+    const rawExpirationValue = Number(raw?.password_expiration_value ?? raw?.passwordExpirationValue ?? 60);
 
     return {
         timezone: raw?.timezone || "America/Chicago",
@@ -148,48 +153,32 @@ function normalizeSettings(raw?: RawDashboardSettings): DashboardSettings {
         time_format: raw?.time_format || raw?.timeFormat || "h:mm a",
         birthdays_on_calendar: Boolean(raw?.birthdays_on_calendar ?? raw?.birthdaysOnCalendar ?? true),
         birthday_excluded_user_ids: excludedIds,
+        password_expiration_value: Number.isInteger(rawExpirationValue) && rawExpirationValue > 0 ? rawExpirationValue : 60,
+        password_expiration_unit: expirationUnit,
     };
 }
 
 function parseStoredDate(value: string): Date | null {
     if (!value) return null;
-
     const trimmed = value.trim();
-
-    /**
-     * Matches:
-     * 2026-04-22 14:30:00
-     * 2026-04-22T14:30:00
-     * 2026-04-22 14:30:00.123456
-     * 2026-04-22T14:30:00Z
-     * 2026-04-22T14:30:00-05:00
-     */
     const mysqlLikeMatch = trimmed.match(
         /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,6}))?(?:\s*(Z|[+-]\d{2}:\d{2}))?$/
     );
 
     if (mysqlLikeMatch) {
-        const [, year, month, day, hour, minute, second, fractional = "0", timezoneOffset] =
-            mysqlLikeMatch;
-
+        const [, year, month, day, hour, minute, second, fractional = "0", timezoneOffset] = mysqlLikeMatch;
         const millis = fractional.slice(0, 3).padEnd(3, "0");
 
-        // If the value already includes Z or an explicit offset, trust it.
         if (timezoneOffset) {
-            const isoValue =
-                timezoneOffset === "Z"
-                    ? `${year}-${month}-${day}T${hour}:${minute}:${second}.${millis}Z`
-                    : `${year}-${month}-${day}T${hour}:${minute}:${second}.${millis}${timezoneOffset}`;
-
+            const isoValue = timezoneOffset === "Z"
+                ? `${year}-${month}-${day}T${hour}:${minute}:${second}.${millis}Z`
+                : `${year}-${month}-${day}T${hour}:${minute}:${second}.${millis}${timezoneOffset}`;
             const parsedWithOffset = new Date(isoValue);
             return Number.isNaN(parsedWithOffset.getTime()) ? null : parsedWithOffset;
         }
 
-        // Plain MySQL DATETIME with no timezone information.
         if (MYSQL_DATETIME_IS_UTC) {
-            const parsedAsUtc = new Date(
-                `${year}-${month}-${day}T${hour}:${minute}:${second}.${millis}Z`
-            );
+            const parsedAsUtc = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}.${millis}Z`);
             return Number.isNaN(parsedAsUtc.getTime()) ? null : parsedAsUtc;
         }
 
@@ -202,16 +191,11 @@ function parseStoredDate(value: string): Date | null {
             Number(second),
             Number(millis)
         );
-
         return Number.isNaN(parsedAsLocal.getTime()) ? null : parsedAsLocal;
     }
 
     const parsed = new Date(trimmed);
-    if (!Number.isNaN(parsed.getTime())) {
-        return parsed;
-    }
-
-    return null;
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 export default function AdminMessagesPage() {
@@ -238,6 +222,8 @@ export default function AdminMessagesPage() {
             time_format: "h:mm a",
             birthdays_on_calendar: true,
             birthday_excluded_user_ids: [],
+            password_expiration_value: 60,
+            password_expiration_unit: "days",
         })
     );
     const [settingsMessage, setSettingsMessage] = useState("");
@@ -257,11 +243,10 @@ export default function AdminMessagesPage() {
     const canViewDonations = user?.role === "admin" || user?.role === "treasurer";
 
     const formatter = useMemo(
-        () =>
-            new Intl.DateTimeFormat("en-US", {
-                ...toIntlOptions(settings.date_format, settings.time_format),
-                timeZone: settings.timezone || "America/Chicago",
-            }),
+        () => new Intl.DateTimeFormat("en-US", {
+            ...toIntlOptions(settings.date_format, settings.time_format),
+            timeZone: settings.timezone || "America/Chicago",
+        }),
         [settings.date_format, settings.time_format, settings.timezone]
     );
 
@@ -273,30 +258,21 @@ export default function AdminMessagesPage() {
     const loadMe = useCallback(async () => {
         const meRes = await fetch("/api/admin/me", { cache: "no-store" });
         const meData = await meRes.json();
-        if (meData?.authenticated) {
-            setUser(meData.user);
-        }
+        if (meData?.authenticated) setUser(meData.user);
     }, []);
 
     const loadSettings = useCallback(async () => {
         if (!user) return;
-
         const res = await fetch("/api/admin/settings", { cache: "no-store" });
         const data = await res.json();
-
-        if (data?.success && data.settings) {
-            setSettings(normalizeSettings(data.settings));
-        }
+        if (data?.success && data.settings) setSettings(normalizeSettings(data.settings));
     }, [user]);
 
     const loadGallery = useCallback(async () => {
         if (!canManageGallery) return;
         const galleryRes = await fetch("/api/admin/gallery", { cache: "no-store" });
         const galleryData = await galleryRes.json();
-
-        if (galleryData?.success) {
-            setGalleryItems(galleryData.images || []);
-        }
+        if (galleryData?.success) setGalleryItems(galleryData.images || []);
     }, [canManageGallery]);
 
     const loadMessages = useCallback(async () => {
@@ -320,14 +296,7 @@ export default function AdminMessagesPage() {
         if (data?.success) setDonations(data.donations || []);
     }, [canViewDonations]);
 
-    useEffect(() => {
-        async function init() {
-            await loadMe();
-        }
-
-        init();
-    }, [loadMe]);
-
+    useEffect(() => { loadMe(); }, [loadMe]);
     useEffect(() => {
         if (!user) return;
         loadSettings();
@@ -355,11 +324,12 @@ export default function AdminMessagesPage() {
                 timeFormat: settings.time_format,
                 birthdaysOnCalendar: settings.birthdays_on_calendar,
                 birthdayExcludedUserIds: settings.birthday_excluded_user_ids,
+                passwordExpirationValue: settings.password_expiration_value,
+                passwordExpirationUnit: settings.password_expiration_unit,
             }),
         });
 
         const data = await response.json();
-
         if (!response.ok) {
             setSettingsMessage(data?.error || "Failed to save settings.");
             return;
@@ -389,9 +359,7 @@ export default function AdminMessagesPage() {
             body: JSON.stringify({ mode: "stripe", limit: 50 }),
         });
         const data = await response.json();
-        if (data?.success) {
-            setDonations(data.donations || []);
-        }
+        if (data?.success) setDonations(data.donations || []);
     };
 
     const handleAddManualDonation = async () => {
@@ -404,38 +372,26 @@ export default function AdminMessagesPage() {
         const response = await fetch("/api/admin/donations", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                mode: "manual",
-                amountCents: Math.round(Number(amount) * 100),
-                donorName,
-                donorEmail,
-                message,
-            }),
+            body: JSON.stringify({ mode: "manual", amountCents: Math.round(Number(amount) * 100), donorName, donorEmail, message }),
         });
-
         const data = await response.json();
-        if (data?.success) {
-            setDonations(data.donations || []);
-        }
+        if (data?.success) setDonations(data.donations || []);
     };
 
     const handleDeleteDonation = async (id: number) => {
         setDeletingDonationId(id);
         setMessageStatus("");
-
         try {
             const response = await fetch("/api/admin/donations", {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ id }),
             });
-
             const data = await response.json();
             if (!response.ok || !data?.success) {
                 setMessageStatus(data?.error || "Failed to delete donation.");
                 return;
             }
-
             setDonations(data.donations || []);
             setMessageStatus("Donation deleted.");
         } finally {
@@ -445,33 +401,21 @@ export default function AdminMessagesPage() {
 
     const handleUploadGalleryImage = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-
         if (!galleryFile) {
             setGalleryError("Please select an image file.");
             return;
         }
-
         setGalleryError("");
         setGallerySuccess("");
         setIsUploadingImage(true);
-
         try {
             const formData = new FormData();
             formData.append("caption", galleryCaption.trim());
             formData.append("file", galleryFile);
             formData.append("isActive", "true");
-
-            const response = await fetch("/api/admin/gallery", {
-                method: "POST",
-                body: formData,
-            });
-
+            const response = await fetch("/api/admin/gallery", { method: "POST", body: formData });
             const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data?.error || "Failed to upload image.");
-            }
-
+            if (!response.ok) throw new Error(data?.error || "Failed to upload image.");
             setGalleryCaption("");
             setGalleryFile(null);
             setGallerySuccess("Image uploaded successfully.");
@@ -486,18 +430,10 @@ export default function AdminMessagesPage() {
     const handleDeleteGalleryImage = async (imageId: number) => {
         setGalleryError("");
         setGallerySuccess("");
-
         try {
-            const response = await fetch(`/api/admin/gallery?id=${imageId}`, {
-                method: "DELETE",
-            });
-
+            const response = await fetch(`/api/admin/gallery?id=${imageId}`, { method: "DELETE" });
             const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data?.error || "Failed to delete image.");
-            }
-
+            if (!response.ok) throw new Error(data?.error || "Failed to delete image.");
             setGallerySuccess("Gallery image removed.");
             await loadGallery();
         } catch (error) {
@@ -507,12 +443,10 @@ export default function AdminMessagesPage() {
 
     const moveGalleryItem = (fromId: number, toId: number) => {
         if (fromId === toId) return;
-
         setGalleryItems((prev) => {
             const fromIndex = prev.findIndex((item) => item.id === fromId);
             const toIndex = prev.findIndex((item) => item.id === toId);
             if (fromIndex < 0 || toIndex < 0) return prev;
-
             const next = [...prev];
             const [moved] = next.splice(fromIndex, 1);
             next.splice(toIndex, 0, moved);
@@ -524,17 +458,13 @@ export default function AdminMessagesPage() {
         try {
             setIsSavingGalleryOrder(true);
             setGalleryError("");
-
             const response = await fetch("/api/admin/gallery", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ imageIds: orderedItems.map((item) => item.id) }),
             });
             const data = await response.json();
-            if (!response.ok || !data?.success) {
-                throw new Error(data?.error || "Failed to save gallery order.");
-            }
-
+            if (!response.ok || !data?.success) throw new Error(data?.error || "Failed to save gallery order.");
             setGallerySuccess("Gallery order updated.");
             await loadGallery();
         } catch (error) {
@@ -551,56 +481,32 @@ export default function AdminMessagesPage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ userId: siteUserId, role }),
         });
-
-        if (response.ok) {
-            await loadUsers();
-        }
+        if (response.ok) await loadUsers();
     };
 
     const handleDeleteContactMessage = async (messageId: number) => {
-        const confirmed = window.confirm(
-            "Delete this contact message from the dashboard? This also attempts to remove the matching inbox email."
-        );
-
-        if (!confirmed) {
-            return;
-        }
-
+        const confirmed = window.confirm("Delete this contact message from the dashboard? This also attempts to remove the matching inbox email.");
+        if (!confirmed) return;
         setMessageStatus("");
         setDeletingMessageId(messageId);
-
         try {
             const response = await fetch("/api/admin/messages", {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ id: messageId }),
             });
-
             const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data?.error || "Failed to delete contact message.");
-            }
-
+            if (!response.ok) throw new Error(data?.error || "Failed to delete contact message.");
             setMessages((prev) => prev.filter((item) => item.id !== messageId));
-
             if (data?.emailDeletionAttempted) {
-                if (data?.deletedEmailCount > 0) {
-                    setMessageStatus("Contact message deleted and matching inbox email removed.");
-                } else {
-                    setMessageStatus(
-                        "Contact message deleted. Inbox email cleanup ran but no matching email was found."
-                    );
-                }
+                setMessageStatus(data?.deletedEmailCount > 0
+                    ? "Contact message deleted and matching inbox email removed."
+                    : "Contact message deleted. Inbox email cleanup ran but no matching email was found.");
             } else {
-                setMessageStatus(
-                    "Contact message deleted. Set IMAP_* environment variables to enable inbox email cleanup."
-                );
+                setMessageStatus("Contact message deleted. Set IMAP_* environment variables to enable inbox email cleanup.");
             }
         } catch (error) {
-            setMessageStatus(
-                error instanceof Error ? error.message : "Failed to delete contact message."
-            );
+            setMessageStatus(error instanceof Error ? error.message : "Failed to delete contact message.");
         } finally {
             setDeletingMessageId(null);
         }
@@ -612,28 +518,14 @@ export default function AdminMessagesPage() {
                 <div className="mb-6 flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-semibold">Role Dashboard</h1>
-                        <p className="text-sm text-slate-300">
-                            Signed in as {user?.username || "..."} ({user?.role || "..."})
-                        </p>
+                        <p className="text-sm text-slate-300">Signed in as {user?.username || "..."} ({user?.role || "..."})</p>
                     </div>
-
                     <div className="relative group">
-                        <button
-                            type="button"
-                            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/40 text-base transition hover:bg-white/10"
-                            aria-label="User menu"
-                        >
-                            👤
-                        </button>
+                        <button type="button" className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/40 text-base transition hover:bg-white/10" aria-label="User menu">👤</button>
                         <div className="pointer-events-none absolute right-0 top-12 w-56 rounded-lg border border-white/15 bg-black/90 p-3 opacity-0 shadow-lg transition duration-150 group-hover:pointer-events-auto group-hover:opacity-100">
                             <p className="text-sm font-medium text-white">{userDisplayName}</p>
                             <p className="text-xs text-slate-300">{user?.role || "Unknown role"}</p>
-                            <button
-                                onClick={handleLogout}
-                                className="mt-3 w-full rounded-md bg-red-800 px-3 py-2 text-sm font-medium hover:bg-red-500"
-                            >
-                                Logout
-                            </button>
+                            <button onClick={handleLogout} className="mt-3 w-full rounded-md bg-red-800 px-3 py-2 text-sm font-medium hover:bg-red-500">Logout</button>
                         </div>
                     </div>
                 </div>
@@ -642,61 +534,49 @@ export default function AdminMessagesPage() {
                     <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
                         <h2 className="text-2xl font-semibold">Dashboard Date/Time Settings</h2>
                         <div className="mt-4 grid gap-4 md:grid-cols-3">
-                            <select
-                                value={settings.timezone}
-                                onChange={(event) =>
-                                    setSettings((prev) => ({ ...prev, timezone: event.target.value }))
-                                }
-                                className="rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
-                            >
-                                {timezoneOptions.map((timezoneOption) => (
-                                    <option key={timezoneOption} value={timezoneOption}>
-                                        {timezoneOption}
-                                    </option>
-                                ))}
+                            <select value={settings.timezone} onChange={(event) => setSettings((prev) => ({ ...prev, timezone: event.target.value }))} className="rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm">
+                                {timezoneOptions.map((timezoneOption) => <option key={timezoneOption} value={timezoneOption}>{timezoneOption}</option>)}
                             </select>
+                            <select value={settings.date_format} onChange={(event) => setSettings((prev) => ({ ...prev, date_format: event.target.value }))} className="rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm">
+                                {DATE_FORMAT_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+                            </select>
+                            <select value={settings.time_format} onChange={(event) => setSettings((prev) => ({ ...prev, time_format: event.target.value }))} className="rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm">
+                                {TIME_FORMAT_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+                            </select>
+                        </div>
 
-                            <select
-                                value={settings.date_format}
-                                onChange={(event) =>
-                                    setSettings((prev) => ({ ...prev, date_format: event.target.value }))
-                                }
-                                className="rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
-                            >
-                                {DATE_FORMAT_OPTIONS.map((option) => (
-                                    <option key={option} value={option}>
-                                        {option}
-                                    </option>
-                                ))}
-                            </select>
-
-                            <select
-                                value={settings.time_format}
-                                onChange={(event) =>
-                                    setSettings((prev) => ({ ...prev, time_format: event.target.value }))
-                                }
-                                className="rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
-                            >
-                                {TIME_FORMAT_OPTIONS.map((option) => (
-                                    <option key={option} value={option}>
-                                        {option}
-                                    </option>
-                                ))}
-                            </select>
+                        <div className="mt-6 border-t border-white/10 pt-5">
+                            <h3 className="text-xl font-semibold text-[#ffdef7]">Password Expiration</h3>
+                            <p className="mt-1 text-xs text-slate-400">Choose how often users are required to change their password.</p>
+                            <div className="mt-3 grid gap-3 sm:grid-cols-[160px_180px_1fr] sm:items-center">
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="3650"
+                                    value={settings.password_expiration_value}
+                                    onChange={(event) => setSettings((prev) => ({ ...prev, password_expiration_value: Math.max(1, Number(event.target.value) || 1) }))}
+                                    className="rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
+                                    aria-label="Password expiration amount"
+                                />
+                                <select
+                                    value={settings.password_expiration_unit}
+                                    onChange={(event) => setSettings((prev) => ({ ...prev, password_expiration_unit: event.target.value as PasswordExpirationUnit }))}
+                                    className="rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
+                                >
+                                    <option value="days">Days</option>
+                                    <option value="months">Months</option>
+                                    <option value="years">Years</option>
+                                </select>
+                                <p className="text-xs text-slate-300">Users will be required to change their password every {settings.password_expiration_value} {settings.password_expiration_unit}.</p>
+                            </div>
                         </div>
 
                         <div className="mt-6 border-t border-white/10 pt-5">
                             <h3 className="text-xl font-semibold text-[#ffdef7]">Birthday Calendar</h3>
                             <label className="mt-3 flex cursor-pointer items-center gap-3 rounded-lg border border-white/10 bg-black/20 p-3">
-                                <input
-                                    type="checkbox"
-                                    checked={settings.birthdays_on_calendar}
-                                    onChange={(event) => setSettings((prev) => ({ ...prev, birthdays_on_calendar: event.target.checked }))}
-                                    className="h-4 w-4 accent-fuchsia-500"
-                                />
+                                <input type="checkbox" checked={settings.birthdays_on_calendar} onChange={(event) => setSettings((prev) => ({ ...prev, birthdays_on_calendar: event.target.checked }))} className="h-4 w-4 accent-fuchsia-500" />
                                 <span className="text-sm">Automatically show active member birthdays on Calendar</span>
                             </label>
-
                             <div className="mt-5">
                                 <h4 className="font-medium">Birthday Calendar Members</h4>
                                 <p className="mt-1 text-xs text-slate-400">Hiding a birthday does not change the member profile. Changes apply when you save settings.</p>
@@ -712,13 +592,7 @@ export default function AdminMessagesPage() {
                                                 <span className={isActive ? "text-emerald-300" : "text-slate-400"}>{isActive ? "Active" : "Inactive"}</span>
                                                 <div className="flex items-center gap-3 sm:justify-end">
                                                     <span className="text-xs text-slate-400">{isShown ? "Shown" : "Not shown"}</span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => toggleBirthdayExclusion(birthdayUser.id)}
-                                                        className="min-w-16 rounded-md border border-fuchsia-300/30 px-2 py-1 text-xs hover:bg-fuchsia-500/20"
-                                                    >
-                                                        {isExcluded ? "Show" : "Hide"}
-                                                    </button>
+                                                    <button type="button" onClick={() => toggleBirthdayExclusion(birthdayUser.id)} className="min-w-16 rounded-md border border-fuchsia-300/30 px-2 py-1 text-xs hover:bg-fuchsia-500/20">{isExcluded ? "Show" : "Hide"}</button>
                                                 </div>
                                             </div>
                                         );
@@ -729,20 +603,10 @@ export default function AdminMessagesPage() {
                         </div>
 
                         <div className="mt-3 flex items-center gap-3">
-                            <button
-                                onClick={handleSaveSettings}
-                                className="rounded-lg bg-red-800 px-4 py-2 text-sm hover:bg-red-500"
-                            >
-                                Save settings
-                            </button>
-                            <p className="text-xs text-slate-300">
-                                Preview: {formatDate(new Date().toISOString())}
-                            </p>
+                            <button onClick={handleSaveSettings} className="rounded-lg bg-red-800 px-4 py-2 text-sm hover:bg-red-500">Save settings</button>
+                            <p className="text-xs text-slate-300">Preview: {formatDate(new Date().toISOString())}</p>
                         </div>
-
-                        {settingsMessage && (
-                            <p className="mt-2 text-sm text-slate-300">{settingsMessage}</p>
-                        )}
+                        {settingsMessage && <p className="mt-2 text-sm text-slate-300">{settingsMessage}</p>}
                     </section>
                 )}
 
@@ -751,48 +615,17 @@ export default function AdminMessagesPage() {
                         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <h2 className="text-2xl font-semibold">Member Role Manager</h2>
                             <div className="flex flex-wrap gap-2">
-                                <Link
-                                    href="/admin/membership"
-                                    className="rounded-lg border border-white/20 px-3 py-2 text-sm hover:bg-white/10"
-                                >
-                                    Open membership page
-                                </Link>
-                                <Link
-                                    href="/admin/ideas-activities"
-                                    className="rounded-lg border border-fuchsia-300/40 px-3 py-2 text-sm text-fuchsia-100 hover:bg-fuchsia-500/20"
-                                >
-                                    Ideas & Activities
-                                </Link>
+                                <Link href="/admin/membership" className="rounded-lg border border-white/20 px-3 py-2 text-sm hover:bg-white/10">Open membership page</Link>
+                                <Link href="/admin/ideas-activities" className="rounded-lg border border-fuchsia-300/40 px-3 py-2 text-sm text-fuchsia-100 hover:bg-fuchsia-500/20">Ideas & Activities</Link>
                             </div>
                         </div>
-
-                        <p className="mt-2 text-sm text-slate-300">
-                            Admin can change or remove member roles.
-                        </p>
-
+                        <p className="mt-2 text-sm text-slate-300">Admin can change or remove member roles.</p>
                         <div className="mt-4 space-y-3">
                             {siteUsers.map((siteUser) => (
-                                <div
-                                    key={siteUser.id}
-                                    className="rounded-lg border border-white/10 p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
-                                >
-                                    <div>
-                                        <p className="font-medium">
-                                            {siteUser.full_name} ({siteUser.username})
-                                        </p>
-                                        <p className="text-sm text-slate-300">{siteUser.email}</p>
-                                    </div>
-
-                                    <select
-                                        className="rounded bg-black border border-white/20 px-3 py-2 text-sm"
-                                        value={siteUser.role || ""}
-                                        onChange={(event) => handleRoleChange(siteUser.id, event.target.value)}
-                                    >
-                                        <option value="">No role</option>
-                                        <option value="member">Member</option>
-                                        <option value="admin">Admin</option>
-                                        <option value="secretary">Secretary</option>
-                                        <option value="treasurer">Treasurer</option>
+                                <div key={siteUser.id} className="rounded-lg border border-white/10 p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                    <div><p className="font-medium">{siteUser.full_name} ({siteUser.username})</p><p className="text-sm text-slate-300">{siteUser.email}</p></div>
+                                    <select className="rounded bg-black border border-white/20 px-3 py-2 text-sm" value={siteUser.role || ""} onChange={(event) => handleRoleChange(siteUser.id, event.target.value)}>
+                                        <option value="">No role</option><option value="member">Member</option><option value="admin">Admin</option><option value="secretary">Secretary</option><option value="treasurer">Treasurer</option>
                                     </select>
                                 </div>
                             ))}
@@ -803,86 +636,21 @@ export default function AdminMessagesPage() {
                 {canManageGallery && (
                     <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
                         <h2 className="text-2xl font-semibold">Gallery Manager</h2>
-
-                        <form
-                            onSubmit={handleUploadGalleryImage}
-                            className="mt-5 grid gap-4 md:grid-cols-[2fr_1fr_auto] md:items-end"
-                        >
-                            <input
-                                type="text"
-                                value={galleryCaption}
-                                onChange={(event) => setGalleryCaption(event.target.value)}
-                                className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
-                                placeholder="Caption"
-                                maxLength={255}
-                                required
-                            />
-                            <input
-                                type="file"
-                                accept="image/png,image/jpeg,image/webp,image/gif"
-                                onChange={(event) => setGalleryFile(event.target.files?.[0] ?? null)}
-                                className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm"
-                                required
-                            />
-                            <button
-                                type="submit"
-                                disabled={isUploadingImage}
-                                className="rounded-lg bg-red-800 px-4 py-2 text-sm font-medium hover:bg-red-500 transition disabled:opacity-60"
-                            >
-                                {isUploadingImage ? "Uploading..." : "Upload"}
-                            </button>
+                        <form onSubmit={handleUploadGalleryImage} className="mt-5 grid gap-4 md:grid-cols-[2fr_1fr_auto] md:items-end">
+                            <input type="text" value={galleryCaption} onChange={(event) => setGalleryCaption(event.target.value)} className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm" placeholder="Caption" maxLength={255} required />
+                            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={(event) => setGalleryFile(event.target.files?.[0] ?? null)} className="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm" required />
+                            <button type="submit" disabled={isUploadingImage} className="rounded-lg bg-red-800 px-4 py-2 text-sm font-medium hover:bg-red-500 transition disabled:opacity-60">{isUploadingImage ? "Uploading..." : "Upload"}</button>
                         </form>
-
-                        {gallerySuccess && (
-                            <p className="mt-3 text-sm text-emerald-400">{gallerySuccess}</p>
-                        )}
-                        {galleryError && (
-                            <p className="mt-3 text-sm text-red-400">{galleryError}</p>
-                        )}
-                        <p className="mt-3 text-xs text-slate-300">
-                            Drag and drop gallery cards to set the scrolling order shown on the dashboard.
-                        </p>
-                        {isSavingGalleryOrder && (
-                            <p className="mt-3 text-xs text-slate-300">Saving gallery order...</p>
-                        )}
-
+                        {gallerySuccess && <p className="mt-3 text-sm text-emerald-400">{gallerySuccess}</p>}
+                        {galleryError && <p className="mt-3 text-sm text-red-400">{galleryError}</p>}
+                        <p className="mt-3 text-xs text-slate-300">Drag and drop gallery cards to set the scrolling order shown on the dashboard.</p>
+                        {isSavingGalleryOrder && <p className="mt-3 text-xs text-slate-300">Saving gallery order...</p>}
                         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                             {galleryItems.map((item) => (
-                                <div
-                                    key={item.id}
-                                    draggable
-                                    onDragStart={() => setDraggingGalleryId(item.id)}
-                                    onDragOver={(event) => {
-                                        event.preventDefault();
-                                        if (draggingGalleryId !== null) {
-                                            moveGalleryItem(draggingGalleryId, item.id);
-                                        }
-                                    }}
-                                    onDragEnd={async () => {
-                                        const latestOrder = [...galleryItems];
-                                        setDraggingGalleryId(null);
-                                        await persistGalleryOrder(latestOrder);
-                                    }}
-                                    className="rounded-xl border border-white/10 bg-black/30 p-3 cursor-move"
-                                >
-                                    <div className="relative h-40 overflow-hidden rounded-lg border border-white/10">
-                                        <Image
-                                            src={item.imageUrl}
-                                            alt={item.caption}
-                                            fill
-                                            sizes="(max-width: 768px) 100vw, 33vw"
-                                            className="object-cover"
-                                            unoptimized
-                                        />
-                                    </div>
+                                <div key={item.id} draggable onDragStart={() => setDraggingGalleryId(item.id)} onDragOver={(event) => { event.preventDefault(); if (draggingGalleryId !== null) moveGalleryItem(draggingGalleryId, item.id); }} onDragEnd={async () => { const latestOrder = [...galleryItems]; setDraggingGalleryId(null); await persistGalleryOrder(latestOrder); }} className="rounded-xl border border-white/10 bg-black/30 p-3 cursor-move">
+                                    <div className="relative h-40 overflow-hidden rounded-lg border border-white/10"><Image src={item.imageUrl} alt={item.caption} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" unoptimized /></div>
                                     <p className="mt-3 text-sm font-medium">{item.caption}</p>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleDeleteGalleryImage(item.id)}
-                                        className="mt-3 rounded-md border border-red-400/40 bg-red-900/30 px-3 py-1.5 text-xs text-red-100 hover:bg-red-900/50"
-                                    >
-                                        Delete
-                                    </button>
+                                    <button type="button" onClick={() => handleDeleteGalleryImage(item.id)} className="mt-3 rounded-md border border-red-400/40 bg-red-900/30 px-3 py-1.5 text-xs text-red-100 hover:bg-red-900/50">Delete</button>
                                 </div>
                             ))}
                         </div>
@@ -892,39 +660,13 @@ export default function AdminMessagesPage() {
                 {canViewMessages && (
                     <section>
                         <h2 className="mb-4 text-2xl font-semibold">Contact Messages</h2>
-                        {messageStatus && (
-                            <p className="mb-3 text-sm text-slate-300">{messageStatus}</p>
-                        )}
+                        {messageStatus && <p className="mb-3 text-sm text-slate-300">{messageStatus}</p>}
                         <div className="space-y-4">
                             {messages.map((item) => (
-                                <div
-                                    key={item.id}
-                                    className="rounded-2xl border border-white/10 bg-white/5 p-5"
-                                >
-                                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                                        <div>
-                                            <p className="text-lg font-medium">{item.name}</p>
-                                            <p className="text-sm text-slate-300">{item.email}</p>
-                                        </div>
-                                        <p className="text-sm text-slate-400">
-                                            {formatDate(item.created_at)}
-                                        </p>
-                                    </div>
-                                    <div className="mt-4 rounded-xl bg-black/40 border border-white/10 p-4">
-                                        <p className="whitespace-pre-wrap text-slate-200">
-                                            {item.message}
-                                        </p>
-                                    </div>
-                                    <div className="mt-3 flex justify-end">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleDeleteContactMessage(item.id)}
-                                            disabled={deletingMessageId === item.id}
-                                            className="rounded-md border border-red-400/40 bg-red-900/30 px-3 py-1.5 text-xs text-red-100 hover:bg-red-900/50 disabled:cursor-not-allowed disabled:opacity-60"
-                                        >
-                                            {deletingMessageId === item.id ? "Deleting..." : "Delete"}
-                                        </button>
-                                    </div>
+                                <div key={item.id} className="rounded-2xl border border-white/10 bg-white/5 p-5">
+                                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2"><div><p className="text-lg font-medium">{item.name}</p><p className="text-sm text-slate-300">{item.email}</p></div><p className="text-sm text-slate-400">{formatDate(item.created_at)}</p></div>
+                                    <div className="mt-4 rounded-xl bg-black/40 border border-white/10 p-4"><p className="whitespace-pre-wrap text-slate-200">{item.message}</p></div>
+                                    <div className="mt-3 flex justify-end"><button type="button" onClick={() => handleDeleteContactMessage(item.id)} disabled={deletingMessageId === item.id} className="rounded-md border border-red-400/40 bg-red-900/30 px-3 py-1.5 text-xs text-red-100 hover:bg-red-900/50 disabled:cursor-not-allowed disabled:opacity-60">{deletingMessageId === item.id ? "Deleting..." : "Delete"}</button></div>
                                 </div>
                             ))}
                         </div>
@@ -933,56 +675,16 @@ export default function AdminMessagesPage() {
 
                 {canViewDonations && (
                     <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                            <h2 className="text-2xl font-semibold">Donations</h2>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={handleSyncStripeDonations}
-                                    className="rounded-lg border border-white/20 px-3 py-2 text-xs hover:bg-white/10"
-                                >
-                                    Sync Stripe
-                                </button>
-                                <button
-                                    onClick={handleAddManualDonation}
-                                    className="rounded-lg border border-white/20 px-3 py-2 text-xs hover:bg-white/10"
-                                >
-                                    Add manual
-                                </button>
-                            </div>
-                        </div>
-
+                        <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-2xl font-semibold">Donations</h2><div className="flex gap-2"><button onClick={handleSyncStripeDonations} className="rounded-lg border border-white/20 px-3 py-2 text-xs hover:bg-white/10">Sync Stripe</button><button onClick={handleAddManualDonation} className="rounded-lg border border-white/20 px-3 py-2 text-xs hover:bg-white/10">Add manual</button></div></div>
                         <div className="mt-4 space-y-3">
                             {donations.map((record) => (
-                                <div
-                                    key={record.id}
-                                    className="rounded-lg border border-white/10 p-3"
-                                >
-                                    <p className="font-medium">
-                                        ${(record.amount_cents / 100).toFixed(2)} -{" "}
-                                        {record.donor_name || "Anonymous"}
-                                    </p>
-                                    <p className="text-sm text-slate-300">
-                                        {record.donor_email || "No email"}
-                                    </p>
-                                    <p className="text-xs text-slate-400">
-                                        {formatDate(record.created_at)} (
-                                        {record.payment_status || "pending"})
-                                    </p>
-                                    <div className="mt-3 flex justify-end">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleDeleteDonation(record.id)}
-                                            disabled={deletingDonationId === record.id}
-                                            className="rounded-md border border-red-400/40 bg-red-900/30 px-3 py-1.5 text-xs text-red-100 hover:bg-red-900/50 disabled:cursor-not-allowed disabled:opacity-60"
-                                        >
-                                            {deletingDonationId === record.id ? "Deleting..." : "Delete"}
-                                        </button>
-                                    </div>
+                                <div key={record.id} className="rounded-lg border border-white/10 p-3">
+                                    <p className="font-medium">${(record.amount_cents / 100).toFixed(2)} - {record.donor_name || "Anonymous"}</p>
+                                    <p className="text-sm text-slate-300">{record.donor_email || "No email"}</p>
+                                    <p className="text-xs text-slate-400">{formatDate(record.created_at)} ({record.payment_status || "pending"})</p>
+                                    <div className="mt-3 flex justify-end"><button type="button" onClick={() => handleDeleteDonation(record.id)} disabled={deletingDonationId === record.id} className="rounded-md border border-red-400/40 bg-red-900/30 px-3 py-1.5 text-xs text-red-100 hover:bg-red-900/50 disabled:cursor-not-allowed disabled:opacity-60">{deletingDonationId === record.id ? "Deleting..." : "Delete"}</button></div>
                                 </div>
                             ))}
-                            {donations.length === 0 && (
-                                <p className="text-sm text-slate-400">No donations recorded yet.</p>
-                            )}
                         </div>
                     </section>
                 )}
