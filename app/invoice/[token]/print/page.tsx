@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getInvoiceByPublicToken } from "@/lib/invoice-db";
+import PrintControls from "./PrintControls";
 
 const money = (cents: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format((cents || 0) / 100);
 
@@ -13,15 +14,7 @@ export default async function PrintableInvoicePage({ params }: { params: Promise
     return (
         <main className="min-h-screen bg-white text-slate-950 print:min-h-0">
             <div className="mx-auto max-w-4xl bg-white p-6 sm:p-10 print:max-w-none print:p-0">
-                <div className="mb-6 flex justify-end print:hidden">
-                    <button
-                        type="button"
-                        onClick={() => window.print()}
-                        className="rounded-lg bg-black px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
-                    >
-                        Print / Save as PDF
-                    </button>
-                </div>
+                <PrintControls />
 
                 <div className="border-b border-slate-200 pb-6">
                     <div className="flex flex-wrap items-start justify-between gap-6">
@@ -84,8 +77,6 @@ export default async function PrintableInvoicePage({ params }: { params: Promise
                 {invoice.terms ? <div className="mt-6"><h2 className="font-semibold">Payment terms</h2><p className="mt-2 whitespace-pre-line text-sm text-slate-600">{invoice.terms}</p></div> : null}
                 {invoice.footer_text ? <p className="mt-10 border-t border-slate-200 pt-6 text-center text-sm text-slate-500">{invoice.footer_text}</p> : null}
             </div>
-
-            <script dangerouslySetInnerHTML={{ __html: "window.addEventListener('load', function(){ setTimeout(function(){ window.print(); }, 150); });" }} />
         </main>
     );
 }
