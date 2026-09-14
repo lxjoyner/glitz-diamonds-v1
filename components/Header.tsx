@@ -113,8 +113,8 @@ export default function Header() {
 
             {open && <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setOpen(false)} />}
 
-            <div className={`fixed top-0 left-0 z-50 h-full w-72 max-w-[85vw] transform bg-black/95 border-r border-white/10 shadow-2xl transition-transform duration-300 ${open ? "translate-x-0" : "-translate-x-full"}`}>
-                <div className="flex items-center justify-between px-4 py-4 border-b border-white/10">
+            <div className={`fixed top-0 left-0 z-50 flex h-full w-72 max-w-[85vw] transform flex-col overflow-hidden bg-black/95 border-r border-white/10 shadow-2xl transition-transform duration-300 ${open ? "translate-x-0" : "-translate-x-full"}`}>
+                <div className="flex shrink-0 items-center justify-between px-4 py-4 border-b border-white/10">
                     <div className="flex items-center gap-3">
                         <Image src="/GlitzOfDiamond_Logo.png" alt="Glitz Of Diamonds logo" width={120} height={32} className="h-10 w-auto" />
                     </div>
@@ -123,7 +123,7 @@ export default function Header() {
                     </button>
                 </div>
 
-                <nav className="flex flex-col gap-2 px-4 py-4">
+                <nav className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain px-4 py-4 pr-3 [scrollbar-gutter:stable]">
                     <Link href="/" className="nav-link" onClick={() => setOpen(false)}>Home</Link>
                     <Link href="/about" className="nav-link" onClick={() => setOpen(false)}>About Us</Link>
                     <Link href="/contact" className="nav-link" onClick={() => setOpen(false)}>Contact</Link>
@@ -153,7 +153,7 @@ export default function Header() {
                         </div>
                     )}
 
-                    <div className="mt-4 border-t border-white/10 pt-4">
+                    <div className="mt-4 border-t border-white/10 pt-4 pb-2">
                         {!loadingAuth && !adminUser && <Link href="/admin/login" className="btn btn-primary w-fit" onClick={() => setOpen(false)}>Login</Link>}
                         {!loadingAuth && adminUser && <button type="button" onClick={handleLogout} className="rounded-lg bg-red-800 text-white px-4 py-2 hover:bg-red-600 transition">Logout</button>}
                     </div>
