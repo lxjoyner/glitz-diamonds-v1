@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth";
-import { getAdminSettings, normalizeExcludedUserIds, updateAdminSettings } from "@/lib/admin-settings-db";
+import {
+    getAdminSettings,
+    normalizeExcludedUserIds,
+    PasswordExpirationUnit,
+    updateAdminSettings,
+} from "@/lib/admin-settings-db";
 
 function requireRole(req: NextRequest, allowedRoles: string[]) {
     const token = req.cookies.get("glitz_token")?.value;
@@ -40,6 +45,8 @@ export async function PATCH(req: NextRequest) {
     const timeFormat = String(body.timeFormat || "").trim();
     const birthdaysOnCalendar = body.birthdaysOnCalendar;
     const birthdayExcludedUserIds = body.birthdayExcludedUserIds;
+    const passwordExpirationValue = Number(body.passwordExpirationValue);
+    const passwordExpirationUnit = String(body.passwordExpirationUnit || "").trim() as PasswordExpirationUnit;
 
     if (!timezone || !dateFormat || !timeFormat) {
         return NextResponse.json(
@@ -51,6 +58,20 @@ export async function PATCH(req: NextRequest) {
     if (typeof birthdaysOnCalendar !== "boolean" || !Array.isArray(birthdayExcludedUserIds)) {
         return NextResponse.json(
             { success: false, error: "Birthday calendar settings are invalid." },
+            { status: 400 }
+        );
+    }
+
+    if (!Number.isInteger(passwordExpirationValue) || passwordExpirationValue < 1 || passwordExpirationValue > 3650) {
+        return NextResponse.json(
+            { success: false, error: "Password expiration value must be a whole number between 1 and 3650." },
+            { status: 400 }
+        );
+    }
+
+    if (!["days", "months", "years"].includes(passwordExpirationUnit)) {
+        return NextResponse.json(
+            { success: false, error: "Password expiration unit must be days, months, or years." },
             { status: 400 }
         );
     }
@@ -67,6 +88,8 @@ export async function PATCH(req: NextRequest) {
         timeFormat,
         birthdaysOnCalendar,
         birthdayExcludedUserIds: normalizeExcludedUserIds(birthdayExcludedUserIds),
+        passwordExpirationValue,
+        passwordExpirationUnit,
     });
     return NextResponse.json({ success: true, settings });
 }
