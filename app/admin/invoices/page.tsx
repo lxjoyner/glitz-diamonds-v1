@@ -19,6 +19,9 @@ type Invoice = {
     sent_at?: string | null;
 };
 
+type InvoiceSortKey = "status" | "due" | "date" | "number" | "member" | "amount" | "paid" | "balance";
+type SortDirection = "asc" | "desc";
+
 const PAGE_SIZE = 25;
 const money = (cents: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format((cents || 0) / 100);
 const prettyStatus = (value: string) => value.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
@@ -114,6 +117,8 @@ export default function InvoicesPage() {
     const [numberFilter, setNumberFilter] = useState("");
     const [tab, setTab] = useState("unpaid");
     const [page, setPage] = useState(1);
+    const [sortKey, setSortKey] = useState<InvoiceSortKey>("date");
+    const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
     const [openActionId, setOpenActionId] = useState<number | null>(null);
     const actionsMenuRef = useRef<HTMLDivElement | null>(null);
 
@@ -194,6 +199,22 @@ export default function InvoicesPage() {
         }
     }
 
+    function toggleSort(key: InvoiceSortKey) {
+        if (sortKey === key) setSortDirection((current) => current === "asc" ? "desc" : "asc");
+        else {
+            setSortKey(key);
+            setSortDirection(key === "date" || key === "due" || key === "amount" || key === "paid" || key === "balance" ? "desc" : "asc");
+        }
+        setPage(1);
+    }
+
+    function sortButton(label: string, key: InvoiceSortKey, align: "left" | "right" = "left") {
+        const active = sortKey === key;
+        return <button type="button" onClick={() => toggleSort(key)} className={`inline-flex w-full items-center gap-1 font-semibold hover:text-blue-700 ${align === "right" ? "justify-end" : "justify-start"}`} aria-label={`Sort by ${label} ${active && sortDirection === "asc" ? "descending" : "ascending"}`}>
+            <span>{label}</span><span aria-hidden="true" className={active ? "text-blue-700" : "text-slate-400"}>{active ? sortDirection === "asc" ? "▲" : "▼" : "↕"}</span>
+        </button>;
+    }
+
     const members = useMemo(() => Array.from(new Map(invoices.map((invoice) => [invoice.member_id, invoice.member_name])).entries()), [invoices]);
     const counts = useMemo(() => ({
         unpaid: invoices.filter((i) => !["paid", "void", "draft"].includes(i.display_status)).length,
@@ -226,11 +247,28 @@ export default function InvoicesPage() {
         return true;
     }), [invoices, memberFilter, statusFilter, fromDate, toDate, numberFilter, tab]);
 
+    const sorted = useMemo(() => [...filtered].sort((a, b) => {
+        let left: string | number;
+        let right: string | number;
+        switch (sortKey) {
+            case "status": left = a.display_status; right = b.display_status; break;
+            case "due": left = a.due_date; right = b.due_date; break;
+            case "date": left = a.invoice_date; right = b.invoice_date; break;
+            case "number": left = a.invoice_number; right = b.invoice_number; break;
+            case "member": left = a.member_name || ""; right = b.member_name || ""; break;
+            case "amount": left = a.total_cents; right = b.total_cents; break;
+            case "paid": left = a.amount_paid_cents; right = b.amount_paid_cents; break;
+            case "balance": left = Math.max(0, a.total_cents - a.amount_paid_cents); right = Math.max(0, b.total_cents - b.amount_paid_cents); break;
+        }
+        const comparison = typeof left === "number" && typeof right === "number" ? left - right : String(left).localeCompare(String(right), undefined, { numeric: true, sensitivity: "base" });
+        return sortDirection === "asc" ? comparison : -comparison;
+    }), [filtered, sortKey, sortDirection]);
+
     useEffect(() => { setPage(1); }, [memberFilter, statusFilter, fromDate, toDate, numberFilter, tab]);
-    const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
     useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount]);
     const pageStart = (page - 1) * PAGE_SIZE;
-    const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+    const paginated = sorted.slice(pageStart, pageStart + PAGE_SIZE);
 
     return (
         <main className="min-h-screen bg-[#f7f9fc] px-4 py-8 text-slate-950 sm:px-8">
@@ -266,7 +304,7 @@ export default function InvoicesPage() {
                         <div>
                             <div className="overflow-x-auto overflow-y-visible pb-48">
                                 <table className="w-full min-w-[1220px] border-collapse text-sm">
-                                    <thead><tr className="border-b-2 border-slate-200 text-left"><th className="px-3 py-3">Status</th><th className="px-3 py-3">Due</th><th className="px-3 py-3">Date</th><th className="px-3 py-3">Number</th><th className="px-3 py-3">Member</th><th className="px-3 py-3 text-right">Amount</th><th className="px-3 py-3 text-right">Paid</th><th className="px-3 py-3 text-right">Balance</th><th className="px-3 py-3 text-right">Actions</th></tr></thead>
+                                    <thead><tr className="border-b-2 border-slate-200 text-left"><th className="px-3 py-3">{sortButton("Status", "status")}</th><th className="px-3 py-3">{sortButton("Due", "due")}</th><th className="px-3 py-3">{sortButton("Date", "date")}</th><th className="px-3 py-3">{sortButton("Number", "number")}</th><th className="px-3 py-3">{sortButton("Member", "member")}</th><th className="px-3 py-3 text-right">{sortButton("Amount", "amount", "right")}</th><th className="px-3 py-3 text-right">{sortButton("Paid", "paid", "right")}</th><th className="px-3 py-3 text-right">{sortButton("Balance", "balance", "right")}</th><th className="px-3 py-3 text-right">Actions</th></tr></thead>
                                     <tbody>{paginated.map((invoice) => {
                                         const balance = Math.max(0, invoice.total_cents - invoice.amount_paid_cents);
                                         const overdueDays = daysPastDue(invoice.due_date);
@@ -304,15 +342,11 @@ export default function InvoicesPage() {
                                         </tr>;
                                     })}</tbody>
                                 </table>
-                                {filtered.length === 0 && <p className="py-10 text-center text-slate-400">No invoices match the selected filters.</p>}
+                                {sorted.length === 0 && <p className="py-10 text-center text-slate-400">No invoices match the selected filters.</p>}
                             </div>
-                            {filtered.length > 0 && <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
-                                <p className="text-sm text-slate-500">Showing {pageStart + 1}-{Math.min(pageStart + PAGE_SIZE, filtered.length)} of {filtered.length}</p>
-                                <div className="flex items-center gap-2">
-                                    <button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40">Previous</button>
-                                    <span className="px-2 text-sm font-semibold">Page {page} of {pageCount}</span>
-                                    <button type="button" onClick={() => setPage((current) => Math.min(pageCount, current + 1))} disabled={page === pageCount} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40">Next</button>
-                                </div>
+                            {sorted.length > 0 && <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
+                                <p className="text-sm text-slate-500">Showing {pageStart + 1}-{Math.min(pageStart + PAGE_SIZE, sorted.length)} of {sorted.length}</p>
+                                <div className="flex items-center gap-2"><button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40">Previous</button><span className="px-2 text-sm font-semibold">Page {page} of {pageCount}</span><button type="button" onClick={() => setPage((current) => Math.min(pageCount, current + 1))} disabled={page === pageCount} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40">Next</button></div>
                             </div>}
                         </div>
                     )}
