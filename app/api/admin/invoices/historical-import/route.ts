@@ -54,16 +54,21 @@ function statusFromInput(value: unknown): "paid" | "unpaid" | "overdue" {
     return "unpaid";
 }
 
+function historicalReference(oldInvoiceNumber: string) {
+    return oldInvoiceNumber ? `Legacy invoice ${oldInvoiceNumber}` : "Historical import";
+}
+
 async function findDuplicate(memberId: number, invoiceDate: string, oldInvoiceNumber: string) {
+    const referenceNumber = historicalReference(oldInvoiceNumber);
     const [rows] = await pool.query<RowDataPacket[]>(
         `SELECT id, invoice_number, reference_number
          FROM invoices
          WHERE member_id = ?
            AND invoice_date = ?
-           AND (? = '' OR reference_number = ?)
+           AND reference_number = ?
          ORDER BY id DESC
          LIMIT 1`,
-        [memberId, invoiceDate, oldInvoiceNumber, oldInvoiceNumber]
+        [memberId, invoiceDate, referenceNumber]
     );
     return rows[0] as { id: number; invoice_number: string; reference_number: string | null } | undefined;
 }
@@ -166,7 +171,7 @@ export async function POST(req: NextRequest) {
                 memberId,
                 invoiceDate: row.invoiceDate,
                 dueDate: row.dueDate,
-                referenceNumber: row.oldInvoiceNumber ? `Legacy invoice ${row.oldInvoiceNumber}` : "Historical import",
+                referenceNumber: historicalReference(row.oldInvoiceNumber),
                 notes: row.recurring ? "Imported historical recurring invoice." : "Imported historical invoice.",
                 items: [{ description: row.description, quantity: 1, unitPriceCents: Math.round(row.amount * 100) }],
             });
