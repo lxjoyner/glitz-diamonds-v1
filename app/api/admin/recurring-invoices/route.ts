@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
         const nextInvoiceDate = String(body?.nextInvoiceDate || firstInvoiceDate).slice(0, 10);
         const status = body?.status === "draft" ? "draft" : "active";
         const notes = String(body?.notes || "").trim();
+        const footerText = String(body?.footerText || "").trim();
         const requestedFrequency = String(body?.frequency || "monthly").toLowerCase() as RecurringFrequency;
         const frequency = VALID_FREQUENCIES.has(requestedFrequency) ? requestedFrequency : "monthly";
         const requestedEndMode = String(body?.endMode || "never").toLowerCase() as RecurringEndMode;
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
         if (endMode === "after" && (!Number.isInteger(endAfterCount) || endAfterCount < 1)) return NextResponse.json({ success: false, error: "End-after count must be at least 1." }, { status: 400 });
         if (endMode === "on" && !endDate) return NextResponse.json({ success: false, error: "Select an end date." }, { status: 400 });
 
-        const recurringInvoice = await createRecurringInvoice({ memberId, repeatDay, firstInvoiceDate, nextInvoiceDate, amountCents, notes, status, frequency, weeklyDay, yearlyMonth, customEvery, customUnit, endMode, endAfterCount, endDate, timeZone });
+        const recurringInvoice = await createRecurringInvoice({ memberId, repeatDay, firstInvoiceDate, nextInvoiceDate, amountCents, notes, footerText, status, frequency, weeklyDay, yearlyMonth, customEvery, customUnit, endMode, endAfterCount, endDate, timeZone });
         return NextResponse.json({ success: true, recurringInvoice }, { status: 201 });
     } catch (error) {
         const message = error instanceof Error ? error.message : "";
