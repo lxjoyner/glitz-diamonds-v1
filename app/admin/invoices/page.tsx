@@ -19,6 +19,7 @@ type Invoice = {
     sent_at?: string | null;
 };
 
+const PAGE_SIZE = 25;
 const money = (cents: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format((cents || 0) / 100);
 const prettyStatus = (value: string) => value.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
 
@@ -112,21 +113,18 @@ export default function InvoicesPage() {
     const [toDate, setToDate] = useState("");
     const [numberFilter, setNumberFilter] = useState("");
     const [tab, setTab] = useState("unpaid");
+    const [page, setPage] = useState(1);
     const [openActionId, setOpenActionId] = useState<number | null>(null);
     const actionsMenuRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         if (openActionId === null) return;
-
         const handleClickAway = (event: MouseEvent) => {
-            if (actionsMenuRef.current && !actionsMenuRef.current.contains(event.target as Node)) {
-                setOpenActionId(null);
-            }
+            if (actionsMenuRef.current && !actionsMenuRef.current.contains(event.target as Node)) setOpenActionId(null);
         };
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === "Escape") setOpenActionId(null);
         };
-
         document.addEventListener("mousedown", handleClickAway);
         document.addEventListener("keydown", handleKeyDown);
         return () => {
@@ -228,6 +226,12 @@ export default function InvoicesPage() {
         return true;
     }), [invoices, memberFilter, statusFilter, fromDate, toDate, numberFilter, tab]);
 
+    useEffect(() => { setPage(1); }, [memberFilter, statusFilter, fromDate, toDate, numberFilter, tab]);
+    const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount]);
+    const pageStart = (page - 1) * PAGE_SIZE;
+    const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+
     return (
         <main className="min-h-screen bg-[#f7f9fc] px-4 py-8 text-slate-950 sm:px-8">
             <div className="mx-auto max-w-[1500px]">
@@ -259,47 +263,57 @@ export default function InvoicesPage() {
                     {notice && <p className="mb-4 rounded-lg bg-emerald-50 p-3 text-emerald-700">{notice}</p>}
                     {error && <p className="mb-4 rounded-lg bg-red-50 p-3 text-red-700">{error}</p>}
                     {loading ? <p className="py-12 text-center text-slate-500">Loading invoices...</p> : (
-                        <div className="overflow-x-auto overflow-y-visible pb-48">
-                            <table className="w-full min-w-[1220px] border-collapse text-sm">
-                                <thead><tr className="border-b-2 border-slate-200 text-left"><th className="px-3 py-3">Status</th><th className="px-3 py-3">Due</th><th className="px-3 py-3">Date</th><th className="px-3 py-3">Number</th><th className="px-3 py-3">Member</th><th className="px-3 py-3 text-right">Amount</th><th className="px-3 py-3 text-right">Paid</th><th className="px-3 py-3 text-right">Balance</th><th className="px-3 py-3 text-right">Actions</th></tr></thead>
-                                <tbody>{filtered.map((invoice) => {
-                                    const balance = Math.max(0, invoice.total_cents - invoice.amount_paid_cents);
-                                    const overdueDays = daysPastDue(invoice.due_date);
-                                    const overdue = !["paid", "void", "draft"].includes(invoice.display_status) && overdueDays > 0;
-                                    const canSend = !["paid", "void"].includes(invoice.display_status);
-                                    const invoiceHref = invoice.public_token ? `/invoice/${invoice.public_token}` : null;
-                                    const printHref = invoice.public_token ? `/invoice/${invoice.public_token}/print` : null;
-                                    const pdfHref = invoice.public_token ? `/invoice/${invoice.public_token}/pdf` : null;
-                                    const dueDisplay = overdue ? `${overdueDays} ${overdueDays === 1 ? "day" : "days"} ago` : new Date(invoice.due_date).toLocaleDateString();
-                                    return <tr key={invoice.id} onClick={() => { if (invoiceHref) router.push(invoiceHref); }} onKeyDown={(event) => { if (!invoiceHref) return; if (event.key === "Enter" || event.key === " ") { event.preventDefault(); router.push(invoiceHref); } }} role={invoiceHref ? "link" : undefined} tabIndex={invoiceHref ? 0 : undefined} aria-label={invoiceHref ? `Open invoice ${invoice.invoice_number}` : undefined} className={`border-b border-slate-100 hover:bg-slate-50 ${invoiceHref ? "cursor-pointer focus:bg-slate-50 focus:outline-none" : ""}`}>
-                                        <td className="px-3 py-4"><span className={`rounded-md px-2.5 py-1 text-xs font-bold ${invoice.display_status === "paid" ? "bg-emerald-100 text-emerald-800" : overdue ? "bg-red-100 text-red-700" : invoice.display_status === "draft" ? "bg-slate-200 text-slate-700" : "bg-amber-100 text-amber-800"}`}>{prettyStatus(invoice.display_status)}</span></td>
-                                        <td className={`px-3 py-4 ${overdue ? "font-semibold text-red-600" : ""}`}>{dueDisplay}</td>
-                                        <td className="px-3 py-4">{new Date(invoice.invoice_date).toLocaleDateString()}</td>
-                                        <td className="px-3 py-4 font-semibold text-blue-700">{invoice.invoice_number}</td>
-                                        <td className="px-3 py-4"><div>{invoice.member_name || `Member #${invoice.member_id}`}</div><div className="text-xs text-slate-400">{invoice.member_email || "No email"}</div></td>
-                                        <td className="px-3 py-4 text-right">{money(invoice.total_cents)}</td><td className="px-3 py-4 text-right">{money(invoice.amount_paid_cents)}</td><td className="px-3 py-4 text-right font-semibold">{money(balance)}</td>
-                                        <td className="relative px-3 py-4 text-right" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                                            {canSend ? <div className="inline-flex items-center gap-2">
-                                                <button type="button" onClick={() => sendInvoice(invoice, Boolean(invoice.sent_at))} disabled={sendingId === invoice.id || !invoice.member_email} className="font-semibold text-blue-700 disabled:cursor-not-allowed disabled:opacity-40">{sendingId === invoice.id ? "Sending..." : invoice.sent_at ? "Send reminder" : "Send invoice"}</button>
-                                                <div ref={openActionId === invoice.id ? actionsMenuRef : null} className="relative inline-block">
-                                                    <button type="button" onClick={() => setOpenActionId(openActionId === invoice.id ? null : invoice.id)} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-blue-600 text-blue-700 hover:bg-blue-50" aria-label={`Actions for invoice ${invoice.invoice_number}`} aria-expanded={openActionId === invoice.id}>⌄</button>
-                                                    {openActionId === invoice.id && <div className="absolute right-0 z-50 mt-2 w-52 rounded-xl border border-slate-200 bg-white py-2 text-left shadow-xl">
-                                                        {invoiceHref && <Link href={invoiceHref} className="block px-4 py-2 hover:bg-slate-50">View</Link>}
-                                                        <Link href={`/admin/invoices/${invoice.id}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit</Link>
-                                                        <Link href={`/admin/invoices/new?duplicate=${invoice.id}`} className="block px-4 py-2 hover:bg-slate-50">Duplicate</Link>
-                                                        <button type="button" disabled className="block w-full cursor-not-allowed px-4 py-2 text-left text-slate-400">Record payment</button>
-                                                        <button type="button" onClick={() => sendInvoice(invoice, true)} disabled={!invoice.member_email || sendingId === invoice.id} className="block w-full px-4 py-2 text-left hover:bg-slate-50 disabled:text-slate-400">Resend invoice</button>
-                                                        {printHref && <Link href={printHref} target="_blank" rel="noreferrer" className="block px-4 py-2 hover:bg-slate-50">Print</Link>}
-                                                        {pdfHref && <a href={pdfHref} download className="block px-4 py-2 hover:bg-slate-50">Export as PDF</a>}
-                                                        <button type="button" onClick={() => deleteInvoice(invoice)} disabled={deletingId === invoice.id} className="block w-full px-4 py-2 text-left font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">{deletingId === invoice.id ? "Deleting..." : "Delete"}</button>
-                                                    </div>}
-                                                </div>
-                                            </div> : <span className="text-slate-400">Complete</span>}
-                                        </td>
-                                    </tr>;
-                                })}</tbody>
-                            </table>
-                            {filtered.length === 0 && <p className="py-10 text-center text-slate-400">No invoices match the selected filters.</p>}
+                        <div>
+                            <div className="overflow-x-auto overflow-y-visible pb-48">
+                                <table className="w-full min-w-[1220px] border-collapse text-sm">
+                                    <thead><tr className="border-b-2 border-slate-200 text-left"><th className="px-3 py-3">Status</th><th className="px-3 py-3">Due</th><th className="px-3 py-3">Date</th><th className="px-3 py-3">Number</th><th className="px-3 py-3">Member</th><th className="px-3 py-3 text-right">Amount</th><th className="px-3 py-3 text-right">Paid</th><th className="px-3 py-3 text-right">Balance</th><th className="px-3 py-3 text-right">Actions</th></tr></thead>
+                                    <tbody>{paginated.map((invoice) => {
+                                        const balance = Math.max(0, invoice.total_cents - invoice.amount_paid_cents);
+                                        const overdueDays = daysPastDue(invoice.due_date);
+                                        const overdue = !["paid", "void", "draft"].includes(invoice.display_status) && overdueDays > 0;
+                                        const canSend = !["paid", "void"].includes(invoice.display_status);
+                                        const invoiceHref = invoice.public_token ? `/invoice/${invoice.public_token}` : null;
+                                        const printHref = invoice.public_token ? `/invoice/${invoice.public_token}/print` : null;
+                                        const pdfHref = invoice.public_token ? `/invoice/${invoice.public_token}/pdf` : null;
+                                        const dueDisplay = overdue ? `${overdueDays} ${overdueDays === 1 ? "day" : "days"} ago` : new Date(invoice.due_date).toLocaleDateString();
+                                        return <tr key={invoice.id} onClick={() => { if (invoiceHref) router.push(invoiceHref); }} onKeyDown={(event) => { if (!invoiceHref) return; if (event.key === "Enter" || event.key === " ") { event.preventDefault(); router.push(invoiceHref); } }} role={invoiceHref ? "link" : undefined} tabIndex={invoiceHref ? 0 : undefined} aria-label={invoiceHref ? `Open invoice ${invoice.invoice_number}` : undefined} className={`border-b border-slate-100 hover:bg-slate-50 ${invoiceHref ? "cursor-pointer focus:bg-slate-50 focus:outline-none" : ""}`}>
+                                            <td className="px-3 py-4"><span className={`rounded-md px-2.5 py-1 text-xs font-bold ${invoice.display_status === "paid" ? "bg-emerald-100 text-emerald-800" : overdue ? "bg-red-100 text-red-700" : invoice.display_status === "draft" ? "bg-slate-200 text-slate-700" : "bg-amber-100 text-amber-800"}`}>{prettyStatus(invoice.display_status)}</span></td>
+                                            <td className={`px-3 py-4 ${overdue ? "font-semibold text-red-600" : ""}`}>{dueDisplay}</td>
+                                            <td className="px-3 py-4">{new Date(invoice.invoice_date).toLocaleDateString()}</td>
+                                            <td className="px-3 py-4 font-semibold text-blue-700">{invoice.invoice_number}</td>
+                                            <td className="px-3 py-4"><div>{invoice.member_name || `Member #${invoice.member_id}`}</div><div className="text-xs text-slate-400">{invoice.member_email || "No email"}</div></td>
+                                            <td className="px-3 py-4 text-right">{money(invoice.total_cents)}</td><td className="px-3 py-4 text-right">{money(invoice.amount_paid_cents)}</td><td className="px-3 py-4 text-right font-semibold">{money(balance)}</td>
+                                            <td className="relative px-3 py-4 text-right" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                                                {canSend ? <div className="inline-flex items-center gap-2">
+                                                    <button type="button" onClick={() => sendInvoice(invoice, Boolean(invoice.sent_at))} disabled={sendingId === invoice.id || !invoice.member_email} className="font-semibold text-blue-700 disabled:cursor-not-allowed disabled:opacity-40">{sendingId === invoice.id ? "Sending..." : invoice.sent_at ? "Send reminder" : "Send invoice"}</button>
+                                                    <div ref={openActionId === invoice.id ? actionsMenuRef : null} className="relative inline-block">
+                                                        <button type="button" onClick={() => setOpenActionId(openActionId === invoice.id ? null : invoice.id)} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-blue-600 text-blue-700 hover:bg-blue-50" aria-label={`Actions for invoice ${invoice.invoice_number}`} aria-expanded={openActionId === invoice.id}>⌄</button>
+                                                        {openActionId === invoice.id && <div className="absolute right-0 z-50 mt-2 w-52 rounded-xl border border-slate-200 bg-white py-2 text-left shadow-xl">
+                                                            {invoiceHref && <Link href={invoiceHref} className="block px-4 py-2 hover:bg-slate-50">View</Link>}
+                                                            <Link href={`/admin/invoices/${invoice.id}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit</Link>
+                                                            <Link href={`/admin/invoices/new?duplicate=${invoice.id}`} className="block px-4 py-2 hover:bg-slate-50">Duplicate</Link>
+                                                            <button type="button" disabled className="block w-full cursor-not-allowed px-4 py-2 text-left text-slate-400">Record payment</button>
+                                                            <button type="button" onClick={() => sendInvoice(invoice, true)} disabled={!invoice.member_email || sendingId === invoice.id} className="block w-full px-4 py-2 text-left hover:bg-slate-50 disabled:text-slate-400">Resend invoice</button>
+                                                            {printHref && <Link href={printHref} target="_blank" rel="noreferrer" className="block px-4 py-2 hover:bg-slate-50">Print</Link>}
+                                                            {pdfHref && <a href={pdfHref} download className="block px-4 py-2 hover:bg-slate-50">Export as PDF</a>}
+                                                            <button type="button" onClick={() => deleteInvoice(invoice)} disabled={deletingId === invoice.id} className="block w-full px-4 py-2 text-left font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">{deletingId === invoice.id ? "Deleting..." : "Delete"}</button>
+                                                        </div>}
+                                                    </div>
+                                                </div> : <span className="text-slate-400">Complete</span>}
+                                            </td>
+                                        </tr>;
+                                    })}</tbody>
+                                </table>
+                                {filtered.length === 0 && <p className="py-10 text-center text-slate-400">No invoices match the selected filters.</p>}
+                            </div>
+                            {filtered.length > 0 && <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
+                                <p className="text-sm text-slate-500">Showing {pageStart + 1}-{Math.min(pageStart + PAGE_SIZE, filtered.length)} of {filtered.length}</p>
+                                <div className="flex items-center gap-2">
+                                    <button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40">Previous</button>
+                                    <span className="px-2 text-sm font-semibold">Page {page} of {pageCount}</span>
+                                    <button type="button" onClick={() => setPage((current) => Math.min(pageCount, current + 1))} disabled={page === pageCount} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40">Next</button>
+                                </div>
+                            </div>}
                         </div>
                     )}
                 </section>
