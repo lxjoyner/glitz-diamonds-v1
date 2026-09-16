@@ -19,6 +19,7 @@ type RecurringInvoice = {
     amount_cents: number;
 };
 
+const PAGE_SIZE = 25;
 const money = (cents: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format((cents || 0) / 100);
 const displayDate = (value: string | null) => value ? new Date(`${String(value).slice(0, 10)}T00:00:00`).toLocaleDateString("en-US") : "—";
 
@@ -31,6 +32,7 @@ export default function RecurringInvoicesPage() {
     const [customerSearch, setCustomerSearch] = useState("");
     const [customerMenuOpen, setCustomerMenuOpen] = useState(false);
     const [tab, setTab] = useState<"active" | "draft" | "all">("active");
+    const [page, setPage] = useState(1);
     const [openMenuId, setOpenMenuId] = useState<number | null>(null);
     const customerMenuRef = useRef<HTMLDivElement>(null);
 
@@ -57,9 +59,7 @@ export default function RecurringInvoicesPage() {
 
     useEffect(() => {
         function closeCustomerMenu(event: MouseEvent) {
-            if (customerMenuRef.current && !customerMenuRef.current.contains(event.target as Node)) {
-                setCustomerMenuOpen(false);
-            }
+            if (customerMenuRef.current && !customerMenuRef.current.contains(event.target as Node)) setCustomerMenuOpen(false);
         }
         document.addEventListener("mousedown", closeCustomerMenu);
         return () => document.removeEventListener("mousedown", closeCustomerMenu);
@@ -75,11 +75,17 @@ export default function RecurringInvoicesPage() {
     const activeCount = rows.filter((row) => row.status === "active").length;
     const draftCount = rows.filter((row) => row.status === "draft").length;
 
-    const filtered = rows.filter((row) => {
+    const filtered = useMemo(() => rows.filter((row) => {
         if (memberFilter !== "all" && String(row.member_id) !== memberFilter) return false;
         if (tab !== "all" && row.status !== tab) return false;
         return true;
-    });
+    }), [rows, memberFilter, tab]);
+
+    useEffect(() => { setPage(1); }, [memberFilter, tab]);
+    const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount]);
+    const pageStart = (page - 1) * PAGE_SIZE;
+    const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
 
     async function endRecurring(row: RecurringInvoice) {
         if (!window.confirm(`End recurring invoices for ${row.member_name || "this member"}?`)) return;
@@ -100,48 +106,20 @@ export default function RecurringInvoicesPage() {
 
                 <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div ref={customerMenuRef} className="relative mb-8 max-w-sm">
-                        <button
-                            type="button"
-                            onClick={() => setCustomerMenuOpen((current) => !current)}
-                            className="flex w-full items-center justify-between rounded-xl border border-slate-300 bg-white px-4 py-3 text-left italic text-slate-600"
-                            aria-haspopup="listbox"
-                            aria-expanded={customerMenuOpen}
-                        >
-                            <span>{selectedMemberName}</span>
-                            <span aria-hidden="true" className="text-slate-500">⌄</span>
+                        <button type="button" onClick={() => setCustomerMenuOpen((current) => !current)} className="flex w-full items-center justify-between rounded-xl border border-slate-300 bg-white px-4 py-3 text-left italic text-slate-600" aria-haspopup="listbox" aria-expanded={customerMenuOpen}>
+                            <span>{selectedMemberName}</span><span aria-hidden="true" className="text-slate-500">⌄</span>
                         </button>
                         {customerMenuOpen && (
                             <div className="absolute left-0 right-0 z-40 mt-1 overflow-hidden rounded-xl border border-blue-300 bg-white shadow-xl">
                                 <div className="border-b border-slate-200 p-2">
                                     <div className="flex items-center gap-2 rounded-lg border border-blue-200 px-3 py-2">
                                         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-slate-500" strokeWidth="1.8"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>
-                                        <input
-                                            autoFocus
-                                            value={customerSearch}
-                                            onChange={(event) => setCustomerSearch(event.target.value)}
-                                            placeholder="Type a customer name"
-                                            className="min-w-0 flex-1 bg-transparent text-sm text-slate-900 outline-none placeholder:italic placeholder:text-slate-500"
-                                        />
+                                        <input autoFocus value={customerSearch} onChange={(event) => setCustomerSearch(event.target.value)} placeholder="Type a customer name" className="min-w-0 flex-1 bg-transparent text-sm text-slate-900 outline-none placeholder:italic placeholder:text-slate-500" />
                                     </div>
                                 </div>
                                 <div className="max-h-80 overflow-y-auto py-1" role="listbox">
-                                    <button
-                                        type="button"
-                                        onClick={() => { setMemberFilter("all"); setCustomerMenuOpen(false); setCustomerSearch(""); }}
-                                        className="block w-full px-4 py-2.5 text-left font-medium hover:bg-blue-50"
-                                    >
-                                        All customers
-                                    </button>
-                                    {filteredMembers.map(([id, name]) => (
-                                        <button
-                                            key={id}
-                                            type="button"
-                                            onClick={() => { setMemberFilter(String(id)); setCustomerMenuOpen(false); setCustomerSearch(""); }}
-                                            className="block w-full px-4 py-2.5 text-left hover:bg-blue-50"
-                                        >
-                                            {name || `Member #${id}`}
-                                        </button>
-                                    ))}
+                                    <button type="button" onClick={() => { setMemberFilter("all"); setCustomerMenuOpen(false); setCustomerSearch(""); }} className="block w-full px-4 py-2.5 text-left font-medium hover:bg-blue-50">All customers</button>
+                                    {filteredMembers.map(([id, name]) => <button key={id} type="button" onClick={() => { setMemberFilter(String(id)); setCustomerMenuOpen(false); setCustomerSearch(""); }} className="block w-full px-4 py-2.5 text-left hover:bg-blue-50">{name || `Member #${id}`}</button>)}
                                     {filteredMembers.length === 0 && <p className="px-4 py-4 text-sm text-slate-500">No customers match that name.</p>}
                                 </div>
                             </div>
@@ -149,48 +127,20 @@ export default function RecurringInvoicesPage() {
                     </div>
 
                     <div className="mb-8 flex flex-wrap justify-center gap-1 border-b border-slate-200 pb-5">
-                        <button onClick={() => setTab("active")} className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold ${tab === "active" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}>
-                            <span>Active</span><span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-green-600 px-2 text-sm font-bold leading-none text-white">{activeCount}</span>
-                        </button>
-                        <button onClick={() => setTab("draft")} className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold ${tab === "draft" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}>
-                            <span>Draft</span><span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-yellow-300 px-2 text-sm font-bold leading-none text-black">{draftCount}</span>
-                        </button>
+                        <button onClick={() => setTab("active")} className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold ${tab === "active" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}><span>Active</span><span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-green-600 px-2 text-sm font-bold leading-none text-white">{activeCount}</span></button>
+                        <button onClick={() => setTab("draft")} className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold ${tab === "draft" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}><span>Draft</span><span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-yellow-300 px-2 text-sm font-bold leading-none text-black">{draftCount}</span></button>
                         <button onClick={() => setTab("all")} className={`rounded-xl px-5 py-2.5 font-semibold ${tab === "all" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}>All recurring invoices</button>
                     </div>
 
                     {error && <p className="mb-4 rounded-lg bg-red-50 p-3 text-red-700">{error}</p>}
                     {loading ? <p className="py-12 text-center text-slate-500">Loading recurring invoices...</p> : (
-                        <div className="overflow-x-auto overflow-y-visible pb-56">
-                            <table className="w-full min-w-[1100px] border-collapse text-sm">
-                                <thead>
-                                    <tr className="border-b-2 border-slate-200 text-left">
-                                        <th className="px-3 py-3">Status</th>
-                                        <th className="px-3 py-3">Customer</th>
-                                        <th className="px-3 py-3">Schedule</th>
-                                        <th className="px-3 py-3">Previous invoice</th>
-                                        <th className="px-3 py-3">Next invoice</th>
-                                        <th className="px-3 py-3 text-right">Invoice amount</th>
-                                        <th className="px-3 py-3 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filtered.map((row) => {
+                        <div>
+                            <div className="overflow-x-auto overflow-y-visible pb-56">
+                                <table className="w-full min-w-[1100px] border-collapse text-sm">
+                                    <thead><tr className="border-b-2 border-slate-200 text-left"><th className="px-3 py-3">Status</th><th className="px-3 py-3">Customer</th><th className="px-3 py-3">Schedule</th><th className="px-3 py-3">Previous invoice</th><th className="px-3 py-3">Next invoice</th><th className="px-3 py-3 text-right">Invoice amount</th><th className="px-3 py-3 text-right">Actions</th></tr></thead>
+                                    <tbody>{paginated.map((row) => {
                                         const viewHref = `/admin/invoices/recurring/${row.id}`;
-                                        return (
-                                        <tr
-                                            key={row.id}
-                                            onClick={() => router.push(viewHref)}
-                                            onKeyDown={(event) => {
-                                                if (event.key === "Enter" || event.key === " ") {
-                                                    event.preventDefault();
-                                                    router.push(viewHref);
-                                                }
-                                            }}
-                                            role="link"
-                                            tabIndex={0}
-                                            aria-label={`Open recurring invoice for ${row.member_name || `member ${row.member_id}`}`}
-                                            className="cursor-pointer border-b border-slate-100 hover:bg-slate-50 focus:bg-slate-50 focus:outline-none"
-                                        >
+                                        return <tr key={row.id} onClick={() => router.push(viewHref)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); router.push(viewHref); } }} role="link" tabIndex={0} aria-label={`Open recurring invoice for ${row.member_name || `member ${row.member_id}`}`} className="cursor-pointer border-b border-slate-100 hover:bg-slate-50 focus:bg-slate-50 focus:outline-none">
                                             <td className="px-3 py-4"><span className={`rounded-md px-2.5 py-1 text-xs font-bold ${row.status === "active" ? "bg-emerald-100 text-emerald-800" : row.status === "draft" ? "bg-yellow-200 text-black" : "bg-slate-200 text-slate-700"}`}>{row.status === "active" ? "Active" : row.status === "draft" ? "Draft" : "Ended"}</span></td>
                                             <td className="px-3 py-4 font-medium">{row.member_name || `Member #${row.member_id}`}</td>
                                             <td className="px-3 py-4"><div>Repeat monthly on the {row.repeat_day}{row.repeat_day === 1 ? "st" : row.repeat_day === 2 ? "nd" : row.repeat_day === 3 ? "rd" : "th"}</div><div className="text-xs text-slate-500">First invoice: {displayDate(row.first_invoice_date)}, Ends: {row.end_date ? displayDate(row.end_date) : "Never"}</div></td>
@@ -199,22 +149,17 @@ export default function RecurringInvoicesPage() {
                                             <td className="px-3 py-4 text-right">{money(row.amount_cents)}</td>
                                             <td className="relative px-3 py-4 text-right" onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
                                                 <button onClick={() => setOpenMenuId(openMenuId === row.id ? null : row.id)} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-blue-600 text-blue-700 hover:bg-blue-50" aria-label={`Actions for ${row.member_name || "recurring invoice"}`}>⌄</button>
-                                                {openMenuId === row.id && (
-                                                    <div className="absolute right-3 z-50 mt-2 w-52 rounded-xl border border-slate-200 bg-white py-2 text-left shadow-xl">
-                                                        <Link href={viewHref} className="block px-4 py-2 hover:bg-slate-50">View</Link>
-                                                        <Link href={`/admin/invoices/recurring/${row.id}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit</Link>
-                                                        {row.status !== "ended" && <button onClick={() => endRecurring(row)} className="block w-full px-4 py-2 text-left text-red-700 hover:bg-red-50">End</button>}
-                                                        <Link href="/admin/invoices" className="block px-4 py-2 hover:bg-slate-50">View created invoices</Link>
-                                                        <Link href={`/admin/invoices/recurring/${row.id}/duplicate`} className="block px-4 py-2 hover:bg-slate-50">Duplicate</Link>
-                                                    </div>
-                                                )}
+                                                {openMenuId === row.id && <div className="absolute right-3 z-50 mt-2 w-52 rounded-xl border border-slate-200 bg-white py-2 text-left shadow-xl"><Link href={viewHref} className="block px-4 py-2 hover:bg-slate-50">View</Link><Link href={`/admin/invoices/recurring/${row.id}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit</Link>{row.status !== "ended" && <button onClick={() => endRecurring(row)} className="block w-full px-4 py-2 text-left text-red-700 hover:bg-red-50">End</button>}<Link href="/admin/invoices" className="block px-4 py-2 hover:bg-slate-50">View created invoices</Link><Link href={`/admin/invoices/recurring/${row.id}/duplicate`} className="block px-4 py-2 hover:bg-slate-50">Duplicate</Link></div>}
                                             </td>
-                                        </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                            {filtered.length === 0 && <p className="py-10 text-center text-slate-400">No recurring invoices match the selected filters.</p>}
+                                        </tr>;
+                                    })}</tbody>
+                                </table>
+                                {filtered.length === 0 && <p className="py-10 text-center text-slate-400">No recurring invoices match the selected filters.</p>}
+                            </div>
+                            {filtered.length > 0 && <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
+                                <p className="text-sm text-slate-500">Showing {pageStart + 1}-{Math.min(pageStart + PAGE_SIZE, filtered.length)} of {filtered.length}</p>
+                                <div className="flex items-center gap-2"><button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40">Previous</button><span className="px-2 text-sm font-semibold">Page {page} of {pageCount}</span><button type="button" onClick={() => setPage((current) => Math.min(pageCount, current + 1))} disabled={page === pageCount} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40">Next</button></div>
+                            </div>}
                         </div>
                     )}
                 </section>
