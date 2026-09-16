@@ -147,6 +147,7 @@ export default function Header() {
                                     <Link href="/admin/invoices" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>Invoices Dashboard</Link>
                                     <Link href="/admin/invoices/new" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>New Invoice</Link>
                                     <Link href="/admin/invoices/recurring" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>Recurring Invoices</Link>
+                                    {adminUser?.role === "admin" && <Link href="/admin/invoices/historical-import" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>Historical Import</Link>}
                                     {adminUser?.role === "admin" && <Link href="/admin/invoices/settings" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>Invoice Settings</Link>}
                                 </div>
                             )}
