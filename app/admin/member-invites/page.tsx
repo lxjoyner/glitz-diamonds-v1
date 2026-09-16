@@ -23,8 +23,16 @@ type InviteRecord = {
     created_at: string;
 };
 
+type InviteSortKey = "invitee" | "email" | "invitedBy" | "sent" | "opened" | "registered" | "status";
+type SortDirection = "asc" | "desc";
+const PAGE_SIZE = 25;
+
 function dateTime(value: string | null) {
     return value ? new Date(value).toLocaleString() : "—";
+}
+
+function inviteStatus(invite: InviteRecord) {
+    return invite.registration_completed_at ? "Registered" : invite.email_opened_at ? "Opened" : invite.email_sent_at ? "Sent" : "Created";
 }
 
 export default function MemberInvitesPage() {
@@ -33,6 +41,9 @@ export default function MemberInvitesPage() {
     const [loadingAuth, setLoadingAuth] = useState(true);
     const [invites, setInvites] = useState<InviteRecord[]>([]);
     const [loadingInvites, setLoadingInvites] = useState(false);
+    const [page, setPage] = useState(1);
+    const [sortKey, setSortKey] = useState<InviteSortKey>("sent");
+    const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
     const [form, setForm] = useState({ firstName: "", lastName: "", phoneNumber: "", email: "" });
     const [submitting, setSubmitting] = useState(false);
@@ -121,6 +132,43 @@ export default function MemberInvitesPage() {
         }
     };
 
+    function toggleSort(key: InviteSortKey) {
+        if (sortKey === key) setSortDirection((current) => current === "asc" ? "desc" : "asc");
+        else {
+            setSortKey(key);
+            setSortDirection(["sent", "opened", "registered"].includes(key) ? "desc" : "asc");
+        }
+        setPage(1);
+    }
+
+    function sortButton(label: string, key: InviteSortKey) {
+        const active = sortKey === key;
+        return <button type="button" onClick={() => toggleSort(key)} className="inline-flex w-full items-center gap-1 font-semibold hover:text-white" aria-label={`Sort by ${label}`}><span>{label}</span><span aria-hidden="true" className={active ? "text-white" : "text-slate-500"}>{active ? sortDirection === "asc" ? "▲" : "▼" : "↕"}</span></button>;
+    }
+
+    const sorted = useMemo(() => [...invites].sort((a, b) => {
+        const valueFor = (invite: InviteRecord): string | number => {
+            switch (sortKey) {
+                case "invitee": return `${invite.first_name} ${invite.last_name}`;
+                case "email": return invite.email;
+                case "invitedBy": return invite.invited_by_username;
+                case "sent": return invite.email_sent_at ? new Date(invite.email_sent_at).getTime() : 0;
+                case "opened": return invite.email_opened_at ? new Date(invite.email_opened_at).getTime() : 0;
+                case "registered": return invite.registration_completed_at ? new Date(invite.registration_completed_at).getTime() : 0;
+                case "status": return inviteStatus(invite);
+            }
+        };
+        const left = valueFor(a);
+        const right = valueFor(b);
+        const comparison = typeof left === "number" && typeof right === "number" ? left - right : String(left).localeCompare(String(right), undefined, { numeric: true, sensitivity: "base" });
+        return sortDirection === "asc" ? comparison : -comparison;
+    }), [invites, sortKey, sortDirection]);
+
+    const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+    useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount]);
+    const pageStart = (page - 1) * PAGE_SIZE;
+    const paginated = sorted.slice(pageStart, pageStart + PAGE_SIZE);
+
     if (loadingAuth) return <main className="min-h-screen bg-black text-white px-4 py-12"><div className="mx-auto max-w-2xl rounded-2xl border border-white/10 bg-white/5 p-6">Loading...</div></main>;
 
     if (!isAdmin) {
@@ -149,16 +197,19 @@ export default function MemberInvitesPage() {
 
                 <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
                     <div className="flex items-center justify-between gap-4"><div><h2 className="text-2xl font-semibold">Sent Invite History</h2><p className="mt-1 text-sm text-slate-300">See who was invited, whether the email was opened, and whether registration was completed.</p></div><button type="button" onClick={loadInviteHistory} className="rounded-lg border border-white/20 px-3 py-2 text-sm hover:bg-white/10">Refresh</button></div>
-                    <div className="mt-5 overflow-x-auto">
-                        <table className="w-full min-w-[1050px] text-sm">
-                            <thead><tr className="border-b border-white/15 text-left text-slate-300"><th className="px-3 py-3">Invitee</th><th className="px-3 py-3">Email</th><th className="px-3 py-3">Invited By</th><th className="px-3 py-3">Sent</th><th className="px-3 py-3">Email Opened</th><th className="px-3 py-3">Registration Completed</th><th className="px-3 py-3">Status</th></tr></thead>
-                            <tbody>{invites.map((invite) => {
-                                const status = invite.registration_completed_at ? "Registered" : invite.email_opened_at ? "Opened" : invite.email_sent_at ? "Sent" : "Created";
-                                return <tr key={invite.id} className="border-b border-white/10"><td className="px-3 py-3 font-medium">{invite.first_name} {invite.last_name}</td><td className="px-3 py-3">{invite.email}</td><td className="px-3 py-3">{invite.invited_by_username}</td><td className="px-3 py-3">{dateTime(invite.email_sent_at)}</td><td className="px-3 py-3">{dateTime(invite.email_opened_at)}</td><td className="px-3 py-3">{dateTime(invite.registration_completed_at)}</td><td className="px-3 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${status === "Registered" ? "bg-emerald-500/20 text-emerald-200" : status === "Opened" ? "bg-blue-500/20 text-blue-200" : "bg-amber-500/20 text-amber-200"}`}>{status}</span></td></tr>;
-                            })}</tbody>
-                        </table>
-                        {!loadingInvites && invites.length === 0 && <p className="py-8 text-center text-slate-400">No tracked invites yet. New invites will appear here.</p>}
-                        {loadingInvites && <p className="py-8 text-center text-slate-400">Loading invite history...</p>}
+                    <div className="mt-5">
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-[1050px] text-sm">
+                                <thead><tr className="border-b border-white/15 text-left text-slate-300"><th className="px-3 py-3">{sortButton("Invitee", "invitee")}</th><th className="px-3 py-3">{sortButton("Email", "email")}</th><th className="px-3 py-3">{sortButton("Invited By", "invitedBy")}</th><th className="px-3 py-3">{sortButton("Sent", "sent")}</th><th className="px-3 py-3">{sortButton("Email Opened", "opened")}</th><th className="px-3 py-3">{sortButton("Registration Completed", "registered")}</th><th className="px-3 py-3">{sortButton("Status", "status")}</th></tr></thead>
+                                <tbody>{paginated.map((invite) => {
+                                    const status = inviteStatus(invite);
+                                    return <tr key={invite.id} className="border-b border-white/10"><td className="px-3 py-3 font-medium">{invite.first_name} {invite.last_name}</td><td className="px-3 py-3">{invite.email}</td><td className="px-3 py-3">{invite.invited_by_username}</td><td className="px-3 py-3">{dateTime(invite.email_sent_at)}</td><td className="px-3 py-3">{dateTime(invite.email_opened_at)}</td><td className="px-3 py-3">{dateTime(invite.registration_completed_at)}</td><td className="px-3 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${status === "Registered" ? "bg-emerald-500/20 text-emerald-200" : status === "Opened" ? "bg-blue-500/20 text-blue-200" : "bg-amber-500/20 text-amber-200"}`}>{status}</span></td></tr>;
+                                })}</tbody>
+                            </table>
+                            {!loadingInvites && sorted.length === 0 && <p className="py-8 text-center text-slate-400">No tracked invites yet. New invites will appear here.</p>}
+                            {loadingInvites && <p className="py-8 text-center text-slate-400">Loading invite history...</p>}
+                        </div>
+                        {!loadingInvites && sorted.length > 0 && <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4"><p className="text-sm text-slate-400">Showing {pageStart + 1}-{Math.min(pageStart + PAGE_SIZE, sorted.length)} of {sorted.length}</p><div className="flex items-center gap-2"><button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1} className="rounded-lg border border-white/20 px-3 py-2 text-sm disabled:opacity-40">Previous</button><span className="text-sm">Page {page} of {pageCount}</span><button type="button" onClick={() => setPage((current) => Math.min(pageCount, current + 1))} disabled={page === pageCount} className="rounded-lg border border-white/20 px-3 py-2 text-sm disabled:opacity-40">Next</button></div></div>}
                     </div>
                     <p className="mt-4 text-xs text-slate-400">Email-open tracking is best-effort. Some email providers block images or pre-load them, so an open time may be unavailable or may represent an email provider preview rather than the recipient personally opening the message.</p>
                 </section>
