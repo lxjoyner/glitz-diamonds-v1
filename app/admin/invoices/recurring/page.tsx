@@ -19,6 +19,9 @@ type RecurringInvoice = {
     amount_cents: number;
 };
 
+type RecurringSortKey = "status" | "customer" | "schedule" | "previous" | "next" | "amount";
+type SortDirection = "asc" | "desc";
+
 const PAGE_SIZE = 25;
 const money = (cents: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format((cents || 0) / 100);
 const displayDate = (value: string | null) => value ? new Date(`${String(value).slice(0, 10)}T00:00:00`).toLocaleDateString("en-US") : "—";
@@ -33,6 +36,8 @@ export default function RecurringInvoicesPage() {
     const [customerMenuOpen, setCustomerMenuOpen] = useState(false);
     const [tab, setTab] = useState<"active" | "draft" | "all">("active");
     const [page, setPage] = useState(1);
+    const [sortKey, setSortKey] = useState<RecurringSortKey>("next");
+    const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
     const [openMenuId, setOpenMenuId] = useState<number | null>(null);
     const customerMenuRef = useRef<HTMLDivElement>(null);
 
@@ -65,6 +70,22 @@ export default function RecurringInvoicesPage() {
         return () => document.removeEventListener("mousedown", closeCustomerMenu);
     }, []);
 
+    function toggleSort(key: RecurringSortKey) {
+        if (sortKey === key) setSortDirection((current) => current === "asc" ? "desc" : "asc");
+        else {
+            setSortKey(key);
+            setSortDirection(key === "previous" || key === "next" || key === "amount" ? "desc" : "asc");
+        }
+        setPage(1);
+    }
+
+    function sortButton(label: string, key: RecurringSortKey, align: "left" | "right" = "left") {
+        const active = sortKey === key;
+        return <button type="button" onClick={() => toggleSort(key)} className={`inline-flex w-full items-center gap-1 font-semibold hover:text-blue-700 ${align === "right" ? "justify-end" : "justify-start"}`} aria-label={`Sort by ${label} ${active && sortDirection === "asc" ? "descending" : "ascending"}`}>
+            <span>{label}</span><span aria-hidden="true" className={active ? "text-blue-700" : "text-slate-400"}>{active ? sortDirection === "asc" ? "▲" : "▼" : "↕"}</span>
+        </button>;
+    }
+
     const members = useMemo(() => Array.from(new Map(rows.map((row) => [row.member_id, row.member_name])).entries()), [rows]);
     const selectedMemberName = memberFilter === "all" ? "All customers" : (members.find(([id]) => String(id) === memberFilter)?.[1] || `Member #${memberFilter}`);
     const filteredMembers = useMemo(() => {
@@ -81,11 +102,26 @@ export default function RecurringInvoicesPage() {
         return true;
     }), [rows, memberFilter, tab]);
 
+    const sorted = useMemo(() => [...filtered].sort((a, b) => {
+        let left: string | number;
+        let right: string | number;
+        switch (sortKey) {
+            case "status": left = a.status; right = b.status; break;
+            case "customer": left = a.member_name || ""; right = b.member_name || ""; break;
+            case "schedule": left = a.repeat_day; right = b.repeat_day; break;
+            case "previous": left = a.previous_invoice_date || ""; right = b.previous_invoice_date || ""; break;
+            case "next": left = a.next_invoice_date || ""; right = b.next_invoice_date || ""; break;
+            case "amount": left = a.amount_cents; right = b.amount_cents; break;
+        }
+        const comparison = typeof left === "number" && typeof right === "number" ? left - right : String(left).localeCompare(String(right), undefined, { numeric: true, sensitivity: "base" });
+        return sortDirection === "asc" ? comparison : -comparison;
+    }), [filtered, sortKey, sortDirection]);
+
     useEffect(() => { setPage(1); }, [memberFilter, tab]);
-    const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
     useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount]);
     const pageStart = (page - 1) * PAGE_SIZE;
-    const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+    const paginated = sorted.slice(pageStart, pageStart + PAGE_SIZE);
 
     async function endRecurring(row: RecurringInvoice) {
         if (!window.confirm(`End recurring invoices for ${row.member_name || "this member"}?`)) return;
@@ -137,7 +173,7 @@ export default function RecurringInvoicesPage() {
                         <div>
                             <div className="overflow-x-auto overflow-y-visible pb-56">
                                 <table className="w-full min-w-[1100px] border-collapse text-sm">
-                                    <thead><tr className="border-b-2 border-slate-200 text-left"><th className="px-3 py-3">Status</th><th className="px-3 py-3">Customer</th><th className="px-3 py-3">Schedule</th><th className="px-3 py-3">Previous invoice</th><th className="px-3 py-3">Next invoice</th><th className="px-3 py-3 text-right">Invoice amount</th><th className="px-3 py-3 text-right">Actions</th></tr></thead>
+                                    <thead><tr className="border-b-2 border-slate-200 text-left"><th className="px-3 py-3">{sortButton("Status", "status")}</th><th className="px-3 py-3">{sortButton("Customer", "customer")}</th><th className="px-3 py-3">{sortButton("Schedule", "schedule")}</th><th className="px-3 py-3">{sortButton("Previous invoice", "previous")}</th><th className="px-3 py-3">{sortButton("Next invoice", "next")}</th><th className="px-3 py-3 text-right">{sortButton("Invoice amount", "amount", "right")}</th><th className="px-3 py-3 text-right">Actions</th></tr></thead>
                                     <tbody>{paginated.map((row) => {
                                         const viewHref = `/admin/invoices/recurring/${row.id}`;
                                         return <tr key={row.id} onClick={() => router.push(viewHref)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); router.push(viewHref); } }} role="link" tabIndex={0} aria-label={`Open recurring invoice for ${row.member_name || `member ${row.member_id}`}`} className="cursor-pointer border-b border-slate-100 hover:bg-slate-50 focus:bg-slate-50 focus:outline-none">
@@ -154,10 +190,10 @@ export default function RecurringInvoicesPage() {
                                         </tr>;
                                     })}</tbody>
                                 </table>
-                                {filtered.length === 0 && <p className="py-10 text-center text-slate-400">No recurring invoices match the selected filters.</p>}
+                                {sorted.length === 0 && <p className="py-10 text-center text-slate-400">No recurring invoices match the selected filters.</p>}
                             </div>
-                            {filtered.length > 0 && <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
-                                <p className="text-sm text-slate-500">Showing {pageStart + 1}-{Math.min(pageStart + PAGE_SIZE, filtered.length)} of {filtered.length}</p>
+                            {sorted.length > 0 && <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
+                                <p className="text-sm text-slate-500">Showing {pageStart + 1}-{Math.min(pageStart + PAGE_SIZE, sorted.length)} of {sorted.length}</p>
                                 <div className="flex items-center gap-2"><button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40">Previous</button><span className="px-2 text-sm font-semibold">Page {page} of {pageCount}</span><button type="button" onClick={() => setPage((current) => Math.min(pageCount, current + 1))} disabled={page === pageCount} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40">Next</button></div>
                             </div>}
                         </div>
