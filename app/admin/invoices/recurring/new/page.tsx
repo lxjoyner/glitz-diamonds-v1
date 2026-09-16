@@ -13,6 +13,14 @@ type Member = {
 };
 
 type LineItem = { description: string; quantity: number; unitPrice: number };
+type InvoiceSettings = {
+    business_name?: string;
+    business_address?: string;
+    business_phone?: string;
+    business_email?: string;
+    has_logo?: boolean | number;
+    footer_text?: string;
+};
 
 const today = () => new Date().toISOString().slice(0, 10);
 const money = (value: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value || 0);
@@ -30,6 +38,8 @@ export default function NewRecurringInvoicePage() {
     const [nextInvoiceDate, setNextInvoiceDate] = useState(today());
     const [items, setItems] = useState<LineItem[]>([{ description: "", quantity: 1, unitPrice: 25 }]);
     const [notes, setNotes] = useState("");
+    const [footerText, setFooterText] = useState("");
+    const [invoiceSettings, setInvoiceSettings] = useState<InvoiceSettings>({ business_name: "Glitz Of Diamonds" });
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState("");
 
@@ -39,9 +49,22 @@ export default function NewRecurringInvoicePage() {
             const me = await meRes.json();
             if (!me?.authenticated) return router.push("/admin/login");
             if (!["admin", "treasurer"].includes(me.user?.role)) return setMessage("Only admins and treasurers can create recurring invoices.");
-            const usersRes = await fetch("/api/admin/users", { cache: "no-store" });
+
+            const [usersRes, settingsRes] = await Promise.all([
+                fetch("/api/admin/users", { cache: "no-store" }),
+                fetch("/api/admin/invoice-settings", { cache: "no-store" }),
+            ]);
+
             const users = await usersRes.json();
             if (usersRes.ok) setMembers((users.users || []).filter((user: Member) => user.email));
+
+            if (settingsRes.ok) {
+                const settingsData = await settingsRes.json();
+                if (settingsData?.settings) {
+                    setInvoiceSettings(settingsData.settings);
+                    setFooterText(settingsData.settings.footer_text || "");
+                }
+            }
         }
         load();
     }, [router]);
@@ -71,6 +94,7 @@ export default function NewRecurringInvoicePage() {
                     nextInvoiceDate,
                     amount: total,
                     notes,
+                    footerText,
                     referenceNumber,
                     paymentDue,
                 }),
@@ -97,8 +121,29 @@ export default function NewRecurringInvoicePage() {
                     </div>
                 </header>
 
-                <details className="mb-6 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-                    <summary className="cursor-pointer font-semibold">Business address and contact details, title, summary, and logo</summary>
+                <details className="mb-6 overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm">
+                    <summary className="cursor-pointer bg-slate-100 px-5 py-4 font-semibold">Business address and contact details, title, summary, and logo</summary>
+                    <div className="grid gap-8 border-t border-slate-200 p-5 md:grid-cols-[1fr_1.4fr] md:p-6">
+                        <div>
+                            {invoiceSettings.has_logo ? (
+                                <img src="/api/invoice-logo" alt="Invoice logo" className="h-52 w-auto max-w-full object-contain" />
+                            ) : (
+                                <div className="flex h-40 max-w-xs items-center justify-center rounded-lg border border-dashed border-slate-300 text-sm text-slate-400">No invoice logo uploaded</div>
+                            )}
+                            <Link href="/admin/invoices/settings" className="mt-3 inline-block font-semibold text-blue-700 hover:underline">Edit invoice settings</Link>
+                        </div>
+                        <div className="flex flex-col items-stretch gap-3 md:items-end md:text-right">
+                            <div className="w-full rounded-xl border border-blue-200 px-4 py-2 text-3xl font-light md:max-w-xl">Invoice</div>
+                            <div className="w-full rounded-xl border border-blue-200 px-4 py-2 text-sm italic text-slate-500 md:max-w-xl">Summary (e.g. project name, description of invoice)</div>
+                            <div className="pt-2 text-sm text-slate-700">
+                                <p className="font-bold text-slate-950">{invoiceSettings.business_name || "Glitz Of Diamonds"}</p>
+                                {invoiceSettings.business_address ? <p className="whitespace-pre-line">{invoiceSettings.business_address}</p> : null}
+                                {invoiceSettings.business_phone ? <p>{invoiceSettings.business_phone}</p> : null}
+                                {invoiceSettings.business_email ? <p>{invoiceSettings.business_email}</p> : null}
+                            </div>
+                            <Link href="/admin/invoices/settings" className="font-semibold text-blue-700 hover:underline">Edit business info</Link>
+                        </div>
+                    </div>
                 </details>
 
                 <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50">
@@ -185,8 +230,13 @@ export default function NewRecurringInvoicePage() {
                     {message && <p className="mx-6 mb-6 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">{message}</p>}
                 </section>
 
-                <details className="mt-5 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-                    <summary className="cursor-pointer font-semibold">Footer</summary>
+                <details className="mt-5 rounded-xl border border-slate-200 bg-white shadow-sm">
+                    <summary className="cursor-pointer px-5 py-4 font-semibold">Footer</summary>
+                    <div className="border-t border-slate-200 p-5">
+                        <label className="block text-sm font-semibold">Footer text</label>
+                        <textarea value={footerText} onChange={(e) => setFooterText(e.target.value)} rows={4} placeholder="Enter the footer text shown on invoices created from this recurring invoice" className="mt-2 w-full rounded-xl border border-slate-300 p-3" />
+                        <p className="mt-2 text-xs text-slate-500">This starts with the current default invoice footer and can be customized for this recurring invoice.</p>
+                    </div>
                 </details>
 
                 <div className="mt-5 flex justify-end gap-3">
