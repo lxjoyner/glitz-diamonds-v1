@@ -216,21 +216,49 @@ export default function InvoicesPage() {
     }
 
     const members = useMemo(() => Array.from(new Map(invoices.map((invoice) => [invoice.member_id, invoice.member_name])).entries()), [invoices]);
-    const counts = useMemo(() => ({
-        unpaid: invoices.filter((i) => !["paid", "void", "draft"].includes(i.display_status)).length,
-        pastDue: invoices.filter((i) => i.display_status === "past_due").length,
-        draft: invoices.filter((i) => i.display_status === "draft").length,
-        paid: invoices.filter((i) => i.display_status === "paid").length,
-    }), [invoices]);
+    const counts = useMemo(() => {
+        const now = new Date();
+        return {
+            unpaid: invoices.filter((i) => !["paid", "void", "draft"].includes(i.display_status)).length,
+            pastDue: invoices.filter((i) => !["paid", "void", "draft"].includes(i.display_status) && new Date(`${String(i.due_date).slice(0, 10)}T23:59:59`).getTime() < now.getTime()).length,
+            draft: invoices.filter((i) => i.display_status === "draft").length,
+            paid: invoices.filter((i) => i.display_status === "paid").length,
+        };
+    }, [invoices]);
 
     const summary = useMemo(() => {
         const now = new Date();
-        const next30 = new Date(); next30.setDate(next30.getDate() + 30);
-        const outstanding = invoices.reduce((s, i) => s + Math.max(0, i.total_cents - i.amount_paid_cents), 0);
-        const overdue = invoices.filter((i) => i.display_status === "past_due").reduce((s, i) => s + Math.max(0, i.total_cents - i.amount_paid_cents), 0);
-        const due30 = invoices.filter((i) => { const d = new Date(i.due_date); return d >= now && d <= next30 && !["paid", "void", "draft"].includes(i.display_status); }).reduce((s, i) => s + Math.max(0, i.total_cents - i.amount_paid_cents), 0);
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const next30 = new Date(todayStart);
+        next30.setDate(next30.getDate() + 30);
+        next30.setHours(23, 59, 59, 999);
+
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const paidMonth = invoices.filter((i) => i.display_status === "paid" && new Date(i.invoice_date) >= monthStart).reduce((s, i) => s + i.amount_paid_cents, 0);
+        const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+        const isOpen = (invoice: Invoice) => !["paid", "void", "draft"].includes(invoice.display_status);
+        const balanceOf = (invoice: Invoice) => Math.max(0, Number(invoice.total_cents || 0) - Number(invoice.amount_paid_cents || 0));
+        const dueAtEndOfDay = (invoice: Invoice) => new Date(`${String(invoice.due_date).slice(0, 10)}T23:59:59`);
+
+        const outstanding = invoices.filter(isOpen).reduce((sum, invoice) => sum + balanceOf(invoice), 0);
+        const overdue = invoices
+            .filter((invoice) => isOpen(invoice) && dueAtEndOfDay(invoice).getTime() < todayStart.getTime())
+            .reduce((sum, invoice) => sum + balanceOf(invoice), 0);
+        const due30 = invoices
+            .filter((invoice) => {
+                if (!isOpen(invoice)) return false;
+                const due = dueAtEndOfDay(invoice);
+                return due.getTime() >= todayStart.getTime() && due.getTime() <= next30.getTime();
+            })
+            .reduce((sum, invoice) => sum + balanceOf(invoice), 0);
+        const paidMonth = invoices
+            .filter((invoice) => {
+                if (invoice.display_status !== "paid" || Number(invoice.amount_paid_cents || 0) <= 0) return false;
+                const invoiceDate = new Date(`${String(invoice.invoice_date).slice(0, 10)}T00:00:00`);
+                return invoiceDate.getTime() >= monthStart.getTime() && invoiceDate.getTime() < nextMonthStart.getTime();
+            })
+            .reduce((sum, invoice) => sum + Number(invoice.amount_paid_cents || 0), 0);
+
         return { overdue, due30, paidMonth, outstanding };
     }, [invoices]);
 
