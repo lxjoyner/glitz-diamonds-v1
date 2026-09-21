@@ -3,6 +3,11 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+type Contact = {
+    id: number;
+    name: string;
+};
+
 type TransactionRow = {
     id: number;
     transaction_date: string;
@@ -36,27 +41,30 @@ function AccountTransactionsContent() {
     const searchParams = useSearchParams();
     const currentYear = new Date().getFullYear();
 
-    const memberId = Number(searchParams.get("memberId") || 0);
+    const initialMemberId = Number(searchParams.get("memberId") || 0);
     const initialType = searchParams.get("type") || "accrual";
     const initialFrom = searchParams.get("from") || dateOnly(currentYear, 1, 1);
     const initialTo = searchParams.get("to") || todayLocal();
 
     const [rows, setRows] = useState<TransactionRow[]>([]);
+    const [contacts, setContacts] = useState<Contact[]>([]);
+    const [memberId, setMemberId] = useState(initialMemberId);
     const [reportType, setReportType] = useState(initialType);
     const [fromDate, setFromDate] = useState(initialFrom);
     const [toDate, setToDate] = useState(initialTo);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState("");
 
-    async function loadReport() {
-        if (!memberId) return;
+    async function loadReport(selectedMemberId = memberId) {
+        if (!selectedMemberId) return;
         setLoading(true);
         setMessage("");
         try {
-            const res = await fetch(`/api/admin/reports/account-transactions?memberId=${memberId}&type=${reportType}&from=${fromDate}&to=${toDate}`, { cache: "no-store" });
+            const res = await fetch(`/api/admin/reports/account-transactions?memberId=${selectedMemberId}&type=${reportType}&from=${fromDate}&to=${toDate}`, { cache: "no-store" });
             const data = await res.json();
             if (!res.ok) throw new Error(data?.error || "Failed to load transactions.");
             setRows(data.rows || []);
+            setContacts(data.contacts || []);
         } catch (error) {
             setMessage(error instanceof Error ? error.message : "Failed to load transactions.");
         } finally {
@@ -80,7 +88,7 @@ function AccountTransactionsContent() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [router]);
 
-    const customerName = rows[0]?.customer_name || "Customer";
+    const customerName = contacts.find((contact) => contact.id === memberId)?.name || rows[0]?.customer_name || "Customer";
     const totals = useMemo(() => rows.reduce((acc, row) => ({
         debit: acc.debit + Number(row.debit_cents || 0),
         credit: acc.credit + Number(row.credit_cents || 0),
@@ -147,8 +155,23 @@ function AccountTransactionsContent() {
 
                         <label className="grid gap-2">
                             <span className="font-semibold text-slate-600">Contact</span>
-                            <select className="rounded-xl border border-blue-300 bg-white px-4 py-3" value={memberId} disabled>
-                                <option value={memberId}>{customerName}</option>
+                            <select
+                                className="rounded-xl border border-blue-300 bg-white px-4 py-3"
+                                value={memberId}
+                                onChange={(e) => {
+                                    const nextMemberId = Number(e.target.value);
+                                    setMemberId(nextMemberId);
+                                    const params = new URLSearchParams(searchParams.toString());
+                                    params.set("memberId", String(nextMemberId));
+                                    params.set("type", reportType);
+                                    params.set("from", fromDate);
+                                    params.set("to", toDate);
+                                    router.replace(`/admin/reports/account-transactions?${params.toString()}`);
+                                }}
+                            >
+                                {contacts.map((contact) => (
+                                    <option key={contact.id} value={contact.id}>{contact.name}</option>
+                                ))}
                             </select>
                         </label>
                     </div>
