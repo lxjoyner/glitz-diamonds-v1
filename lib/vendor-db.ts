@@ -147,3 +147,124 @@ export async function deleteVendor(id: number) {
     const [result] = await pool.execute<ResultSetHeader>(`DELETE FROM vendors WHERE id = ?`, [id]);
     return result.affectedRows === 1;
 }
+
+
+export type BillLineInput = {
+    item: string;
+    expenseCategory: string;
+    description: string;
+    quantity: number;
+    priceCents: number;
+    taxCents: number;
+};
+
+export type VendorBillInput = {
+    vendorId: number;
+    billDate: string;
+    dueDate: string;
+    purchaseOrder?: string;
+    billNumber?: string;
+    notes?: string;
+    currency?: string;
+    lines: BillLineInput[];
+};
+
+export async function ensureBillSchema() {
+    await ensureVendorSchema();
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS vendor_bills (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            vendor_id BIGINT NOT NULL,
+            bill_date DATE NOT NULL,
+            due_date DATE NOT NULL,
+            purchase_order VARCHAR(120) NULL,
+            bill_number VARCHAR(120) NULL,
+            notes TEXT NULL,
+            currency VARCHAR(20) NOT NULL DEFAULT 'USD',
+            subtotal_cents INT NOT NULL DEFAULT 0,
+            total_tax_cents INT NOT NULL DEFAULT 0,
+            total_cents INT NOT NULL DEFAULT 0,
+            amount_paid_cents INT NOT NULL DEFAULT 0,
+            status VARCHAR(40) NOT NULL DEFAULT 'unpaid',
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_vendor_bills_vendor (vendor_id),
+            INDEX idx_vendor_bills_dates (bill_date, due_date),
+            CONSTRAINT fk_vendor_bills_vendor FOREIGN KEY (vendor_id) REFERENCES vendors(id) ON DELETE RESTRICT
+        )
+    `);
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS vendor_bill_lines (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            bill_id BIGINT NOT NULL,
+            item VARCHAR(180) NULL,
+            expense_category VARCHAR(180) NULL,
+            description VARCHAR(500) NULL,
+            quantity DECIMAL(10,2) NOT NULL DEFAULT 1,
+            price_cents INT NOT NULL DEFAULT 0,
+            tax_cents INT NOT NULL DEFAULT 0,
+            amount_cents INT NOT NULL DEFAULT 0,
+            sort_order INT NOT NULL DEFAULT 0,
+            INDEX idx_vendor_bill_lines_bill (bill_id),
+            CONSTRAINT fk_vendor_bill_lines_bill FOREIGN KEY (bill_id) REFERENCES vendor_bills(id) ON DELETE CASCADE
+        )
+    `);
+}
+
+export async function createVendorBill(input: VendorBillInput) {
+    await ensureBillSchema();
+    const subtotalCents = input.lines.reduce((sum, line) => sum + Math.round(Number(line.quantity || 0) * Number(line.priceCents || 0)), 0);
+    const totalTaxCents = input.lines.reduce((sum, line) => sum + Math.max(0, Math.round(Number(line.taxCents || 0))), 0);
+    const totalCents = subtotalCents + totalTaxCents;
+
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+        const [result] = await connection.execute<ResultSetHeader>(`
+            INSERT INTO vendor_bills (
+                vendor_id, bill_date, due_date, purchase_order, bill_number, notes, currency,
+                subtotal_cents, total_tax_cents, total_cents, amount_paid_cents, status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'unpaid')
+        `, [
+            input.vendorId,
+            input.billDate,
+            input.dueDate,
+            input.purchaseOrder?.trim() || null,
+            input.billNumber?.trim() || null,
+            input.notes?.trim() || null,
+            input.currency || "USD",
+            subtotalCents,
+            totalTaxCents,
+            totalCents,
+        ]);
+
+        const billId = result.insertId;
+        for (let index = 0; index < input.lines.length; index += 1) {
+            const line = input.lines[index];
+            const amountCents = Math.round(Number(line.quantity || 0) * Number(line.priceCents || 0)) + Math.max(0, Math.round(Number(line.taxCents || 0)));
+            await connection.execute(`
+                INSERT INTO vendor_bill_lines (
+                    bill_id, item, expense_category, description, quantity, price_cents, tax_cents, amount_cents, sort_order
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [
+                billId,
+                line.item?.trim() || null,
+                line.expenseCategory?.trim() || null,
+                line.description?.trim() || null,
+                Number(line.quantity || 0),
+                Math.max(0, Math.round(Number(line.priceCents || 0))),
+                Math.max(0, Math.round(Number(line.taxCents || 0))),
+                amountCents,
+                index,
+            ]);
+        }
+
+        await connection.commit();
+        return { id: billId };
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
+}
