@@ -56,7 +56,10 @@ function AccountTransactionsContent() {
     const [message, setMessage] = useState("");
 
     async function loadReport(selectedMemberId = memberId) {
-        if (!selectedMemberId) return;
+        if (!selectedMemberId) {
+            setRows([]);
+            return;
+        }
         setLoading(true);
         setMessage("");
         try {
@@ -82,7 +85,20 @@ function AccountTransactionsContent() {
                 setLoading(false);
                 return;
             }
-            await loadReport();
+            if (initialMemberId) {
+                await loadReport(initialMemberId);
+            } else {
+                const contactsRes = await fetch(`/api/admin/reports/account-transactions/contacts`, { cache: "no-store" });
+                const contactsData = await contactsRes.json();
+                if (!contactsRes.ok) throw new Error(contactsData?.error || "Failed to load contacts.");
+                const loadedContacts = contactsData.contacts || [];
+                setContacts(loadedContacts);
+                if (loadedContacts.length > 0) {
+                    const firstMemberId = Number(loadedContacts[0].id);
+                    setMemberId(firstMemberId);
+                    await loadReport(firstMemberId);
+                }
+            }
         }
         init();
         // eslint-disable-next-line react-hooks/exhaustive-deps
