@@ -18,6 +18,15 @@ type RangePreset = {
 
 const money = (cents: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format((Number(cents) || 0) / 100);
 
+function escapeHtml(value: string) {
+    return value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 function dateOnly(year: number, month: number, day: number) {
     return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
@@ -143,24 +152,32 @@ export default function IncomeByCustomerPage() {
 
 
     function exportPdf() {
-        const reportWindow = window.open("", "_blank", "noopener,noreferrer");
+        const reportWindow = window.open("", "_blank");
         if (!reportWindow) {
             setMessage("Allow pop-ups to export the report as PDF.");
             return;
         }
 
+        try {
+            reportWindow.opener = null;
+        } catch {
+            // Some browsers prevent changing opener. The report still remains usable.
+        }
+
         const tableRows = rows.map((row) => `
             <tr>
-                <td>${row.customer_name}</td>
+                <td>${escapeHtml(row.customer_name)}</td>
                 <td style="text-align:right">${money(row.all_income_cents)}</td>
                 <td style="text-align:right">${money(row.paid_income_cents)}</td>
             </tr>
         `).join("");
 
+        reportWindow.document.open();
         reportWindow.document.write(`
             <!doctype html>
             <html>
             <head>
+                <meta charset="utf-8" />
                 <title>Income by Customer</title>
                 <style>
                     body { font-family: Arial, sans-serif; padding: 28px; color: #111827; }
@@ -175,7 +192,7 @@ export default function IncomeByCustomerPage() {
             </head>
             <body>
                 <h1>Income by Customer</h1>
-                <div class="range">Date range: ${fromDate} to ${toDate}</div>
+                <div class="range">Date range: ${escapeHtml(fromDate)} to ${escapeHtml(toDate)}</div>
                 <table>
                     <thead>
                         <tr><th>Customer</th><th style="text-align:right">All Income</th><th style="text-align:right">Paid Income</th></tr>
@@ -189,15 +206,16 @@ export default function IncomeByCustomerPage() {
                         </tr>
                     </tfoot>
                 </table>
-                <script>
-                    window.addEventListener("load", () => {
-                        window.print();
-                    });
-                </script>
             </body>
             </html>
         `);
         reportWindow.document.close();
+
+        window.setTimeout(() => {
+            reportWindow.focus();
+            reportWindow.print();
+        }, 250);
+
         setExportOpen(false);
     }
 
