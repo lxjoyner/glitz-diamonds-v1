@@ -341,11 +341,13 @@ export default function InvoicesPage() {
                                         const invoiceHref = invoice.public_token ? `/invoice/${invoice.public_token}` : null;
                                         const printHref = invoice.public_token ? `/invoice/${invoice.public_token}/print` : null;
                                         const pdfHref = invoice.public_token ? `/invoice/${invoice.public_token}/pdf` : null;
-                                        const dueDisplay = overdue ? `${overdueDays} ${overdueDays === 1 ? "day" : "days"} ago` : new Date(invoice.due_date).toLocaleDateString();
+                                        const dueDateValue = String(invoice.due_date || "").slice(0, 10);
+                                        const invoiceDateValue = String(invoice.invoice_date || "").slice(0, 10);
+                                        const dueDisplay = overdue ? `${overdueDays} ${overdueDays === 1 ? "day" : "days"} ago` : toDisplayDate(dueDateValue);
                                         return <tr key={invoice.id} onClick={() => { if (invoiceHref) router.push(invoiceHref); }} onKeyDown={(event) => { if (!invoiceHref) return; if (event.key === "Enter" || event.key === " ") { event.preventDefault(); router.push(invoiceHref); } }} role={invoiceHref ? "link" : undefined} tabIndex={invoiceHref ? 0 : undefined} aria-label={invoiceHref ? `Open invoice ${invoice.invoice_number}` : undefined} className={`border-b border-slate-100 hover:bg-slate-50 ${invoiceHref ? "cursor-pointer focus:bg-slate-50 focus:outline-none" : ""}`}>
                                             <td className="px-3 py-4"><span className={`rounded-md px-2.5 py-1 text-xs font-bold ${invoice.display_status === "paid" ? "bg-emerald-100 text-emerald-800" : overdue ? "bg-red-100 text-red-700" : invoice.display_status === "draft" ? "bg-slate-200 text-slate-700" : "bg-amber-100 text-amber-800"}`}>{prettyStatus(invoice.display_status)}</span></td>
                                             <td className={`px-3 py-4 ${overdue ? "font-semibold text-red-600" : ""}`}>{dueDisplay}</td>
-                                            <td className="px-3 py-4">{new Date(invoice.invoice_date).toLocaleDateString()}</td>
+                                            <td className="px-3 py-4">{toDisplayDate(invoiceDateValue)}</td>
                                             <td className="px-3 py-4 font-semibold text-blue-700">{invoice.invoice_number}</td>
                                             <td className="px-3 py-4"><div>{invoice.member_name || `Member #${invoice.member_id}`}</div><div className="text-xs text-slate-400">{invoice.member_email || "No email"}</div></td>
                                             <td className="px-3 py-4 text-right">{money(invoice.total_cents)}</td><td className="px-3 py-4 text-right">{money(invoice.amount_paid_cents)}</td><td className="px-3 py-4 text-right font-semibold">{money(balance)}</td>
