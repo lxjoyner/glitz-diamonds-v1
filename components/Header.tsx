@@ -164,6 +164,7 @@ export default function Header() {
                             {reportsOpen && (
                                 <div id="reports-submenu" className="flex flex-col gap-1 border-t border-white/10 px-2 py-2">
                                     <Link href="/admin/reports/income-by-customer" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>Income By Customer</Link>
+                                    <Link href="/admin/reports/account-transactions" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>Account Transactions</Link>
                                 </div>
                             )}
                         </div>
