@@ -142,7 +142,7 @@ function AccountTransactionsContent() {
                             </label>
                         </div>
 
-                        <button type="button" onClick={loadReport} className="self-end rounded-full bg-blue-700 px-6 py-3 font-semibold text-white">Update Report</button>
+                        <button type="button" onClick={() => loadReport()} className="self-end rounded-full bg-blue-700 px-6 py-3 font-semibold text-white">Update Report</button>
 
                         <label className="grid gap-2">
                             <span className="font-semibold text-slate-600">Report Type</span>
