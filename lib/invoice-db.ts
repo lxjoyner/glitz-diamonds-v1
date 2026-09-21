@@ -592,3 +592,90 @@ export async function getIncomeByCustomerReport(fromDate: string, toDate: string
     `, [fromDate, toDate]);
     return rows;
 }
+
+
+export type AccountTransactionRow = RowDataPacket & {
+    id: number;
+    transaction_date: string;
+    invoice_id: number;
+    invoice_number: string;
+    member_id: number;
+    customer_name: string;
+    debit_cents: number;
+    credit_cents: number;
+    description: string;
+};
+
+export async function getAccountTransactionsReport(input: {
+    memberId: number;
+    fromDate: string;
+    toDate: string;
+    reportType: "accrual" | "cash" | "cash_only";
+}): Promise<AccountTransactionRow[]> {
+    await ensureInvoiceSchema();
+
+    if (input.reportType === "cash") {
+        const [rows] = await pool.query<AccountTransactionRow[]>(`
+            SELECT
+                p.id,
+                p.payment_date AS transaction_date,
+                p.invoice_id,
+                i.invoice_number,
+                p.member_id,
+                COALESCE(u.full_name, CONCAT('Member #', p.member_id)) AS customer_name,
+                0 AS debit_cents,
+                p.amount_cents AS credit_cents,
+                CONCAT(COALESCE(u.full_name, CONCAT('Member #', p.member_id)), ' - Payment for Invoice ', i.invoice_number) AS description
+            FROM invoice_payments p
+            JOIN invoices i ON i.id = p.invoice_id
+            LEFT JOIN users u ON u.id = p.member_id
+            WHERE p.member_id = ?
+              AND p.payment_date BETWEEN ? AND ?
+            ORDER BY p.payment_date, p.id
+        `, [input.memberId, input.fromDate, input.toDate]);
+        return rows;
+    }
+
+    if (input.reportType === "cash_only") {
+        const [rows] = await pool.query<AccountTransactionRow[]>(`
+            SELECT
+                p.id,
+                p.payment_date AS transaction_date,
+                p.invoice_id,
+                i.invoice_number,
+                p.member_id,
+                COALESCE(u.full_name, CONCAT('Member #', p.member_id)) AS customer_name,
+                0 AS debit_cents,
+                p.amount_cents AS credit_cents,
+                CONCAT(COALESCE(u.full_name, CONCAT('Member #', p.member_id)), ' - Payment for Invoice ', i.invoice_number) AS description
+            FROM invoice_payments p
+            JOIN invoices i ON i.id = p.invoice_id
+            LEFT JOIN users u ON u.id = p.member_id
+            WHERE p.member_id = ?
+              AND p.payment_date BETWEEN ? AND ?
+              AND LOWER(p.method) = 'cash'
+            ORDER BY p.payment_date, p.id
+        `, [input.memberId, input.fromDate, input.toDate]);
+        return rows;
+    }
+
+    const [rows] = await pool.query<AccountTransactionRow[]>(`
+        SELECT
+            i.id,
+            i.invoice_date AS transaction_date,
+            i.id AS invoice_id,
+            i.invoice_number,
+            i.member_id,
+            COALESCE(u.full_name, CONCAT('Member #', i.member_id)) AS customer_name,
+            i.total_cents AS debit_cents,
+            0 AS credit_cents,
+            CONCAT(COALESCE(u.full_name, CONCAT('Member #', i.member_id)), ' - ', i.invoice_number) AS description
+        FROM invoices i
+        LEFT JOIN users u ON u.id = i.member_id
+        WHERE i.member_id = ?
+          AND i.invoice_date BETWEEN ? AND ?
+          AND i.status <> 'void'
+        ORDER BY i.invoice_date, i.id
+    `, [input.memberId, input.fromDate, input.toDate]);
+    return rows;
+}

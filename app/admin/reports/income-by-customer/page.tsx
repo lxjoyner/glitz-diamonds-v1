@@ -323,8 +323,24 @@ export default function IncomeByCustomerPage() {
                                 ) : rows.map((row) => (
                                     <tr key={row.member_id} className="border-b border-slate-100">
                                         <td className="px-5 py-4">{row.customer_name}</td>
-                                        <td className="px-5 py-4 text-right font-semibold text-blue-700">{money(row.all_income_cents)}</td>
-                                        <td className="px-5 py-4 text-right font-semibold text-blue-700">{money(row.paid_income_cents)}</td>
+                                        <td className="px-5 py-4 text-right font-semibold">
+                                            <button
+                                                type="button"
+                                                onClick={() => router.push(`/admin/reports/account-transactions?memberId=${row.member_id}&type=accrual&from=${fromDate}&to=${toDate}`)}
+                                                className="font-semibold text-blue-700 hover:underline"
+                                            >
+                                                {money(row.all_income_cents)}
+                                            </button>
+                                        </td>
+                                        <td className="px-5 py-4 text-right font-semibold">
+                                            <button
+                                                type="button"
+                                                onClick={() => router.push(`/admin/reports/account-transactions?memberId=${row.member_id}&type=cash&from=${fromDate}&to=${toDate}`)}
+                                                className="font-semibold text-blue-700 hover:underline"
+                                            >
+                                                {money(row.paid_income_cents)}
+                                            </button>
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
