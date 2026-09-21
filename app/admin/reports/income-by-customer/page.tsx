@@ -181,7 +181,10 @@ export default function IncomeByCustomerPage() {
                 <title>Income by Customer</title>
                 <style>
                     body { font-family: Arial, sans-serif; padding: 28px; color: #111827; }
-                    h1 { margin-bottom: 4px; }
+                    .brand-header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 2px solid #111827; }
+                    .brand-logo { width: 70px; height: auto; }
+                    .brand-title { font-size: 24px; font-weight: 700; margin: 0; }
+                    h1 { margin: 0 0 4px 0; font-size: 22px; }
                     .range { color: #6b7280; margin-bottom: 24px; }
                     table { width: 100%; border-collapse: collapse; }
                     th, td { padding: 10px 8px; border-bottom: 1px solid #d1d5db; }
@@ -191,7 +194,13 @@ export default function IncomeByCustomerPage() {
                 </style>
             </head>
             <body>
-                <h1>Income by Customer</h1>
+                <div class="brand-header">
+                    <img class="brand-logo" src="/GlitzOfDiamond_Logo.png" alt="Glitz Of Diamonds logo" />
+                    <div>
+                        <div class="brand-title">Glitz Of Diamonds</div>
+                        <h1>Income by Customer</h1>
+                    </div>
+                </div>
                 <div class="range">Date range: ${escapeHtml(fromDate)} to ${escapeHtml(toDate)}</div>
                 <table>
                     <thead>
