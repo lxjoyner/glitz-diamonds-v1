@@ -629,10 +629,10 @@ export async function getAccountTransactionsReport(input: {
             FROM invoice_payments p
             JOIN invoices i ON i.id = p.invoice_id
             LEFT JOIN users u ON u.id = p.member_id
-            WHERE p.member_id = ?
+            WHERE (? = 0 OR p.member_id = ?)
               AND p.payment_date BETWEEN ? AND ?
             ORDER BY p.payment_date, p.id
-        `, [input.memberId, input.fromDate, input.toDate]);
+        `, [input.memberId, input.memberId, input.fromDate, input.toDate]);
         return rows;
     }
 
@@ -651,11 +651,11 @@ export async function getAccountTransactionsReport(input: {
             FROM invoice_payments p
             JOIN invoices i ON i.id = p.invoice_id
             LEFT JOIN users u ON u.id = p.member_id
-            WHERE p.member_id = ?
+            WHERE (? = 0 OR p.member_id = ?)
               AND p.payment_date BETWEEN ? AND ?
               AND LOWER(p.method) = 'cash'
             ORDER BY p.payment_date, p.id
-        `, [input.memberId, input.fromDate, input.toDate]);
+        `, [input.memberId, input.memberId, input.fromDate, input.toDate]);
         return rows;
     }
 
@@ -672,11 +672,11 @@ export async function getAccountTransactionsReport(input: {
             CONCAT(COALESCE(u.full_name, CONCAT('Member #', i.member_id)), ' - ', i.invoice_number) AS description
         FROM invoices i
         LEFT JOIN users u ON u.id = i.member_id
-        WHERE i.member_id = ?
+        WHERE (? = 0 OR i.member_id = ?)
           AND i.invoice_date BETWEEN ? AND ?
           AND i.status <> 'void'
         ORDER BY i.invoice_date, i.id
-    `, [input.memberId, input.fromDate, input.toDate]);
+    `, [input.memberId, input.memberId, input.fromDate, input.toDate]);
     return rows;
 }
 
