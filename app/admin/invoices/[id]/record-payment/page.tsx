@@ -12,11 +12,11 @@ type Invoice = {
     amount_paid_cents: number;
 };
 
-const METHODS = ["Bank payment", "Cash", "Check", "Credit card", "PayPal", "Other"];
-const ACCOUNTS = ["Cash on Hand (USD)", "Wave Payroll Clearing (USD)"];
+type PaymentOption = { id: number; name: string };
 
 function today() {
-    return new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
 export default function RecordPaymentPage() {
@@ -28,6 +28,8 @@ export default function RecordPaymentPage() {
     const [method, setMethod] = useState("");
     const [accountName, setAccountName] = useState("");
     const [memo, setMemo] = useState("");
+    const [methods, setMethods] = useState<PaymentOption[]>([]);
+    const [accounts, setAccounts] = useState<PaymentOption[]>([]);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState("");
 
@@ -38,10 +40,18 @@ export default function RecordPaymentPage() {
             if (!me?.authenticated) return router.push("/admin/login");
             if (!["admin", "treasurer"].includes(me.user?.role)) return setMessage("Only admins and treasurers can record invoice payments.");
 
-            const res = await fetch(`/api/admin/invoices/${params.id}/payments`, { cache: "no-store" });
+            const [res, optionsRes] = await Promise.all([
+                fetch(`/api/admin/invoices/${params.id}/payments`, { cache: "no-store" }),
+                fetch("/api/admin/invoices/payment-options", { cache: "no-store" }),
+            ]);
             const data = await res.json();
+            const optionsData = await optionsRes.json();
             if (!res.ok) return setMessage(data?.error || "Failed to load invoice.");
             setInvoice(data.invoice);
+            if (optionsRes.ok) {
+                setMethods(optionsData.methods || []);
+                setAccounts(optionsData.accounts || []);
+            }
             const remaining = Math.max(0, Number(data.invoice.total_cents || 0) - Number(data.invoice.amount_paid_cents || 0));
             setAmount((remaining / 100).toFixed(2));
         }
@@ -51,6 +61,50 @@ export default function RecordPaymentPage() {
     const remainingCents = useMemo(() => invoice ? Math.max(0, Number(invoice.total_cents) - Number(invoice.amount_paid_cents)) : 0, [invoice]);
     const paymentCents = Math.round(Number(amount || 0) * 100);
     const fullyPaid = invoice && paymentCents > 0 && paymentCents >= remainingCents;
+
+    async function addOption(type: "method" | "account") {
+        const label = type === "method" ? "payment method" : "payment account";
+        const name = window.prompt(`Enter the new ${label} name:`);
+        if (!name?.trim()) return;
+        const res = await fetch("/api/admin/invoices/payment-options", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type, name }),
+        });
+        const data = await res.json();
+        if (!res.ok) return setMessage(data?.error || `Failed to add ${label}.`);
+        if (type === "method") {
+            setMethods((current) => [...current, data.item].sort((a, b) => a.name.localeCompare(b.name)));
+            setMethod(data.item.name);
+        } else {
+            setAccounts((current) => [...current, data.item].sort((a, b) => a.name.localeCompare(b.name)));
+            setAccountName(data.item.name);
+        }
+    }
+
+    async function editOption(type: "method" | "account") {
+        const selectedName = type === "method" ? method : accountName;
+        if (!selectedName) return setMessage(`Select a ${type === "method" ? "payment method" : "payment account"} to edit.`);
+        const source = type === "method" ? methods : accounts;
+        const selected = source.find((item) => item.name === selectedName);
+        if (!selected) return setMessage("The selected option could not be found.");
+        const name = window.prompt("Edit name:", selected.name);
+        if (!name?.trim() || name.trim() === selected.name) return;
+        const res = await fetch("/api/admin/invoices/payment-options", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type, id: selected.id, name }),
+        });
+        const data = await res.json();
+        if (!res.ok) return setMessage(data?.error || "Failed to update payment option.");
+        if (type === "method") {
+            setMethods((current) => current.map((item) => item.id === selected.id ? data.item : item).sort((a, b) => a.name.localeCompare(b.name)));
+            setMethod(data.item.name);
+        } else {
+            setAccounts((current) => current.map((item) => item.id === selected.id ? data.item : item).sort((a, b) => a.name.localeCompare(b.name)));
+            setAccountName(data.item.name);
+        }
+    }
 
     async function submit(event: React.FormEvent) {
         event.preventDefault();
@@ -107,8 +161,12 @@ export default function RecordPaymentPage() {
                         <span className="font-semibold text-slate-600 sm:text-right">Method</span>
                         <select value={method} onChange={(e) => setMethod(e.target.value)} className="rounded-xl border border-blue-200 px-4 py-3 italic text-slate-700">
                             <option value="">Select a payment method...</option>
-                            {METHODS.map((item) => <option key={item} value={item}>{item}</option>)}
+                            {methods.map((item) => <option key={item.id} value={item.name}>{item.name}</option>)}
                         </select>
+                        <span className="sm:col-start-2 flex gap-3 text-sm">
+                            <button type="button" onClick={() => addOption("method")} className="font-semibold text-blue-700">＋ Add method</button>
+                            <button type="button" onClick={() => editOption("method")} className="font-semibold text-slate-600">Edit selected</button>
+                        </span>
                     </label>
 
                     <div className="grid gap-2 sm:grid-cols-[150px_1fr] sm:items-start">
@@ -116,8 +174,12 @@ export default function RecordPaymentPage() {
                         <div>
                             <select value={accountName} onChange={(e) => setAccountName(e.target.value)} className="w-full rounded-xl border border-blue-200 px-4 py-3 italic text-slate-700">
                                 <option value="">Select a payment account...</option>
-                                {ACCOUNTS.map((item) => <option key={item} value={item}>{item}</option>)}
+                                {accounts.map((item) => <option key={item.id} value={item.name}>{item.name}</option>)}
                             </select>
+                            <div className="mt-2 flex flex-wrap gap-3 text-sm">
+                                <button type="button" onClick={() => addOption("account")} className="font-semibold text-blue-700">＋ Add account</button>
+                                <button type="button" onClick={() => editOption("account")} className="font-semibold text-slate-600">Edit selected</button>
+                            </div>
                             <p className="mt-2 text-sm text-slate-500">Choose the account where the payment was deposited.</p>
                         </div>
                     </div>
