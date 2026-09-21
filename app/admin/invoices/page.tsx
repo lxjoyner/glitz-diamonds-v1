@@ -358,7 +358,7 @@ export default function InvoicesPage() {
                                                             {invoiceHref && <Link href={invoiceHref} className="block px-4 py-2 hover:bg-slate-50">View</Link>}
                                                             <Link href={`/admin/invoices/${invoice.id}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit</Link>
                                                             <Link href={`/admin/invoices/new?duplicate=${invoice.id}`} className="block px-4 py-2 hover:bg-slate-50">Duplicate</Link>
-                                                            <button type="button" disabled className="block w-full cursor-not-allowed px-4 py-2 text-left text-slate-400">Record payment</button>
+                                                            <Link href={`/admin/invoices/${invoice.id}/record-payment`} className="block px-4 py-2 hover:bg-slate-50">Record payment</Link>
                                                             <button type="button" onClick={() => sendInvoice(invoice, true)} disabled={!invoice.member_email || sendingId === invoice.id} className="block w-full px-4 py-2 text-left hover:bg-slate-50 disabled:text-slate-400">Resend invoice</button>
                                                             {printHref && <Link href={printHref} target="_blank" rel="noreferrer" className="block px-4 py-2 hover:bg-slate-50">Print</Link>}
                                                             {pdfHref && <a href={pdfHref} download className="block px-4 py-2 hover:bg-slate-50">Export as PDF</a>}
