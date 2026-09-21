@@ -162,6 +162,35 @@ export async function ensureInvoiceSchema() {
             CONSTRAINT fk_invoice_payments_invoice FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
         )
     `);
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS invoice_payment_methods (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(80) NOT NULL UNIQUE,
+            is_active TINYINT(1) NOT NULL DEFAULT 1,
+            sort_order INT NOT NULL DEFAULT 0,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+    `);
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS invoice_payment_accounts (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(120) NOT NULL UNIQUE,
+            is_active TINYINT(1) NOT NULL DEFAULT 1,
+            sort_order INT NOT NULL DEFAULT 0,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+    `);
+    await pool.query(`
+        INSERT IGNORE INTO invoice_payment_methods (name, sort_order) VALUES
+        ('Bank payment', 10), ('Cash', 20), ('Check', 30), ('Credit card', 40), ('PayPal', 50), ('Other', 60)
+    `);
+    await pool.query(`
+        INSERT IGNORE INTO invoice_payment_accounts (name, sort_order) VALUES
+        ('Cash on Hand (USD)', 10), ('Wave Payroll Clearing (USD)', 20)
+    `);
 }
 
 function computedStatus(row: { status: string; due_date: string; total_cents: number; amount_paid_cents: number }) {
@@ -467,4 +496,73 @@ export async function recordInvoicePayment(invoiceId: number, input: InvoicePaym
     } finally {
         connection.release();
     }
+}
+
+
+export async function listInvoicePaymentMethods() {
+    await ensureInvoiceSchema();
+    const [rows] = await pool.query<RowDataPacket[]>(`
+        SELECT id, name, is_active, sort_order
+        FROM invoice_payment_methods
+        WHERE is_active = 1
+        ORDER BY sort_order, name
+    `);
+    return rows;
+}
+
+export async function listInvoicePaymentAccounts() {
+    await ensureInvoiceSchema();
+    const [rows] = await pool.query<RowDataPacket[]>(`
+        SELECT id, name, is_active, sort_order
+        FROM invoice_payment_accounts
+        WHERE is_active = 1
+        ORDER BY sort_order, name
+    `);
+    return rows;
+}
+
+export async function createInvoicePaymentMethod(name: string) {
+    await ensureInvoiceSchema();
+    const trimmed = name.trim();
+    if (!trimmed) throw new Error("INVALID_NAME");
+    const [result] = await pool.execute<ResultSetHeader>(
+        `INSERT INTO invoice_payment_methods (name, sort_order) VALUES (?, 100)`,
+        [trimmed]
+    );
+    return { id: result.insertId, name: trimmed };
+}
+
+export async function renameInvoicePaymentMethod(id: number, name: string) {
+    await ensureInvoiceSchema();
+    const trimmed = name.trim();
+    if (!trimmed) throw new Error("INVALID_NAME");
+    const [result] = await pool.execute<ResultSetHeader>(
+        `UPDATE invoice_payment_methods SET name = ? WHERE id = ?`,
+        [trimmed, id]
+    );
+    if (result.affectedRows !== 1) throw new Error("NOT_FOUND");
+    return { id, name: trimmed };
+}
+
+export async function createInvoicePaymentAccount(name: string) {
+    await ensureInvoiceSchema();
+    const trimmed = name.trim();
+    if (!trimmed) throw new Error("INVALID_NAME");
+    const [result] = await pool.execute<ResultSetHeader>(
+        `INSERT INTO invoice_payment_accounts (name, sort_order) VALUES (?, 100)`,
+        [trimmed]
+    );
+    return { id: result.insertId, name: trimmed };
+}
+
+export async function renameInvoicePaymentAccount(id: number, name: string) {
+    await ensureInvoiceSchema();
+    const trimmed = name.trim();
+    if (!trimmed) throw new Error("INVALID_NAME");
+    const [result] = await pool.execute<ResultSetHeader>(
+        `UPDATE invoice_payment_accounts SET name = ? WHERE id = ?`,
+        [trimmed, id]
+    );
+    if (result.affectedRows !== 1) throw new Error("NOT_FOUND");
+    return { id, name: trimmed };
 }
