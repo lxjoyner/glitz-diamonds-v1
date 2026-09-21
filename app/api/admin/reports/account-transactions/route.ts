@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth";
-import { getAccountTransactionsReport } from "@/lib/invoice-db";
+import { getAccountTransactionsReport, listAccountTransactionContacts } from "@/lib/invoice-db";
 
 function requireReportAccess(req: NextRequest) {
     const token = req.cookies.get("glitz_token")?.value;
@@ -36,12 +36,15 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ success: false, error: "Invalid report type." }, { status: 400 });
     }
 
-    const rows = await getAccountTransactionsReport({
-        memberId,
-        fromDate: from,
-        toDate: to,
-        reportType: reportType as "accrual" | "cash" | "cash_only",
-    });
+    const [rows, contacts] = await Promise.all([
+        getAccountTransactionsReport({
+            memberId,
+            fromDate: from,
+            toDate: to,
+            reportType: reportType as "accrual" | "cash" | "cash_only",
+        }),
+        listAccountTransactionContacts(),
+    ]);
 
-    return NextResponse.json({ success: true, rows });
+    return NextResponse.json({ success: true, rows, contacts });
 }
