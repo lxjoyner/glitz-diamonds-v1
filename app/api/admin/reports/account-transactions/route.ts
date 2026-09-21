@@ -26,8 +26,8 @@ export async function GET(req: NextRequest) {
     const to = String(searchParams.get("to") || "").slice(0, 10);
     const reportType = String(searchParams.get("type") || "accrual");
 
-    if (!Number.isInteger(memberId) || memberId <= 0) {
-        return NextResponse.json({ success: false, error: "Member is required." }, { status: 400 });
+    if (!Number.isInteger(memberId) || memberId < 0) {
+        return NextResponse.json({ success: false, error: "Invalid member." }, { status: 400 });
     }
     if (!from || !to || from > to) {
         return NextResponse.json({ success: false, error: "Valid from and to dates are required." }, { status: 400 });
