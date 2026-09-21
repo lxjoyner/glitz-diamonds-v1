@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 type Contact = {
@@ -54,12 +54,10 @@ function AccountTransactionsContent() {
     const [toDate, setToDate] = useState(initialTo);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState("");
+    const fromDateRef = useRef<HTMLInputElement | null>(null);
+    const toDateRef = useRef<HTMLInputElement | null>(null);
 
     async function loadReport(selectedMemberId = memberId) {
-        if (!selectedMemberId) {
-            setRows([]);
-            return;
-        }
         setLoading(true);
         setMessage("");
         try {
@@ -93,18 +91,15 @@ function AccountTransactionsContent() {
                 if (!contactsRes.ok) throw new Error(contactsData?.error || "Failed to load contacts.");
                 const loadedContacts = contactsData.contacts || [];
                 setContacts(loadedContacts);
-                if (loadedContacts.length > 0) {
-                    const firstMemberId = Number(loadedContacts[0].id);
-                    setMemberId(firstMemberId);
-                    await loadReport(firstMemberId);
-                }
+                setMemberId(0);
+                await loadReport(0);
             }
         }
         init();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [router]);
 
-    const customerName = contacts.find((contact) => contact.id === memberId)?.name || rows[0]?.customer_name || "Customer";
+    const customerName = memberId === 0 ? "All Contacts" : contacts.find((contact) => contact.id === memberId)?.name || rows[0]?.customer_name || "Customer";
     const totals = useMemo(() => rows.reduce((acc, row) => ({
         debit: acc.debit + Number(row.debit_cents || 0),
         credit: acc.credit + Number(row.credit_cents || 0),
@@ -150,11 +145,57 @@ function AccountTransactionsContent() {
                         <div className="grid grid-cols-2 gap-2">
                             <label className="grid gap-2">
                                 <span className="font-semibold text-slate-600">From</span>
-                                <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="rounded-xl border border-blue-300 bg-white px-3 py-3" />
+                                <div className="relative">
+                                    <input
+                                        ref={fromDateRef}
+                                        type="date"
+                                        value={fromDate}
+                                        onChange={(e) => setFromDate(e.target.value)}
+                                        className="w-full rounded-xl border border-blue-300 bg-white px-3 py-3 pr-14 [&::-webkit-calendar-picker-indicator]:opacity-0"
+                                    />
+                                    <button
+                                        type="button"
+                                        aria-label="Open From date picker"
+                                        title="Open date picker"
+                                        onClick={() => {
+                                            const input = fromDateRef.current;
+                                            if (!input) return;
+                                            input.showPicker();
+                                        }}
+                                        className="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg bg-blue-100 text-blue-700 transition-colors hover:bg-blue-200 active:bg-blue-300"
+                                    >
+                                        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M7 2v3M17 2v3M3.5 9h17M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
+                                        </svg>
+                                    </button>
+                                </div>
                             </label>
                             <label className="grid gap-2">
                                 <span className="font-semibold text-slate-600">To</span>
-                                <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="rounded-xl border border-blue-300 bg-white px-3 py-3" />
+                                <div className="relative">
+                                    <input
+                                        ref={toDateRef}
+                                        type="date"
+                                        value={toDate}
+                                        onChange={(e) => setToDate(e.target.value)}
+                                        className="w-full rounded-xl border border-blue-300 bg-white px-3 py-3 pr-14 [&::-webkit-calendar-picker-indicator]:opacity-0"
+                                    />
+                                    <button
+                                        type="button"
+                                        aria-label="Open To date picker"
+                                        title="Open date picker"
+                                        onClick={() => {
+                                            const input = toDateRef.current;
+                                            if (!input) return;
+                                            input.showPicker();
+                                        }}
+                                        className="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg bg-blue-100 text-blue-700 transition-colors hover:bg-blue-200 active:bg-blue-300"
+                                    >
+                                        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M7 2v3M17 2v3M3.5 9h17M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
+                                        </svg>
+                                    </button>
+                                </div>
                             </label>
                         </div>
 
@@ -185,6 +226,7 @@ function AccountTransactionsContent() {
                                     router.replace(`/admin/reports/account-transactions?${params.toString()}`);
                                 }}
                             >
+                                <option value={0}>All Contacts</option>
                                 {contacts.map((contact) => (
                                     <option key={contact.id} value={contact.id}>{contact.name}</option>
                                 ))}
