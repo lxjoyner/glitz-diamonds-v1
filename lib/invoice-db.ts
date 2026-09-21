@@ -679,3 +679,22 @@ export async function getAccountTransactionsReport(input: {
     `, [input.memberId, input.fromDate, input.toDate]);
     return rows;
 }
+
+
+export async function listAccountTransactionContacts() {
+    await ensureInvoiceSchema();
+    const [rows] = await pool.query<RowDataPacket[]>(`
+        SELECT DISTINCT
+            u.id,
+            u.full_name
+        FROM users u
+        INNER JOIN invoices i ON i.member_id = u.id
+        WHERE u.full_name IS NOT NULL
+          AND TRIM(u.full_name) <> ''
+        ORDER BY u.full_name
+    `);
+    return rows.map((row) => ({
+        id: Number(row.id),
+        name: String(row.full_name),
+    }));
+}
