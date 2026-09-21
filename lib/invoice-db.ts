@@ -566,3 +566,29 @@ export async function renameInvoicePaymentAccount(id: number, name: string) {
     if (result.affectedRows !== 1) throw new Error("NOT_FOUND");
     return { id, name: trimmed };
 }
+
+
+export type IncomeByCustomerRow = RowDataPacket & {
+    member_id: number;
+    customer_name: string;
+    all_income_cents: number;
+    paid_income_cents: number;
+};
+
+export async function getIncomeByCustomerReport(fromDate: string, toDate: string): Promise<IncomeByCustomerRow[]> {
+    await ensureInvoiceSchema();
+    const [rows] = await pool.query<IncomeByCustomerRow[]>(`
+        SELECT
+            i.member_id,
+            COALESCE(u.full_name, CONCAT('Member #', i.member_id)) AS customer_name,
+            COALESCE(SUM(i.total_cents), 0) AS all_income_cents,
+            COALESCE(SUM(i.amount_paid_cents), 0) AS paid_income_cents
+        FROM invoices i
+        LEFT JOIN users u ON u.id = i.member_id
+        WHERE i.invoice_date BETWEEN ? AND ?
+          AND i.status <> 'void'
+        GROUP BY i.member_id, u.full_name
+        ORDER BY customer_name
+    `, [fromDate, toDate]);
+    return rows;
+}
