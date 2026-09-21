@@ -82,8 +82,8 @@ export default function VendorsPage() {
 
                 {message && <p className="mb-4 rounded-lg bg-red-50 p-3 text-red-700">{message}</p>}
 
-                <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                    <div className="overflow-x-auto">
+                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div className="overflow-x-auto overflow-y-visible pb-40">
                         <table className="w-full border-collapse">
                             <thead>
                                 <tr className="border-b border-slate-200 text-left">
@@ -111,7 +111,7 @@ export default function VendorsPage() {
                                                 <div className="relative" ref={openMenuId === vendor.id ? menuRef : null}>
                                                     <button type="button" aria-label={`Vendor actions for ${vendor.vendor_name}`} onClick={() => setOpenMenuId((current) => current === vendor.id ? null : vendor.id)} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-blue-600 text-blue-700 hover:bg-blue-50">⌄</button>
                                                     {openMenuId === vendor.id && (
-                                                        <div className="absolute right-0 z-20 mt-2 w-40 rounded-xl border border-slate-200 bg-white py-2 shadow-xl">
+                                                        <div className="absolute right-0 z-50 mt-2 w-40 rounded-xl border border-slate-200 bg-white py-2 shadow-xl">
                                                             <Link href={`/admin/vendors/${vendor.id}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit</Link>
                                                             <Link href={`/admin/vendors/${vendor.id}/create-bill`} className="block px-4 py-2 hover:bg-slate-50">Create bill</Link>
                                                             <button type="button" onClick={() => removeVendor(vendor)} className="block w-full px-4 py-2 text-left hover:bg-slate-50">Delete</button>
