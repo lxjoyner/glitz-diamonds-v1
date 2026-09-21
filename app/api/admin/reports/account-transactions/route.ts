@@ -36,15 +36,13 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ success: false, error: "Invalid report type." }, { status: 400 });
     }
 
-    const [rows, contacts] = await Promise.all([
-        getAccountTransactionsReport({
-            memberId,
-            fromDate: from,
-            toDate: to,
-            reportType: reportType as "accrual" | "cash" | "cash_only",
-        }),
-        listAccountTransactionContacts(),
-    ]);
+    const rows = await getAccountTransactionsReport({
+        memberId,
+        fromDate: from,
+        toDate: to,
+        reportType: reportType as "accrual" | "cash" | "cash_only",
+    });
+    const contacts = await listAccountTransactionContacts();
 
     return NextResponse.json({ success: true, rows, contacts });
 }
