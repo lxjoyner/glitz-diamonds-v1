@@ -115,7 +115,7 @@ export default function InvoicesPage() {
     const [fromDate, setFromDate] = useState("");
     const [toDate, setToDate] = useState("");
     const [numberFilter, setNumberFilter] = useState("");
-    const [tab, setTab] = useState("unpaid");
+    const [tab, setTab] = useState("past_due");
     const [page, setPage] = useState(1);
     const [sortKey, setSortKey] = useState<InvoiceSortKey>("date");
     const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
@@ -268,7 +268,6 @@ export default function InvoicesPage() {
         if (fromDate && invoice.invoice_date.slice(0, 10) < fromDate) return false;
         if (toDate && invoice.invoice_date.slice(0, 10) > toDate) return false;
         if (numberFilter && !invoice.invoice_number.toLowerCase().includes(numberFilter.toLowerCase())) return false;
-        if (tab === "unpaid" && ["paid", "void", "draft"].includes(invoice.display_status)) return false;
         if (tab === "past_due" && invoice.display_status !== "past_due") return false;
         if (tab === "draft" && invoice.display_status !== "draft") return false;
         if (tab === "paid" && invoice.display_status !== "paid") return false;
@@ -319,7 +318,6 @@ export default function InvoicesPage() {
                     </div>
 
                     <div className="my-7 flex flex-wrap justify-center gap-1 border-b border-slate-200 pb-5">
-                        <button onClick={() => setTab("unpaid")} className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold ${tab === "unpaid" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}><span>Unpaid</span><span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-red-600 px-2 text-sm font-bold leading-none text-white">{counts.unpaid}</span></button>
                         <button onClick={() => setTab("past_due")} className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold ${tab === "past_due" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}><span>Past Due</span><span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-red-600 px-2 text-sm font-bold leading-none text-white">{counts.pastDue}</span></button>
                         <button onClick={() => setTab("draft")} className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold ${tab === "draft" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}><span>Draft</span><span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-yellow-400 px-2 text-sm font-bold leading-none text-black">{counts.draft}</span></button>
                         <button onClick={() => setTab("paid")} className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold ${tab === "paid" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}><span>Paid</span><span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-green-600 px-2 text-sm font-bold leading-none text-white">{counts.paid}</span></button>
