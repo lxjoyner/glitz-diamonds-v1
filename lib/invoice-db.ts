@@ -144,6 +144,24 @@ export async function ensureInvoiceSchema() {
             CONSTRAINT fk_invoice_items_invoice FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
         )
     `);
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS invoice_payments (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            invoice_id BIGINT NOT NULL,
+            member_id BIGINT NOT NULL,
+            payment_date DATE NOT NULL,
+            amount_cents INT NOT NULL,
+            method VARCHAR(50) NOT NULL,
+            account_name VARCHAR(120) NOT NULL,
+            memo VARCHAR(500) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_invoice_payments_invoice (invoice_id),
+            INDEX idx_invoice_payments_member (member_id),
+            INDEX idx_invoice_payments_date (payment_date),
+            CONSTRAINT fk_invoice_payments_invoice FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+        )
+    `);
 }
 
 function computedStatus(row: { status: string; due_date: string; total_cents: number; amount_paid_cents: number }) {
@@ -388,6 +406,61 @@ export async function createInvoice(input: InvoiceInput) {
 
         await connection.commit();
         return { id: invoiceId, invoiceNumber, publicToken };
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
+}
+
+
+export type InvoicePaymentInput = {
+    paymentDate: string;
+    amountCents: number;
+    method: string;
+    accountName: string;
+    memo?: string;
+};
+
+export async function recordInvoicePayment(invoiceId: number, input: InvoicePaymentInput) {
+    await ensureInvoiceSchema();
+    const invoice = await getInvoiceById(invoiceId);
+    if (!invoice) throw new Error("INVOICE_NOT_FOUND");
+
+    const currentPaid = Number(invoice.amount_paid_cents || 0);
+    const total = Number(invoice.total_cents || 0);
+    const remaining = Math.max(0, total - currentPaid);
+    const amountCents = Math.round(Number(input.amountCents || 0));
+
+    if (!Number.isInteger(amountCents) || amountCents <= 0) throw new Error("INVALID_AMOUNT");
+    if (amountCents > remaining) throw new Error("AMOUNT_EXCEEDS_BALANCE");
+
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+        await connection.execute(`
+            INSERT INTO invoice_payments (invoice_id, member_id, payment_date, amount_cents, method, account_name, memo)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [
+            invoiceId,
+            invoice.member_id,
+            input.paymentDate,
+            amountCents,
+            input.method,
+            input.accountName,
+            input.memo || null,
+        ]);
+
+        const newPaid = currentPaid + amountCents;
+        const nextStatus = newPaid >= total && total > 0 ? "paid" : newPaid > 0 ? "partially_paid" : invoice.status;
+        await connection.execute(
+            `UPDATE invoices SET amount_paid_cents = ?, status = ? WHERE id = ?`,
+            [newPaid, nextStatus, invoiceId]
+        );
+
+        await connection.commit();
+        return getInvoiceById(invoiceId);
     } catch (error) {
         await connection.rollback();
         throw error;
