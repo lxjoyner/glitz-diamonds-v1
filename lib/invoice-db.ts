@@ -685,16 +685,14 @@ export async function listAccountTransactionContacts() {
     await ensureInvoiceSchema();
     const [rows] = await pool.query<RowDataPacket[]>(`
         SELECT DISTINCT
-            u.id,
-            u.full_name
-        FROM users u
-        INNER JOIN invoices i ON i.member_id = u.id
-        WHERE u.full_name IS NOT NULL
-          AND TRIM(u.full_name) <> ''
-        ORDER BY u.full_name
+            i.member_id AS id,
+            COALESCE(u.full_name, CONCAT('Member #', i.member_id)) AS name
+        FROM invoices i
+        LEFT JOIN users u ON u.id = i.member_id
+        ORDER BY name
     `);
     return rows.map((row) => ({
         id: Number(row.id),
-        name: String(row.full_name),
+        name: String(row.name),
     }));
 }
