@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type ReportRow = {
@@ -73,6 +73,8 @@ export default function IncomeByCustomerPage() {
     const [toDate, setToDate] = useState(todayLocal());
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState("");
+    const [exportOpen, setExportOpen] = useState(false);
+    const exportMenuRef = useRef<HTMLDivElement | null>(null);
 
     async function loadReport(from = fromDate, to = toDate) {
         setLoading(true);
@@ -88,6 +90,14 @@ export default function IncomeByCustomerPage() {
             setLoading(false);
         }
     }
+
+    useEffect(() => {
+        function closeExportMenu(event: MouseEvent) {
+            if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) setExportOpen(false);
+        }
+        document.addEventListener("mousedown", closeExportMenu);
+        return () => document.removeEventListener("mousedown", closeExportMenu);
+    }, []);
 
     useEffect(() => {
         async function init() {
@@ -131,6 +141,66 @@ export default function IncomeByCustomerPage() {
         URL.revokeObjectURL(url);
     }
 
+
+    function exportPdf() {
+        const reportWindow = window.open("", "_blank", "noopener,noreferrer");
+        if (!reportWindow) {
+            setMessage("Allow pop-ups to export the report as PDF.");
+            return;
+        }
+
+        const tableRows = rows.map((row) => `
+            <tr>
+                <td>${row.customer_name}</td>
+                <td style="text-align:right">${money(row.all_income_cents)}</td>
+                <td style="text-align:right">${money(row.paid_income_cents)}</td>
+            </tr>
+        `).join("");
+
+        reportWindow.document.write(`
+            <!doctype html>
+            <html>
+            <head>
+                <title>Income by Customer</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 28px; color: #111827; }
+                    h1 { margin-bottom: 4px; }
+                    .range { color: #6b7280; margin-bottom: 24px; }
+                    table { width: 100%; border-collapse: collapse; }
+                    th, td { padding: 10px 8px; border-bottom: 1px solid #d1d5db; }
+                    th { text-align: left; background: #e5e7eb; }
+                    tfoot td { font-weight: 700; border-top: 2px solid #111827; }
+                    @media print { body { padding: 0; } }
+                </style>
+            </head>
+            <body>
+                <h1>Income by Customer</h1>
+                <div class="range">Date range: ${fromDate} to ${toDate}</div>
+                <table>
+                    <thead>
+                        <tr><th>Customer</th><th style="text-align:right">All Income</th><th style="text-align:right">Paid Income</th></tr>
+                    </thead>
+                    <tbody>${tableRows}</tbody>
+                    <tfoot>
+                        <tr>
+                            <td>Total Income</td>
+                            <td style="text-align:right">${money(totals.all)}</td>
+                            <td style="text-align:right">${money(totals.paid)}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+                <script>
+                    window.addEventListener("load", () => {
+                        window.print();
+                    });
+                </script>
+            </body>
+            </html>
+        `);
+        reportWindow.document.close();
+        setExportOpen(false);
+    }
+
     const totals = useMemo(() => rows.reduce((acc, row) => ({
         all: acc.all + Number(row.all_income_cents || 0),
         paid: acc.paid + Number(row.paid_income_cents || 0),
@@ -148,7 +218,25 @@ export default function IncomeByCustomerPage() {
                         <h1 className="text-4xl font-bold tracking-tight">Income by Customer</h1>
                         <p className="mt-1 text-sm text-slate-500">Report income totals and paid income by member.</p>
                     </div>
-                    <button type="button" onClick={exportCsv} disabled={rows.length === 0} className="rounded-full border border-blue-600 bg-white px-6 py-3 font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-40">Export CSV</button>
+                    <div ref={exportMenuRef} className="relative">
+                        <button
+                            type="button"
+                            onClick={() => setExportOpen((current) => !current)}
+                            disabled={rows.length === 0}
+                            className="inline-flex items-center gap-2 rounded-full border border-blue-600 bg-white px-6 py-3 font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-40"
+                            aria-haspopup="menu"
+                            aria-expanded={exportOpen}
+                        >
+                            <span>Export</span>
+                            <span aria-hidden="true">⌄</span>
+                        </button>
+                        {exportOpen && (
+                            <div className="absolute right-0 z-20 mt-2 w-40 rounded-xl border border-slate-200 bg-white py-2 shadow-xl" role="menu">
+                                <button type="button" onClick={() => { exportCsv(); setExportOpen(false); }} className="block w-full px-4 py-2 text-left hover:bg-slate-50" role="menuitem">CSV</button>
+                                <button type="button" onClick={exportPdf} className="block w-full px-4 py-2 text-left hover:bg-slate-50" role="menuitem">PDF</button>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <section className="mb-8 rounded-2xl bg-slate-200/70 p-5">
