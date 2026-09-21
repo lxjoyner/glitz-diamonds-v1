@@ -84,6 +84,8 @@ export default function IncomeByCustomerPage() {
     const [message, setMessage] = useState("");
     const [exportOpen, setExportOpen] = useState(false);
     const exportMenuRef = useRef<HTMLDivElement | null>(null);
+    const fromDateRef = useRef<HTMLInputElement | null>(null);
+    const toDateRef = useRef<HTMLInputElement | null>(null);
 
     async function loadReport(from = fromDate, to = toDate) {
         setLoading(true);
@@ -288,14 +290,28 @@ export default function IncomeByCustomerPage() {
                             <span className="font-semibold">From</span>
                             <div className="relative">
                                 <input
+                                    ref={fromDateRef}
                                     type="date"
                                     value={fromDate}
                                     onChange={(e) => { setFromDate(e.target.value); setRangeValue("custom"); }}
-                                    className="w-full rounded-xl border border-blue-300 bg-white px-4 py-3 pr-12 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100"
+                                    className="w-full rounded-xl border border-blue-300 bg-white px-4 py-3 pr-14 [&::-webkit-calendar-picker-indicator]:opacity-0"
                                 />
-                                <svg aria-hidden="true" viewBox="0 0 24 24" className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-blue-700" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M7 2v3M17 2v3M3.5 9h17M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
-                                </svg>
+                                <button
+                                    type="button"
+                                    aria-label="Open From date picker"
+                                    title="Open date picker"
+                                    onClick={() => {
+                                        const input = fromDateRef.current;
+                                        if (!input) return;
+                                        if ("showPicker" in input) input.showPicker();
+                                        else input.focus();
+                                    }}
+                                    className="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg bg-blue-100 text-blue-700 transition-colors hover:bg-blue-200 active:bg-blue-300"
+                                >
+                                    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M7 2v3M17 2v3M3.5 9h17M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
+                                    </svg>
+                                </button>
                             </div>
                         </label>
 
@@ -303,14 +319,28 @@ export default function IncomeByCustomerPage() {
                             <span className="font-semibold">To</span>
                             <div className="relative">
                                 <input
+                                    ref={toDateRef}
                                     type="date"
                                     value={toDate}
                                     onChange={(e) => { setToDate(e.target.value); setRangeValue("custom"); }}
-                                    className="w-full rounded-xl border border-blue-300 bg-white px-4 py-3 pr-12 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100"
+                                    className="w-full rounded-xl border border-blue-300 bg-white px-4 py-3 pr-14 [&::-webkit-calendar-picker-indicator]:opacity-0"
                                 />
-                                <svg aria-hidden="true" viewBox="0 0 24 24" className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-blue-700" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M7 2v3M17 2v3M3.5 9h17M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
-                                </svg>
+                                <button
+                                    type="button"
+                                    aria-label="Open To date picker"
+                                    title="Open date picker"
+                                    onClick={() => {
+                                        const input = toDateRef.current;
+                                        if (!input) return;
+                                        if ("showPicker" in input) input.showPicker();
+                                        else input.focus();
+                                    }}
+                                    className="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg bg-blue-100 text-blue-700 transition-colors hover:bg-blue-200 active:bg-blue-300"
+                                >
+                                    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M7 2v3M17 2v3M3.5 9h17M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
+                                    </svg>
+                                </button>
                             </div>
                         </label>
 
