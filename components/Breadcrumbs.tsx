@@ -11,6 +11,7 @@ const LABELS: Record<string, string> = {
     "roles-manager": "Roles Manager",
     "ideas-activities": "Ideas & Activities",
     invoices: "Invoices",
+    vendors: "Vendors",
     recurring: "Recurring Invoices",
     new: "New Invoice",
     edit: "Edit",
@@ -52,6 +53,10 @@ function getBreadcrumbHref(segments: string[], index: number) {
 
     if (segment === "reports" && segments[0] === "admin") {
         return "/admin/reports/income-by-customer";
+    }
+
+    if (segment === "vendors" && segments[0] === "admin") {
+        return "/admin/vendors";
     }
 
     return `/${segments.slice(0, index + 1).join("/")}`;

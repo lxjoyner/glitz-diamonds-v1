@@ -28,6 +28,7 @@ export default function Header() {
     const [open, setOpen] = useState(false);
     const [invoicingOpen, setInvoicingOpen] = useState(false);
     const [reportsOpen, setReportsOpen] = useState(false);
+    const [vendorsOpen, setVendorsOpen] = useState(false);
     const [loadingAuth, setLoadingAuth] = useState(true);
     const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
     const router = useRouter();
@@ -155,6 +156,20 @@ export default function Header() {
                         </div>
                     )}
 
+
+                    {!loadingAuth && (adminUser?.role === "admin" || adminUser?.role === "treasurer") && (
+                        <div className="rounded-lg border border-white/10 bg-white/[0.03]">
+                            <button type="button" onClick={() => setVendorsOpen((current) => !current)} className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-white hover:bg-white/10 transition" aria-expanded={vendorsOpen} aria-controls="vendors-submenu">
+                                <span>Vendors</span><span className={`text-sm transition-transform ${vendorsOpen ? "rotate-180" : ""}`} aria-hidden="true">⌄</span>
+                            </button>
+                            {vendorsOpen && (
+                                <div id="vendors-submenu" className="flex flex-col gap-1 border-t border-white/10 px-2 py-2">
+                                    <Link href="/admin/vendors" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>Vendors</Link>
+                                    <Link href="/admin/vendors/new" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>Add a Vendor</Link>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {!loadingAuth && (adminUser?.role === "admin" || adminUser?.role === "treasurer") && (
                         <div className="rounded-lg border border-white/10 bg-white/[0.03]">
