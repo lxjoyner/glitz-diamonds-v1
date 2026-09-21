@@ -303,8 +303,7 @@ export default function IncomeByCustomerPage() {
                                     onClick={() => {
                                         const input = fromDateRef.current;
                                         if (!input) return;
-                                        if ("showPicker" in input) input.showPicker();
-                                        else input.focus();
+                                        input.showPicker();
                                     }}
                                     className="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg bg-blue-100 text-blue-700 transition-colors hover:bg-blue-200 active:bg-blue-300"
                                 >
@@ -332,8 +331,7 @@ export default function IncomeByCustomerPage() {
                                     onClick={() => {
                                         const input = toDateRef.current;
                                         if (!input) return;
-                                        if ("showPicker" in input) input.showPicker();
-                                        else input.focus();
+                                        input.showPicker();
                                     }}
                                     className="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg bg-blue-100 text-blue-700 transition-colors hover:bg-blue-200 active:bg-blue-300"
                                 >
