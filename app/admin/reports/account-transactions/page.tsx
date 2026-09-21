@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 type TransactionRow = {
@@ -31,7 +31,7 @@ function displayDate(value: string) {
     return new Date(year, month - 1, day).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
 }
 
-export default function AccountTransactionsPage() {
+function AccountTransactionsContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const currentYear = new Date().getFullYear();
@@ -207,5 +207,22 @@ export default function AccountTransactionsPage() {
                 </section>
             </div>
         </main>
+    );
+}
+
+export default function AccountTransactionsPage() {
+    return (
+        <Suspense
+            fallback={
+                <main className="min-h-screen bg-[#f7f9fc] px-4 py-8 text-slate-950 sm:px-8">
+                    <div className="mx-auto max-w-[1500px]">
+                        <h1 className="text-4xl font-bold tracking-tight">Account Transactions</h1>
+                        <p className="mt-6 text-slate-500">Loading report...</p>
+                    </div>
+                </main>
+            }
+        >
+            <AccountTransactionsContent />
+        </Suspense>
     );
 }
