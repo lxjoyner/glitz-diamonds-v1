@@ -27,6 +27,7 @@ function getDisplayName(user: AdminUser | null) {
 export default function Header() {
     const [open, setOpen] = useState(false);
     const [invoicingOpen, setInvoicingOpen] = useState(false);
+    const [reportsOpen, setReportsOpen] = useState(false);
     const [loadingAuth, setLoadingAuth] = useState(true);
     const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
     const router = useRouter();
@@ -149,6 +150,20 @@ export default function Header() {
                                     <Link href="/admin/invoices/recurring" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>Recurring Invoices</Link>
                                     {adminUser?.role === "admin" && <Link href="/admin/invoices/historical-import" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>Historical Import</Link>}
                                     {adminUser?.role === "admin" && <Link href="/admin/invoices/settings" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>Invoice Settings</Link>}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+
+                    {!loadingAuth && (adminUser?.role === "admin" || adminUser?.role === "treasurer") && (
+                        <div className="rounded-lg border border-white/10 bg-white/[0.03]">
+                            <button type="button" onClick={() => setReportsOpen((current) => !current)} className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-white hover:bg-white/10 transition" aria-expanded={reportsOpen} aria-controls="reports-submenu">
+                                <span>Reports</span><span className={`text-sm transition-transform ${reportsOpen ? "rotate-180" : ""}`} aria-hidden="true">⌄</span>
+                            </button>
+                            {reportsOpen && (
+                                <div id="reports-submenu" className="flex flex-col gap-1 border-t border-white/10 px-2 py-2">
+                                    <Link href="/admin/reports/income-by-customer" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>Income By Customer</Link>
                                 </div>
                             )}
                         </div>
