@@ -189,7 +189,12 @@ export async function ensureInvoiceSchema() {
     `);
     await pool.query(`
         INSERT IGNORE INTO invoice_payment_accounts (name, sort_order) VALUES
-        ('Cash on Hand (USD)', 10), ('Wave Payroll Clearing (USD)', 20)
+        ('Cash on Hand (USD)', 10)
+    `);
+    await pool.query(`
+        UPDATE invoice_payment_accounts
+        SET is_active = 0
+        WHERE name = 'Wave Payroll Clearing (USD)'
     `);
 }
 
@@ -505,6 +510,7 @@ export async function listInvoicePaymentMethods() {
         SELECT id, name, is_active, sort_order
         FROM invoice_payment_methods
         WHERE is_active = 1
+          AND name <> 'Wave Payroll Clearing (USD)'
         ORDER BY sort_order, name
     `);
     return rows;
