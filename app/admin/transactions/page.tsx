@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Transaction = {
@@ -33,6 +33,10 @@ export default function TransactionsPage() {
     const [sortDesc, setSortDesc] = useState(true);
     const [filter, setFilter] = useState<"all" | "income" | "expense">("all");
     const [selected, setSelected] = useState<Set<string>>(new Set());
+    const [openActionKey, setOpenActionKey] = useState<string | null>(null);
+    const menuRef = useRef<HTMLDivElement | null>(null);
+    const [uploadKey, setUploadKey] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     useEffect(() => {
         async function init() {
@@ -70,6 +74,40 @@ export default function TransactionsPage() {
                 return sortDesc ? right - left : left - right;
             });
     }, [rows, search, filter, sortDesc]);
+
+    useEffect(() => {
+        function closeMenu(event: MouseEvent) {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) setOpenActionKey(null);
+        }
+        document.addEventListener("mousedown", closeMenu);
+        async function deleteTransaction(row: Transaction) {
+        if (!window.confirm(`Delete transaction "${row.description}"?`)) return;
+        const res = await fetch(`/api/admin/transactions/${encodeURIComponent(row.transaction_key)}`, { method: "DELETE" });
+        const data = await res.json();
+        if (!res.ok) {
+            setMessage(data?.error || "Failed to delete transaction.");
+            return;
+        }
+        setRows((current) => current.filter((item) => item.transaction_key !== row.transaction_key));
+        setOpenActionKey(null);
+    }
+
+    async function uploadReceipt(file: File) {
+        if (!uploadKey) return;
+        const form = new FormData();
+        form.append("file", file);
+        const res = await fetch(`/api/admin/transactions/${encodeURIComponent(uploadKey)}/receipt`, { method: "POST", body: form });
+        const data = await res.json();
+        if (!res.ok) {
+            setMessage(data?.error || "Failed to upload receipt.");
+            return;
+        }
+        setMessage("Receipt uploaded successfully.");
+        setUploadKey(null);
+    }
+
+    return () => document.removeEventListener("mousedown", closeMenu);
+    }, []);
 
     const allSelected = visible.length > 0 && visible.every((row) => selected.has(row.transaction_key));
 
@@ -127,7 +165,7 @@ export default function TransactionsPage() {
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-100 px-4 py-3">
                         <div className="flex items-center gap-3">
                             <label className="flex items-center gap-2">
-                                <input type="checkbox" checked={allSelected} onChange={toggleAll} />
+                                <input type="checkbox" checked={allSelected} onChange={toggleAll} className="h-4 w-4 appearance-none rounded border border-slate-400 bg-white checked:border-blue-600 checked:bg-blue-600 checked:after:block checked:after:text-center checked:after:text-xs checked:after:leading-[14px] checked:after:text-white checked:after:content-['✓']" />
                                 <span>Select all</span>
                             </label>
                             <button type="button" disabled={selected.size === 0} className="rounded-full border border-blue-300 px-3 py-1 text-blue-600 disabled:opacity-40">🗑</button>
@@ -170,7 +208,7 @@ export default function TransactionsPage() {
                                     const href = row.source_type === "invoice_payment" ? `/admin/invoices/${row.linked_id}/preview` : `/admin/vendors/bills`;
                                     return (
                                         <tr key={row.transaction_key} className="border-b border-slate-200 hover:bg-slate-50">
-                                            <td className="px-4 py-4"><input type="checkbox" checked={selected.has(row.transaction_key)} onChange={() => toggleOne(row.transaction_key)} /></td>
+                                            <td className="px-4 py-4"><input type="checkbox" checked={selected.has(row.transaction_key)} onChange={() => toggleOne(row.transaction_key)} className="h-4 w-4 appearance-none rounded border border-slate-400 bg-white checked:border-blue-600 checked:bg-blue-600 checked:after:block checked:after:text-center checked:after:text-xs checked:after:leading-[14px] checked:after:text-white checked:after:content-['✓']" /></td>
                                             <td className="px-4 py-4 font-semibold">{displayDate(row.transaction_date)}</td>
                                             <td className="px-4 py-4 font-semibold"><Link href={href} className="hover:text-blue-700 hover:underline">{row.description}</Link></td>
                                             <td className="px-4 py-4">{row.account_name}</td>
@@ -179,7 +217,16 @@ export default function TransactionsPage() {
                                             <td className="px-4 py-4">
                                                 <div className="flex justify-end gap-2">
                                                     <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-800">✓</button>
-                                                    <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-800">⌄</button>
+                                                    <div className="relative" ref={openActionKey === row.transaction_key ? menuRef : null}>
+                                                        <button type="button" onClick={() => setOpenActionKey((current) => current === row.transaction_key ? null : row.transaction_key)} className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-800">⌄</button>
+                                                        {openActionKey === row.transaction_key && (
+                                                            <div className="absolute right-0 z-50 mt-2 w-48 rounded-xl border border-slate-200 bg-white py-2 text-left shadow-xl">
+                                                                <Link href={`/admin/transactions/${encodeURIComponent(row.transaction_key)}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit more details</Link>
+                                                                <button type="button" onClick={() => { setUploadKey(row.transaction_key); fileInputRef.current?.click(); setOpenActionKey(null); }} className="block w-full px-4 py-2 text-left hover:bg-slate-50">Upload receipt</button>
+                                                                <button type="button" onClick={() => deleteTransaction(row)} className="block w-full px-4 py-2 text-left text-red-700 hover:bg-red-50">Delete</button>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </td>
                                         </tr>
@@ -189,6 +236,17 @@ export default function TransactionsPage() {
                         </table>
                     </div>
                 </section>
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".jpg,.jpeg,.gif,.tif,.tiff,.bmp,.png,.pdf,.heic,.heif"
+                    className="hidden"
+                    onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) uploadReceipt(file);
+                        e.target.value = "";
+                    }}
+                />
             </div>
         </main>
     );
