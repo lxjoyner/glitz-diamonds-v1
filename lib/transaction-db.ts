@@ -39,6 +39,28 @@ export async function listTransactions(): Promise<TransactionRow[]> {
         UNION ALL
 
         SELECT
+            CONCAT('invoice-history-', i.id) AS transaction_key,
+            'invoice_payment' AS source_type,
+            i.id AS source_id,
+            i.id AS linked_id,
+            i.invoice_date AS transaction_date,
+            CONCAT(COALESCE(u.full_name, CONCAT('Member #', i.member_id)), ' - Payment for Invoice ', i.invoice_number) AS description,
+            'Cash on Hand (USD)' AS account_name,
+            CONCAT('Invoice ', i.invoice_number, ' | Payment from ', COALESCE(u.full_name, CONCAT('Member #', i.member_id))) AS category,
+            i.amount_paid_cents AS amount_cents,
+            'income' AS direction
+        FROM invoices i
+        LEFT JOIN users u ON u.id = i.member_id
+        WHERE i.amount_paid_cents > 0
+          AND NOT EXISTS (
+              SELECT 1
+              FROM invoice_payments p2
+              WHERE p2.invoice_id = i.id
+          )
+
+        UNION ALL
+
+        SELECT
             CONCAT('bill-', bp.id) AS transaction_key,
             'vendor_bill_payment' AS source_type,
             bp.id AS source_id,
