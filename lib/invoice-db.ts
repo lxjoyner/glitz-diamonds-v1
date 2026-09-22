@@ -26,6 +26,7 @@ export type InvoiceInput = {
 export type InvoiceRecord = RowDataPacket & {
     id: number;
     invoice_number: string;
+    public_token: string | null;
     member_id: number;
     member_name: string | null;
     member_email: string | null;
@@ -627,6 +628,7 @@ export async function getAccountTransactionsReport(input: {
                 p.payment_date AS transaction_date,
                 p.invoice_id,
                 i.invoice_number,
+                i.public_token,
                 p.member_id,
                 COALESCE(u.full_name, CONCAT('Member #', p.member_id)) AS customer_name,
                 0 AS debit_cents,
@@ -649,6 +651,7 @@ export async function getAccountTransactionsReport(input: {
                 p.payment_date AS transaction_date,
                 p.invoice_id,
                 i.invoice_number,
+                i.public_token,
                 p.member_id,
                 COALESCE(u.full_name, CONCAT('Member #', p.member_id)) AS customer_name,
                 0 AS debit_cents,
@@ -671,6 +674,7 @@ export async function getAccountTransactionsReport(input: {
             i.invoice_date AS transaction_date,
             i.id AS invoice_id,
             i.invoice_number,
+            i.public_token,
             i.member_id,
             COALESCE(u.full_name, CONCAT('Member #', i.member_id)) AS customer_name,
             i.total_cents AS debit_cents,
