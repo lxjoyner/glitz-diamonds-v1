@@ -13,6 +13,7 @@ const LABELS: Record<string, string> = {
     invoices: "Invoices",
     vendors: "Vendors",
     bills: "Bills",
+    transactions: "Transactions",
     recurring: "Recurring Invoices",
     new: "New Invoice",
     edit: "Edit",
