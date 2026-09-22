@@ -70,6 +70,14 @@ function getBreadcrumbHref(segments: string[], index: number) {
         return `/admin/invoices/${segment}/preview`;
     }
 
+    if (
+        segments[0] === "admin" &&
+        segments[1] === "transactions" &&
+        segments[index + 1] === "edit"
+    ) {
+        return `/admin/transactions/${segment}/edit`;
+    }
+
     return `/${segments.slice(0, index + 1).join("/")}`;
 }
 
