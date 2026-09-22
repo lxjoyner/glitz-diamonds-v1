@@ -212,7 +212,7 @@ export async function ensureBillSchema() {
 }
 
 export async function createVendorBill(input: VendorBillInput) {
-    await ensureBillSchema();
+    await ensureVendorBillPaymentSchema();
     const subtotalCents = input.lines.reduce((sum, line) => sum + Math.round(Number(line.quantity || 0) * Number(line.priceCents || 0)), 0);
     const totalTaxCents = input.lines.reduce((sum, line) => sum + Math.max(0, Math.round(Number(line.taxCents || 0))), 0);
     const totalCents = subtotalCents + totalTaxCents;
@@ -312,13 +312,42 @@ export async function listVendorBills(): Promise<VendorBillRow[]> {
     return rows;
 }
 
-export async function recordVendorBillPayment(billId: number, amountCents: number) {
+export type VendorBillPaymentInput = {
+    paymentDate: string;
+    amountCents: number;
+    method: string;
+    accountName: string;
+    memo?: string;
+};
+
+export async function ensureVendorBillPaymentSchema() {
+    await ensureBillSchema();
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS vendor_bill_payments (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            bill_id BIGINT NOT NULL,
+            vendor_id BIGINT NOT NULL,
+            payment_date DATE NOT NULL,
+            amount_cents INT NOT NULL,
+            method VARCHAR(80) NOT NULL,
+            account_name VARCHAR(160) NOT NULL,
+            memo VARCHAR(500) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_vendor_bill_payments_bill (bill_id),
+            INDEX idx_vendor_bill_payments_vendor (vendor_id),
+            INDEX idx_vendor_bill_payments_date (payment_date),
+            CONSTRAINT fk_vendor_bill_payments_bill FOREIGN KEY (bill_id) REFERENCES vendor_bills(id) ON DELETE CASCADE
+        )
+    `);
+}
+
+export async function recordVendorBillPayment(billId: number, input: VendorBillPaymentInput) {
     await ensureBillSchema();
     const connection = await pool.getConnection();
     try {
         await connection.beginTransaction();
         const [rows] = await connection.query<RowDataPacket[]>(`
-            SELECT id, total_cents, amount_paid_cents
+            SELECT id, vendor_id, total_cents, amount_paid_cents
             FROM vendor_bills
             WHERE id = ?
             FOR UPDATE
@@ -329,10 +358,25 @@ export async function recordVendorBillPayment(billId: number, amountCents: numbe
         const total = Number(bill.total_cents || 0);
         const currentPaid = Number(bill.amount_paid_cents || 0);
         const remaining = Math.max(0, total - currentPaid);
-        const amount = Math.round(Number(amountCents || 0));
+        const amount = Math.round(Number(input.amountCents || 0));
 
         if (!Number.isInteger(amount) || amount <= 0) throw new Error("INVALID_AMOUNT");
         if (amount > remaining) throw new Error("AMOUNT_EXCEEDS_BALANCE");
+        if (!input.paymentDate || !input.method.trim() || !input.accountName.trim()) throw new Error("MISSING_PAYMENT_DETAILS");
+
+        await connection.execute(`
+            INSERT INTO vendor_bill_payments (
+                bill_id, vendor_id, payment_date, amount_cents, method, account_name, memo
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [
+            billId,
+            Number(bill.vendor_id),
+            input.paymentDate,
+            amount,
+            input.method.trim(),
+            input.accountName.trim(),
+            input.memo?.trim() || null,
+        ]);
 
         const newPaid = currentPaid + amount;
         const nextStatus = newPaid >= total && total > 0 ? "paid" : "partially_paid";

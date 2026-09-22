@@ -28,14 +28,20 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
     try {
         const body = await req.json();
-        const amountCents = Math.round(Number(body.amount || 0) * 100);
-        const payment = await recordVendorBillPayment(billId, amountCents);
-        return NextResponse.json({ success: true, payment });
+        const result = await recordVendorBillPayment(billId, {
+            paymentDate: String(body.paymentDate || "").slice(0, 10),
+            amountCents: Math.round(Number(body.amount || 0) * 100),
+            method: String(body.method || ""),
+            accountName: String(body.accountName || ""),
+            memo: String(body.memo || ""),
+        });
+        return NextResponse.json({ success: true, result });
     } catch (error) {
-        const message = error instanceof Error ? error.message : "";
-        if (message === "BILL_NOT_FOUND") return NextResponse.json({ success: false, error: "Bill not found." }, { status: 404 });
-        if (message === "INVALID_AMOUNT") return NextResponse.json({ success: false, error: "Enter a valid payment amount." }, { status: 400 });
-        if (message === "AMOUNT_EXCEEDS_BALANCE") return NextResponse.json({ success: false, error: "Payment cannot exceed the amount due." }, { status: 400 });
+        const code = error instanceof Error ? error.message : "";
+        if (code === "BILL_NOT_FOUND") return NextResponse.json({ success: false, error: "Bill not found." }, { status: 404 });
+        if (code === "INVALID_AMOUNT") return NextResponse.json({ success: false, error: "Enter a valid payment amount." }, { status: 400 });
+        if (code === "AMOUNT_EXCEEDS_BALANCE") return NextResponse.json({ success: false, error: "Payment cannot exceed the amount due." }, { status: 400 });
+        if (code === "MISSING_PAYMENT_DETAILS") return NextResponse.json({ success: false, error: "Payment date, method, and account are required." }, { status: 400 });
         console.error("Record vendor bill payment failed:", error);
         return NextResponse.json({ success: false, error: "Failed to record payment." }, { status: 500 });
     }
