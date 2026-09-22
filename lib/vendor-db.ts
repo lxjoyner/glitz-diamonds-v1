@@ -268,3 +268,85 @@ export async function createVendorBill(input: VendorBillInput) {
         connection.release();
     }
 }
+
+
+export type VendorBillRow = RowDataPacket & {
+    id: number;
+    vendor_id: number;
+    vendor_name: string;
+    bill_date: string;
+    due_date: string;
+    bill_number: string | null;
+    currency: string;
+    subtotal_cents: number;
+    total_tax_cents: number;
+    total_cents: number;
+    amount_paid_cents: number;
+    status: string;
+};
+
+export async function listVendorBills(): Promise<VendorBillRow[]> {
+    await ensureBillSchema();
+    const [rows] = await pool.query<VendorBillRow[]>(`
+        SELECT
+            b.id,
+            b.vendor_id,
+            v.vendor_name,
+            b.bill_date,
+            b.due_date,
+            b.bill_number,
+            b.currency,
+            b.subtotal_cents,
+            b.total_tax_cents,
+            b.total_cents,
+            b.amount_paid_cents,
+            CASE
+                WHEN b.amount_paid_cents >= b.total_cents AND b.total_cents > 0 THEN 'paid'
+                WHEN b.amount_paid_cents > 0 THEN 'partially_paid'
+                ELSE b.status
+            END AS status
+        FROM vendor_bills b
+        JOIN vendors v ON v.id = b.vendor_id
+        ORDER BY b.bill_date DESC, b.id DESC
+    `);
+    return rows;
+}
+
+export async function recordVendorBillPayment(billId: number, amountCents: number) {
+    await ensureBillSchema();
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+        const [rows] = await connection.query<RowDataPacket[]>(`
+            SELECT id, total_cents, amount_paid_cents
+            FROM vendor_bills
+            WHERE id = ?
+            FOR UPDATE
+        `, [billId]);
+        const bill = rows[0];
+        if (!bill) throw new Error("BILL_NOT_FOUND");
+
+        const total = Number(bill.total_cents || 0);
+        const currentPaid = Number(bill.amount_paid_cents || 0);
+        const remaining = Math.max(0, total - currentPaid);
+        const amount = Math.round(Number(amountCents || 0));
+
+        if (!Number.isInteger(amount) || amount <= 0) throw new Error("INVALID_AMOUNT");
+        if (amount > remaining) throw new Error("AMOUNT_EXCEEDS_BALANCE");
+
+        const newPaid = currentPaid + amount;
+        const nextStatus = newPaid >= total && total > 0 ? "paid" : "partially_paid";
+        await connection.execute(
+            `UPDATE vendor_bills SET amount_paid_cents = ?, status = ? WHERE id = ?`,
+            [newPaid, nextStatus, billId]
+        );
+
+        await connection.commit();
+        return { id: billId, amountPaidCents: newPaid, status: nextStatus };
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
+}
