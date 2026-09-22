@@ -270,9 +270,9 @@ function AccountTransactionsContent() {
                                     <tr key={`${row.id}-${row.transaction_date}`} className="border-b border-slate-100">
                                         <td className="px-5 py-4">{displayDate(row.transaction_date)}</td>
                                         <td className="px-5 py-4 font-semibold text-blue-700">
-                                            {row.public_token ? (
+                                            {row.invoice_id ? (
                                                 <a
-                                                    href={`/invoice/${row.public_token}`}
+                                                    href={`/admin/invoices/${row.invoice_id}/preview`}
                                                     className="hover:underline"
                                                 >
                                                     {row.description}
