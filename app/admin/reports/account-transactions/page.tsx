@@ -13,6 +13,7 @@ type TransactionRow = {
     transaction_date: string;
     invoice_id: number;
     invoice_number: string;
+    public_token: string | null;
     member_id: number;
     customer_name: string;
     debit_cents: number;
@@ -268,7 +269,18 @@ function AccountTransactionsContent() {
                                 return (
                                     <tr key={`${row.id}-${row.transaction_date}`} className="border-b border-slate-100">
                                         <td className="px-5 py-4">{displayDate(row.transaction_date)}</td>
-                                        <td className="px-5 py-4 font-semibold text-blue-700">{row.description}</td>
+                                        <td className="px-5 py-4 font-semibold text-blue-700">
+                                            {row.public_token ? (
+                                                <a
+                                                    href={`/invoice/${row.public_token}`}
+                                                    className="hover:underline"
+                                                >
+                                                    {row.description}
+                                                </a>
+                                            ) : (
+                                                row.description
+                                            )}
+                                        </td>
                                         <td className="px-5 py-4 text-right">{row.debit_cents ? money(row.debit_cents) : ""}</td>
                                         <td className="px-5 py-4 text-right">{row.credit_cents ? money(row.credit_cents) : ""}</td>
                                         <td className="px-5 py-4 text-right">{money(runningBalance)}</td>
