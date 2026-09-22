@@ -80,7 +80,10 @@ export default function TransactionsPage() {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) setOpenActionKey(null);
         }
         document.addEventListener("mousedown", closeMenu);
-        async function deleteTransaction(row: Transaction) {
+        return () => document.removeEventListener("mousedown", closeMenu);
+    }, []);
+
+    async function deleteTransaction(row: Transaction) {
         if (!window.confirm(`Delete transaction "${row.description}"?`)) return;
         const res = await fetch(`/api/admin/transactions/${encodeURIComponent(row.transaction_key)}`, { method: "DELETE" });
         const data = await res.json();
@@ -105,9 +108,6 @@ export default function TransactionsPage() {
         setMessage("Receipt uploaded successfully.");
         setUploadKey(null);
     }
-
-    return () => document.removeEventListener("mousedown", closeMenu);
-    }, []);
 
     const allSelected = visible.length > 0 && visible.every((row) => selected.has(row.transaction_key));
 
