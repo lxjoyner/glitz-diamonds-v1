@@ -42,7 +42,6 @@ export type InvoiceRecord = RowDataPacket & {
     notes: string | null;
     terms: string | null;
     footer_text: string | null;
-    public_token: string | null;
     sent_at: string | null;
     viewed_at: string | null;
 };
@@ -606,6 +605,7 @@ export type AccountTransactionRow = RowDataPacket & {
     transaction_date: string;
     invoice_id: number;
     invoice_number: string;
+    public_token: string | null;
     member_id: number;
     customer_name: string;
     debit_cents: number;
