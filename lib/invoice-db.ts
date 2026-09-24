@@ -507,7 +507,15 @@ export async function recordInvoicePayment(invoiceId: number, input: InvoicePaym
         connection.release();
     }
 
-    return { invoice: await getInvoiceById(invoiceId), paymentId };
+    // Payment is already committed: an unexpected read failure here must not
+    // cause the caller to mistake a saved payment for a rejected one and retry it.
+    let savedInvoice: InvoiceWithDisplayStatus | null = null;
+    try {
+        savedInvoice = await getInvoiceById(invoiceId);
+    } catch (error) {
+        console.error("Payment was recorded, but its refreshed invoice could not be loaded:", error);
+    }
+    return { invoice: savedInvoice, paymentId };
 }
 
 export async function listInvoicePaymentMethods() {
