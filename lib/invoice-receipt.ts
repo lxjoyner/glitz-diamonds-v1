@@ -130,7 +130,10 @@ export async function sendInvoicePaymentReceipt(input: {
 
     try {
         if (!email) throw new Error("The customer does not have an email address.");
-        const [settings, logo] = await Promise.all([getInvoiceSettings(), getInvoiceLogo()]);
+        // Both helpers initialize invoice tables; run them sequentially to avoid
+        // overlapping schema initialization/DDL on the same MySQL database.
+        const settings = await getInvoiceSettings();
+        const logo = await getInvoiceLogo();
         const baseUrl = (input.baseUrl?.trim() || process.env.APP_BASE_URL?.trim()
             || (process.env.NODE_ENV === "production" ? "https://glitzofdiamonds.com" : "http://localhost:3000")
         ).replace(/\/$/, "");
