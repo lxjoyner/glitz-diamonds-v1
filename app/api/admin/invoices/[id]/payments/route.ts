@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth";
 import { getInvoiceById, recordInvoicePayment } from "@/lib/invoice-db";
+import { sendInvoicePaymentReceipt } from "@/lib/invoice-receipt";
 
 function requireInvoiceManager(req: NextRequest) {
     const token = req.cookies.get("glitz_token")?.value;
@@ -53,8 +54,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         if (!method) return NextResponse.json({ success: false, error: "Select a payment method." }, { status: 400 });
         if (!accountName) return NextResponse.json({ success: false, error: "Select a payment account." }, { status: 400 });
 
-        const invoice = await recordInvoicePayment(invoiceId, { paymentDate, amountCents, method, accountName, memo });
-        return NextResponse.json({ success: true, invoice });
+        // Save payment first. Receipt email failures must never undo or silently
+        // duplicate an otherwise successfully recorded payment.
+        const saved = await recordInvoicePayment(invoiceId, { paymentDate, amountCents, method, accountName, memo });
+        let receipt: { sent: boolean; status: string } = { sent: false, status: "failed" };
+        try {
+            receipt = await sendInvoicePaymentReceipt({
+                invoiceId,
+                paymentId: saved.paymentId,
+            });
+        } catch (emailError) {
+            console.error("Payment saved, but automatic invoice receipt failed:", emailError);
+        }
+        return NextResponse.json({ success: true, invoice: saved.invoice, receipt });
     } catch (error) {
         const message = error instanceof Error ? error.message : "";
         if (message === "INVOICE_NOT_FOUND") return NextResponse.json({ success: false, error: "Invoice not found." }, { status: 404 });
