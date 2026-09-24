@@ -114,7 +114,8 @@ export async function sendInvoicePaymentReceipt(input: {
         paymentSql += " AND id = ?";
         params.push(input.paymentId);
     }
-    paymentSql += " ORDER BY payment_date DESC, id DESC LIMIT 1";
+    // Resend the most recently recorded payment, even if its payment date was backdated.
+    paymentSql += " ORDER BY id DESC LIMIT 1";
     const [payments] = await pool.query<PaymentRow[]>(paymentSql, params);
     const payment = payments[0];
 
