@@ -32,6 +32,7 @@ export default function RecordPaymentPage() {
     const [accounts, setAccounts] = useState<PaymentOption[]>([]);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState("");
+    const [paymentRecorded, setPaymentRecorded] = useState(false);
 
     useEffect(() => {
         async function load() {
@@ -108,6 +109,7 @@ export default function RecordPaymentPage() {
 
     async function submit(event: React.FormEvent) {
         event.preventDefault();
+        if (paymentRecorded) return;
         setMessage("");
         if (!paymentDate || !amount || !method || !accountName) return setMessage("Complete the payment date, amount, method, and account.");
         setSaving(true);
@@ -119,6 +121,13 @@ export default function RecordPaymentPage() {
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data?.error || "Failed to record payment.");
+            if (!data.receipt?.sent) {
+                // Payment is committed. Do not allow this form to submit a second
+                // payment merely because the email delivery failed.
+                setPaymentRecorded(true);
+                setMessage("Payment saved successfully, but the automatic receipt email was not delivered. Return to Invoices and choose Actions > Send Receipt to retry.");
+                return;
+            }
             router.push("/admin/invoices");
             router.refresh();
         } catch (error) {
@@ -189,11 +198,15 @@ export default function RecordPaymentPage() {
                         <textarea value={memo} onChange={(e) => setMemo(e.target.value)} rows={4} className="rounded-xl border border-blue-200 p-3" />
                     </label>
 
-                    {message && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{message}</p>}
+                    {message && <p className={`rounded-lg p-3 text-sm ${paymentRecorded ? "bg-amber-50 text-amber-800" : "bg-red-50 text-red-700"}`}>{message}</p>}
 
                     <div className="flex justify-end gap-3 border-t border-slate-200 pt-5">
                         <Link href="/admin/invoices" className="rounded-full border border-blue-600 px-6 py-3 font-semibold text-blue-700">Cancel</Link>
-                        <button type="submit" disabled={saving || !invoice || remainingCents <= 0} className="rounded-full bg-blue-600 px-7 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:bg-blue-200">{saving ? "Submitting..." : "Submit"}</button>
+                        {paymentRecorded ? (
+                            <Link href="/admin/invoices" className="rounded-full bg-blue-600 px-7 py-3 font-semibold text-white">Return to invoices</Link>
+                        ) : (
+                            <button type="submit" disabled={saving || !invoice || remainingCents <= 0} className="rounded-full bg-blue-600 px-7 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:bg-blue-200">{saving ? "Submitting..." : "Submit"}</button>
+                        )}
                     </div>
                 </form>
             </div>

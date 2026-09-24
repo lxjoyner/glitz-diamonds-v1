@@ -327,3 +327,167 @@ export async function sendMemberInviteAdminCopyEmail(params: {
         return { sent: false as const, reason: "send_failed" as const };
     }
 }
+
+
+type InvoiceReceiptEmailParams = {
+    toEmail: string;
+    customerName: string;
+    businessName: string;
+    businessAddress: string;
+    businessPhone: string;
+    businessEmail: string;
+    invoiceNumber: string;
+    invoiceDate: string | Date;
+    paymentDate: string | null;
+    paymentMethod: string | null;
+    paymentAmountCents: number;
+    paidToDateCents: number;
+    totalCents: number;
+    remainingCents: number;
+    historical: boolean;
+    memo: string | null;
+    footerText: string;
+    items: Array<{
+        description: string;
+        quantity: number;
+        unitPriceCents: number;
+        lineTotalCents: number;
+    }>;
+    invoiceUrl: string | null;
+    logo: { data: Buffer; mimeType: string } | null;
+};
+
+function escapeReceiptHtml(value: string | number) {
+    return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function receiptHtmlLines(value: string) {
+    return escapeReceiptHtml(value).replace(/\r?\n/g, "<br/>");
+}
+
+function receiptMoney(cents: number) {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+}
+
+function receiptDate(value: string | Date | null) {
+    if (!value) return "Not recorded";
+    let date: Date;
+    if (value instanceof Date) {
+        date = value;
+    } else {
+        const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (!match) return String(value);
+        date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    }
+    return date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+}
+
+/** Email the actual recorded payment, not the full invoice amount a second time. */
+export async function sendInvoiceReceiptEmail(params: InvoiceReceiptEmailParams) {
+    const subject = `Glitz Of Diamonds - Receipt of Payment - ${params.invoiceNumber}`;
+    if (!hasSmtpConfig()) {
+        const missing = getMissingSmtpConfigKeys();
+        writeEmailLog({
+            channel: "invoice-receipt", status: "skipped", to: params.toEmail, subject,
+            reason: "missing_smtp_config", details: { missingEnv: missing },
+        });
+        throw new Error(`SMTP config is incomplete: ${missing.join(", ")}`);
+    }
+
+    const paymentLabel = params.historical ? "Previously recorded payment" : "Payment received";
+    const dateLabel = params.historical ? "Payment date: Not recorded (historical import)"
+        : `Payment date: ${receiptDate(params.paymentDate)}`;
+    const logoCid = "glitz-invoice-receipt-logo";
+    const brandLogo = params.logo
+        ? `<img src="cid:${logoCid}" alt="Glitz Of Diamonds logo" style="max-height:76px;max-width:210px;object-fit:contain"/>`
+        : "";
+    const itemRows = params.items.map((item) =>
+        `<tr><td style="padding:10px;border-bottom:1px solid #e2e8f0">${escapeReceiptHtml(item.description)}</td>` +
+        `<td style="padding:10px;border-bottom:1px solid #e2e8f0;text-align:right">${escapeReceiptHtml(item.quantity)}</td>` +
+        `<td style="padding:10px;border-bottom:1px solid #e2e8f0;text-align:right">${receiptMoney(item.unitPriceCents)}</td>` +
+        `<td style="padding:10px;border-bottom:1px solid #e2e8f0;text-align:right">${receiptMoney(item.lineTotalCents)}</td></tr>`
+    ).join("");
+    const viewLink = params.invoiceUrl
+        ? `<p style="margin:26px 0"><a href="${escapeReceiptHtml(params.invoiceUrl)}" style="background:#1d4ed8;color:white;text-decoration:none;padding:12px 18px;border-radius:7px">View original invoice</a></p>`
+        : "";
+    const html = `<div style="font-family:Arial,sans-serif;color:#1f2937;max-width:740px;margin:auto;line-height:1.5">
+        <div style="border-bottom:2px solid #111827;padding:20px 0;display:flex;align-items:center;gap:16px">
+            ${brandLogo}
+            <div><h1 style="margin:0;font-size:24px">${escapeReceiptHtml(params.businessName)}</h1>
+            <h2 style="margin:4px 0;color:#166534;font-size:20px">RECEIPT OF PAYMENT</h2></div>
+        </div>
+        <p>Hello ${escapeReceiptHtml(params.customerName)},</p>
+        <p>Thank you for your payment. ${params.historical ? "This acknowledgement reflects a payment recorded in imported historical invoice records; the exact payment date and method were not retained." : "We have received the following payment toward your invoice."}</p>
+        <table style="width:100%;border-collapse:collapse;margin:18px 0">
+            <tr><td><strong>Invoice number:</strong></td><td>${escapeReceiptHtml(params.invoiceNumber)}</td></tr>
+            <tr><td><strong>Invoice date:</strong></td><td>${receiptDate(params.invoiceDate)}</td></tr>
+            <tr><td><strong>${params.historical ? "Historical payment date:" : "Payment date:"}</strong></td><td>${params.historical ? "Not recorded" : receiptDate(params.paymentDate)}</td></tr>
+            ${params.paymentMethod ? `<tr><td><strong>Payment method:</strong></td><td>${escapeReceiptHtml(params.paymentMethod)}</td></tr>` : ""}
+        </table>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:18px;margin:16px 0">
+            <p style="margin:0;font-size:14px">${paymentLabel}</p>
+            <p style="font-size:28px;font-weight:bold;color:#166534;margin:3px 0">${receiptMoney(params.paymentAmountCents)}</p>
+            <p style="margin:0;font-size:14px">Remaining invoice balance: ${receiptMoney(params.remainingCents)}</p>
+        </div>
+        <h3 style="margin-top:30px">Original invoice details</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead><tr style="background:#f1f5f9"><th style="padding:10px;text-align:left">Description</th><th style="padding:10px;text-align:right">Qty</th><th style="padding:10px;text-align:right">Price</th><th style="padding:10px;text-align:right">Amount</th></tr></thead>
+            <tbody>${itemRows}</tbody>
+        </table>
+        <div style="margin-top:18px;text-align:right">
+            <p>Invoice total: <strong>${receiptMoney(params.totalCents)}</strong></p>
+            <p>Paid to date: <strong>${receiptMoney(params.paidToDateCents)}</strong></p>
+            <p>Remaining: <strong>${receiptMoney(params.remainingCents)}</strong></p>
+        </div>
+        ${params.memo ? `<p><strong>Payment memo:</strong> ${receiptHtmlLines(params.memo)}</p>` : ""}
+        ${viewLink}
+        ${params.footerText ? `<p style="border-top:1px solid #e2e8f0;padding-top:16px;color:#64748b;font-size:13px">${receiptHtmlLines(params.footerText)}</p>` : ""}
+        <p style="font-size:13px;color:#64748b">${[params.businessAddress, params.businessPhone, params.businessEmail].filter(Boolean).map(receiptHtmlLines).join("<br/>")}</p>
+        <p>Thank you,<br/>Glitz Of Diamonds</p>
+    </div>`;
+
+    const text = [
+        params.businessName, "RECEIPT OF PAYMENT", "",
+        `Hello ${params.customerName},`, "Thank you for your payment.", "",
+        `Invoice: ${params.invoiceNumber}`,
+        `Invoice date: ${receiptDate(params.invoiceDate)}`,
+        dateLabel,
+        ...(params.paymentMethod ? [`Payment method: ${params.paymentMethod}`] : []),
+        `${paymentLabel}: ${receiptMoney(params.paymentAmountCents)}`,
+        `Invoice total: ${receiptMoney(params.totalCents)}`,
+        `Paid to date: ${receiptMoney(params.paidToDateCents)}`,
+        `Remaining balance: ${receiptMoney(params.remainingCents)}`,
+        ...(params.memo ? [`Payment memo: ${params.memo}`] : []),
+        ...(params.invoiceUrl ? [`View original invoice: ${params.invoiceUrl}`] : []),
+        ...(params.footerText ? ["", params.footerText] : []),
+        "", "Thank you,", "Glitz Of Diamonds",
+    ].join("\n");
+
+    writeEmailLog({ channel: "invoice-receipt", status: "attempt", to: params.toEmail, subject });
+    try {
+        const transport = getSmtpTransport();
+        await transport.sendMail({
+            from: getFromEmailAddress(),
+            to: params.toEmail,
+            subject,
+            text,
+            html,
+            attachments: params.logo ? [{
+                filename: "glitz-logo",
+                content: params.logo.data,
+                contentType: params.logo.mimeType,
+                cid: logoCid,
+                contentDisposition: "inline",
+            }] : [],
+        });
+        writeEmailLog({ channel: "invoice-receipt", status: "success", to: params.toEmail, subject });
+        return { sent: true as const };
+    } catch (error) {
+        writeEmailLog({
+            channel: "invoice-receipt", status: "error", to: params.toEmail, subject,
+            reason: error instanceof Error ? error.message : "unknown_error",
+        });
+        throw error;
+    }
+}
