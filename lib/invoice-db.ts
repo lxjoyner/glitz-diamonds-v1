@@ -459,21 +459,27 @@ export type InvoicePaymentInput = {
 
 export async function recordInvoicePayment(invoiceId: number, input: InvoicePaymentInput) {
     await ensureInvoiceSchema();
-    const invoice = await getInvoiceById(invoiceId);
-    if (!invoice) throw new Error("INVOICE_NOT_FOUND");
+    const amountCents = Number(input.amountCents);
+    if (!Number.isSafeInteger(amountCents) || amountCents <= 0) throw new Error("INVALID_AMOUNT");
 
-    const currentPaid = Number(invoice.amount_paid_cents || 0);
-    const total = Number(invoice.total_cents || 0);
-    const remaining = Math.max(0, total - currentPaid);
-    const amountCents = Math.round(Number(input.amountCents || 0));
-
-    if (!Number.isInteger(amountCents) || amountCents <= 0) throw new Error("INVALID_AMOUNT");
-    if (amountCents > remaining) throw new Error("AMOUNT_EXCEEDS_BALANCE");
-
+    // Lock the invoice before checking its balance, so simultaneous payment submissions
+    // cannot both apply a payment against the same remaining amount.
     const connection = await pool.getConnection();
+    let paymentId: number;
     try {
         await connection.beginTransaction();
-        await connection.execute(`
+        const [rows] = await connection.query<RowDataPacket[]>(`
+            SELECT id, member_id, total_cents, amount_paid_cents, status
+            FROM invoices WHERE id = ? FOR UPDATE
+        `, [invoiceId]);
+        const invoice = rows[0];
+        if (!invoice) throw new Error("INVOICE_NOT_FOUND");
+
+        const currentPaid = Number(invoice.amount_paid_cents || 0);
+        const total = Number(invoice.total_cents || 0);
+        if (amountCents > Math.max(0, total - currentPaid)) throw new Error("AMOUNT_EXCEEDS_BALANCE");
+
+        const [inserted] = await connection.execute<ResultSetHeader>(`
             INSERT INTO invoice_payments (invoice_id, member_id, payment_date, amount_cents, method, account_name, memo)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         `, [
@@ -485,24 +491,24 @@ export async function recordInvoicePayment(invoiceId: number, input: InvoicePaym
             input.accountName,
             input.memo || null,
         ]);
+        paymentId = inserted.insertId;
 
         const newPaid = currentPaid + amountCents;
-        const nextStatus = newPaid >= total && total > 0 ? "paid" : newPaid > 0 ? "partially_paid" : invoice.status;
+        const nextStatus = newPaid >= total && total > 0 ? "paid" : "partially_paid";
         await connection.execute(
             `UPDATE invoices SET amount_paid_cents = ?, status = ? WHERE id = ?`,
             [newPaid, nextStatus, invoiceId]
         );
-
         await connection.commit();
-        return getInvoiceById(invoiceId);
     } catch (error) {
         await connection.rollback();
         throw error;
     } finally {
         connection.release();
     }
-}
 
+    return { invoice: await getInvoiceById(invoiceId), paymentId };
+}
 
 export async function listInvoicePaymentMethods() {
     await ensureInvoiceSchema();
