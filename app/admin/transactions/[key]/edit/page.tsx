@@ -140,17 +140,24 @@ export default function EditTransactionPage() {
 
                         <label className="grid gap-2">
                             <span className="font-semibold text-slate-600">Description</span>
-                            <input value={description} onChange={(e) => setDescription(e.target.value)} disabled className="rounded-xl border border-blue-300 bg-slate-100 px-4 py-3" />
+                            <input value={description} onChange={(e) => setDescription(e.target.value)} disabled={readOnly} className="rounded-xl border border-blue-300 bg-white px-4 py-3 disabled:bg-slate-100" />
                         </label>
 
                         <label className="grid gap-2">
                             <span className="font-semibold text-slate-600">Account</span>
-                            <input value={account} onChange={(e) => setAccount(e.target.value)} disabled={readOnly} className="rounded-xl border border-blue-300 px-4 py-3 disabled:bg-slate-100" />
+                            <select value={account} onChange={(e) => setAccount(e.target.value)} disabled={readOnly} className="rounded-xl border border-blue-300 bg-white px-4 py-3 disabled:bg-slate-100">
+                                <option value="">Select payment account...</option>
+                                {account && !accounts.includes(account) && <option value={account} disabled>{account} (select a valid account)</option>}
+                                {accounts.map((name) => <option key={name} value={name}>{name}</option>)}
+                            </select>
                         </label>
 
                         <label className="grid gap-2">
                             <span className="font-semibold text-slate-600">Type</span>
-                            <input value={transaction.direction === "income" ? "Deposit" : "Withdrawal"} disabled className="rounded-xl border border-blue-300 bg-slate-100 px-4 py-3" />
+                            <select value={transactionType} onChange={(e) => setTransactionType(e.target.value as "Deposit" | "Withdrawal")} disabled={readOnly} className="rounded-xl border border-blue-300 bg-white px-4 py-3 disabled:bg-slate-100">
+                                <option value="Deposit">Deposit</option><option value="Withdrawal">Withdrawal</option>
+                            </select>
+                            <span className="text-xs text-slate-500">Changing the direction of a linked invoice or bill requires a separate reversal.</span>
                         </label>
 
                         <label className="grid gap-2">
@@ -163,7 +170,7 @@ export default function EditTransactionPage() {
 
                         <label className="grid gap-2">
                             <span className="font-semibold text-slate-600">Category</span>
-                            <input value={category} onChange={(e) => setCategory(e.target.value)} disabled className="rounded-xl border border-blue-300 bg-slate-100 px-4 py-3" />
+                            <input value={category} onChange={(e) => setCategory(e.target.value)} disabled={readOnly} className="rounded-xl border border-blue-300 bg-white px-4 py-3 disabled:bg-slate-100" />
                         </label>
 
                         <label className="grid gap-2 md:col-span-1">
