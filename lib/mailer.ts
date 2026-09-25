@@ -75,6 +75,10 @@ export async function sendInvoiceEmail(params: {
     amountDueCents: number;
     dueDate: string;
     invoiceUrl: string;
+    overdue?: {
+        rows: Array<{ year: number; month: number; amountDueCents: number }>;
+        totalCents: number;
+    };
 }) {
     if (!hasSmtpConfig()) {
         const missingSmtpKeys = getMissingSmtpConfigKeys();
@@ -92,6 +96,41 @@ export async function sendInvoiceEmail(params: {
     const dueDate = new Date(params.dueDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
     const subject = `Glitz Of Diamonds invoice ${params.invoiceNumber}`;
     const membershipPolicy = "Please be advised that if your account becomes three (3) payments past due, your membership will be temporarily deactivated. Membership privileges will be restored once all outstanding payments have been received and your account is brought current.\n\nThank you for your understanding and for being a valued member of the Glitz Of Diamonds Women’s Group.";
+    const overdueMoney = (cents: number) => new Intl.NumberFormat("en-US", {
+        style: "currency", currency: "USD",
+    }).format(cents / 100);
+    const overdueRows = params.overdue?.rows || [];
+    const overdueText = overdueRows.length > 0
+        ? "\\nOver Due Invoice Payments\\nYear  Month  Amount Due\\n" +
+          overdueRows.map((row) => `${row.year}  ${new Date(Date.UTC(2000, row.month - 1, 1)).toLocaleString("en-US", { month: "long", timeZone: "UTC" })}  ${overdueMoney(row.amountDueCents)}`).join("\\n") +
+          `\\nTotal Over Due: ${overdueMoney(params.overdue?.totalCents || 0)}\\n`
+        : "";
+    const overdueHtml = overdueRows.length > 0
+        ? `<div style="margin:22px 0;max-width:380px">
+            <table style="width:100%;border-collapse:collapse;font:14px Arial,sans-serif;border:1px solid #1f2937">
+                <thead>
+                    <tr><th colspan="3" style="background:#161616;color:white;padding:8px;text-align:center">Over Due Invoice Payments</th></tr>
+                    <tr style="background:#f1f5f9">
+                        <th style="padding:7px;border:1px solid #ddd">Year</th>
+                        <th style="padding:7px;border:1px solid #ddd">Month</th>
+                        <th style="padding:7px;border:1px solid #ddd;text-align:right">Amount Due</th>
+                    </tr>
+                </thead>
+                <tbody>${overdueRows.map((row) => `<tr>
+                    <td style="padding:7px;border:1px solid #ddd;text-align:center">${row.year}</td>
+                    <td style="padding:7px;border:1px solid #ddd;text-align:center">${new Date(Date.UTC(2000, row.month - 1, 1)).toLocaleString("en-US", { month: "long", timeZone: "UTC" })}</td>
+                    <td style="padding:7px;border:1px solid #ddd;text-align:right">${overdueMoney(row.amountDueCents)}</td>
+                </tr>`).join("")}
+                    <tr style="background:#ef1717;color:#fff;font-weight:bold">
+                        <td colspan="2" style="padding:9px">Total Over Due</td>
+                        <td style="padding:9px;text-align:right">${overdueMoney(params.overdue?.totalCents || 0)}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p style="font-size:12px;color:#64748b">This amount covers older overdue invoices only. Your new invoice amount is shown separately above.</p>
+        </div>`
+        : "";
+
 
     writeEmailLog({ channel: "invoice", status: "attempt", to: params.toEmail, subject });
 
@@ -101,8 +140,8 @@ export async function sendInvoiceEmail(params: {
             from: getFromEmailAddress(),
             to: params.toEmail,
             subject,
-            text: `Hello ${params.memberName},\n\nYou have a new invoice from Glitz Of Diamonds.\n\n${membershipPolicy}\n\nInvoice: ${params.invoiceNumber}\nAmount Due: ${amountDue}\nDue Date: ${dueDate}\n\nView your invoice:\n${params.invoiceUrl}\n\nThank you,\nGlitz Of Diamonds`,
-            html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937"><h2>Glitz Of Diamonds</h2><p>Hello ${params.memberName},</p><p>You have a new invoice from Glitz Of Diamonds.</p><p>Please be advised that if your account becomes three (3) payments past due, your membership will be temporarily deactivated. Membership privileges will be restored once all outstanding payments have been received and your account is brought current.</p><p>Thank you for your understanding and for being a valued member of the Glitz Of Diamonds Women’s Group.</p><p><strong>Invoice:</strong> ${params.invoiceNumber}<br/><strong>Amount Due:</strong> ${amountDue}<br/><strong>Due Date:</strong> ${dueDate}</p><p style="margin:28px 0"><a href="${params.invoiceUrl}" style="background:#1d4ed8;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600">View Invoice</a></p><p>Thank you,<br/>Glitz Of Diamonds</p></div>`,
+            text: `Hello ${params.memberName},\n\nYou have a new invoice from Glitz Of Diamonds.\n\n${membershipPolicy}\n\nInvoice: ${params.invoiceNumber}\nAmount Due: ${amountDue}\nDue Date: ${dueDate}\n${overdueText}\nView your invoice:\n${params.invoiceUrl}\n\nThank you,\nGlitz Of Diamonds`,
+            html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937"><h2>Glitz Of Diamonds</h2><p>Hello ${params.memberName},</p><p>You have a new invoice from Glitz Of Diamonds.</p><p>Please be advised that if your account becomes three (3) payments past due, your membership will be temporarily deactivated. Membership privileges will be restored once all outstanding payments have been received and your account is brought current.</p><p>Thank you for your understanding and for being a valued member of the Glitz Of Diamonds Women’s Group.</p><p><strong>Invoice:</strong> ${params.invoiceNumber}<br/><strong>Amount Due:</strong> ${amountDue}<br/><strong>Due Date:</strong> ${dueDate}</p>${overdueHtml}<p style="margin:28px 0"><a href="${params.invoiceUrl}" style="background:#1d4ed8;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600">View Invoice</a></p><p>Thank you,<br/>Glitz Of Diamonds</p></div>`,
         });
         writeEmailLog({ channel: "invoice", status: "success", to: params.toEmail, subject });
         return { sent: true as const };
