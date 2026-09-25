@@ -75,6 +75,31 @@ export async function listTransactions(): Promise<TransactionRow[]> {
         JOIN vendor_bills b ON b.id = bp.bill_id
         JOIN vendors v ON v.id = bp.vendor_id
 
+
+        UNION ALL
+
+        -- Imported bills retain a paid balance but have no dated payment-ledger
+        -- entry. Show the unitemized remainder once, without fabricating a
+        -- bank account or actual payment date.
+        SELECT
+            CONCAT('bill-history-', b.id) AS transaction_key,
+            'vendor_bill_payment' AS source_type,
+            b.id AS source_id,
+            b.id AS linked_id,
+            b.bill_date AS transaction_date,
+            CONCAT('Historical payment to ', v.vendor_name, ' (actual date unknown)') AS description,
+            'Unknown (historical import)' AS account_name,
+            CONCAT('Historical bill paid to ', v.vendor_name) AS category,
+            GREATEST(0, b.amount_paid_cents - COALESCE(posted.posted_cents, 0)) AS amount_cents,
+            'expense' AS direction
+        FROM vendor_bills b
+        JOIN vendors v ON v.id = b.vendor_id
+        LEFT JOIN (
+            SELECT bill_id, SUM(amount_cents) AS posted_cents
+            FROM vendor_bill_payments GROUP BY bill_id
+        ) posted ON posted.bill_id = b.id
+        WHERE b.amount_paid_cents > COALESCE(posted.posted_cents, 0)
+
         ORDER BY transaction_date DESC, source_id DESC
     `);
     return rows;
@@ -136,6 +161,35 @@ export async function getTransactionByKey(key: string) {
         return rows[0] || null;
     }
 
+    if (key.startsWith("bill-history-")) {
+        const id = Number(key.replace("bill-history-", ""));
+        if (!Number.isInteger(id) || id <= 0) return null;
+        const [rows] = await pool.query<RowDataPacket[]>(`
+            SELECT
+                CONCAT('bill-history-', b.id) AS transaction_key,
+                'vendor_bill_payment' AS source_type,
+                b.id AS source_id,
+                b.id AS linked_id,
+                DATE_FORMAT(b.bill_date, '%Y-%m-%d') AS transaction_date,
+                CONCAT('Historical payment to ', v.vendor_name, ' (actual date unknown)') AS description,
+                'Unknown (historical import)' AS account_name,
+                CONCAT('Historical bill paid to ', v.vendor_name) AS category,
+                GREATEST(0, b.amount_paid_cents - COALESCE(posted.posted_cents, 0)) AS amount_cents,
+                'expense' AS direction,
+                'Historical imported balance: actual payment date, method and bank account were not supplied.' AS memo,
+                v.vendor_name AS contact_name
+            FROM vendor_bills b
+            JOIN vendors v ON v.id = b.vendor_id
+            LEFT JOIN (
+                SELECT bill_id, SUM(amount_cents) AS posted_cents
+                FROM vendor_bill_payments GROUP BY bill_id
+            ) posted ON posted.bill_id = b.id
+            WHERE b.id = ? AND b.amount_paid_cents > COALESCE(posted.posted_cents, 0)
+            LIMIT 1
+        `, [id]);
+        return rows[0] || null;
+    }
+
     if (key.startsWith("bill-")) {
         const id = Number(key.replace("bill-", ""));
         if (!Number.isInteger(id) || id <= 0) return null;
@@ -175,7 +229,7 @@ export async function updateTransactionByKey(key: string, input: {
     await ensureInvoiceSchema();
     await ensureVendorBillPaymentSchema();
 
-    if (key.startsWith("invoice-history-")) {
+    if (key.startsWith("invoice-history-") || key.startsWith("bill-history-")) {
         throw new Error("HISTORICAL_TRANSACTION_READ_ONLY");
     }
 
@@ -210,7 +264,7 @@ export async function deleteTransactionByKey(key: string) {
     await ensureInvoiceSchema();
     await ensureVendorBillPaymentSchema();
 
-    if (key.startsWith("invoice-history-")) {
+    if (key.startsWith("invoice-history-") || key.startsWith("bill-history-")) {
         throw new Error("HISTORICAL_TRANSACTION_READ_ONLY");
     }
 
