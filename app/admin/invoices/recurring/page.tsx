@@ -15,6 +15,8 @@ type RecurringInvoice = {
     first_invoice_date: string;
     next_invoice_date: string;
     previous_invoice_date: string | null;
+    previous_invoice_id: number | null;
+    previous_invoice_number: string | null;
     end_date: string | null;
     amount_cents: number;
 };
@@ -180,7 +182,25 @@ export default function RecurringInvoicesPage() {
                                             <td className="px-3 py-4"><span className={`rounded-md px-2.5 py-1 text-xs font-bold ${row.status === "active" ? "bg-emerald-100 text-emerald-800" : row.status === "draft" ? "bg-yellow-200 text-black" : "bg-slate-200 text-slate-700"}`}>{row.status === "active" ? "Active" : row.status === "draft" ? "Draft" : "Ended"}</span></td>
                                             <td className="px-3 py-4 font-medium">{row.member_name || `Member #${row.member_id}`}</td>
                                             <td className="px-3 py-4"><div>Repeat monthly on the {row.repeat_day}{row.repeat_day === 1 ? "st" : row.repeat_day === 2 ? "nd" : row.repeat_day === 3 ? "rd" : "th"}</div><div className="text-xs text-slate-500">First invoice: {displayDate(row.first_invoice_date)}, Ends: {row.end_date ? displayDate(row.end_date) : "Never"}</div></td>
-                                            <td className="px-3 py-4">{displayDate(row.previous_invoice_date)}</td>
+                                            <td className="px-3 py-4">
+                                                {row.previous_invoice_date ? (
+                                                    <div className="flex flex-col gap-1">
+                                                        {row.previous_invoice_id ? (
+                                                            <Link
+                                                                href={`/admin/invoices/${row.previous_invoice_id}/preview`}
+                                                                onClick={(event) => event.stopPropagation()}
+                                                                onKeyDown={(event) => event.stopPropagation()}
+                                                                className="font-semibold text-blue-700 hover:underline"
+                                                            >
+                                                                {displayDate(row.previous_invoice_date)}
+                                                            </Link>
+                                                        ) : <span>{displayDate(row.previous_invoice_date)}</span>}
+                                                        {row.previous_invoice_number && (
+                                                            <span className="text-xs text-slate-500">{row.previous_invoice_number}</span>
+                                                        )}
+                                                    </div>
+                                                ) : <span className="text-slate-400">Not generated yet</span>}
+                                            </td>
                                             <td className="px-3 py-4">{displayDate(row.next_invoice_date)}</td>
                                             <td className="px-3 py-4 text-right">{money(row.amount_cents)}</td>
                                             <td className="relative px-3 py-4 text-right" onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
