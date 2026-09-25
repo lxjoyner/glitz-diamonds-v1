@@ -17,6 +17,10 @@ type Invoice = {
     total_cents: number;
     amount_paid_cents: number;
     sent_at?: string | null;
+    email_opened_at?: string | null;
+    customer_viewed_at?: string | null;
+    customer_view_count?: number;
+    email_send_count?: number;
 };
 
 type InvoiceSortKey = "status" | "due" | "date" | "number" | "member" | "amount" | "paid" | "balance";
@@ -349,8 +353,8 @@ export default function InvoicesPage() {
                     {loading ? <p className="py-12 text-center text-slate-500">Loading invoices...</p> : (
                         <div>
                             <div className="overflow-x-auto overflow-y-visible pb-48">
-                                <table className="w-full min-w-[1220px] border-collapse text-sm">
-                                    <thead><tr className="border-b-2 border-slate-200 text-left"><th className="px-3 py-3">{sortButton("Status", "status")}</th><th className="px-3 py-3">{sortButton("Due", "due")}</th><th className="px-3 py-3">{sortButton("Date", "date")}</th><th className="px-3 py-3">{sortButton("Number", "number")}</th><th className="px-3 py-3">{sortButton("Member", "member")}</th><th className="px-3 py-3 text-right">{sortButton("Amount", "amount", "right")}</th><th className="px-3 py-3 text-right">{sortButton("Paid", "paid", "right")}</th><th className="px-3 py-3 text-right">{sortButton("Balance", "balance", "right")}</th><th className="px-3 py-3 text-right">Actions</th></tr></thead>
+                                <table className="w-full min-w-[1370px] border-collapse text-sm">
+                                    <thead><tr className="border-b-2 border-slate-200 text-left"><th className="px-3 py-3">{sortButton("Status", "status")}</th><th className="px-3 py-3">{sortButton("Due", "due")}</th><th className="px-3 py-3">{sortButton("Date", "date")}</th><th className="px-3 py-3">{sortButton("Number", "number")}</th><th className="px-3 py-3">{sortButton("Member", "member")}</th><th className="px-3 py-3 text-right">{sortButton("Amount", "amount", "right")}</th><th className="px-3 py-3 text-right">{sortButton("Paid", "paid", "right")}</th><th className="px-3 py-3 text-right">{sortButton("Balance", "balance", "right")}</th><th className="px-3 py-3">Engagement</th><th className="px-3 py-3 text-right">Actions</th></tr></thead>
                                     <tbody>{paginated.map((invoice) => {
                                         const balance = Math.max(0, invoice.total_cents - invoice.amount_paid_cents);
                                         const overdueDays = daysPastDue(invoice.due_date);
@@ -369,6 +373,38 @@ export default function InvoicesPage() {
                                             <td className="px-3 py-4 font-semibold text-blue-700">{invoice.invoice_number}</td>
                                             <td className="px-3 py-4"><div>{invoice.member_name || `Member #${invoice.member_id}`}</div><div className="text-xs text-slate-400">{invoice.member_email || "No email"}</div></td>
                                             <td className="px-3 py-4 text-right">{money(invoice.total_cents)}</td><td className="px-3 py-4 text-right">{money(invoice.amount_paid_cents)}</td><td className="px-3 py-4 text-right font-semibold">{money(balance)}</td>
+                                            <td className="px-3 py-4">
+                                                {!invoice.sent_at ? (
+                                                    <span className="text-xs text-slate-400">Not emailed</span>
+                                                ) : (
+                                                    <div className="flex min-w-36 flex-col gap-1 text-xs">
+                                                        <span className="font-medium text-slate-700" title={invoice.sent_at || undefined}>
+                                                            Emailed {invoice.email_send_count && invoice.email_send_count > 1 ? `(${invoice.email_send_count} sends)` : ""}
+                                                        </span>
+                                                        {invoice.email_opened_at ? (
+                                                            <span className="font-semibold text-emerald-700" title={String(invoice.email_opened_at)}>
+                                                                Email image loaded
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-slate-400">Email open unconfirmed</span>
+                                                        )}
+                                                        {invoice.customer_viewed_at ? (
+                                                            <span className="font-semibold text-blue-700" title={String(invoice.customer_viewed_at)}>
+                                                                Invoice opened
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-slate-400">Invoice not opened yet</span>
+                                                        )}
+                                                        {(invoice.email_opened_at || invoice.customer_viewed_at) && (
+                                                            <span className="text-slate-500">
+                                                                {invoice.customer_viewed_at
+                                                                    ? new Date(invoice.customer_viewed_at).toLocaleString()
+                                                                    : new Date(invoice.email_opened_at!).toLocaleString()}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </td>
                                             <td className="relative px-3 py-4 text-right" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                                                 {(canSend || Number(invoice.amount_paid_cents) > 0) ? (
                                                     <div className="inline-flex items-center gap-2">
