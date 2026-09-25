@@ -60,8 +60,32 @@ export default function NewInvoicePage() {
         setItems((current) => current.map((item, i) => i === index ? { ...item, [field]: field === "description" ? value : Number(value) } : item));
     }
 
-    async function saveInvoice() {
+    const [createdInvoiceId, setCreatedInvoiceId] = useState<number | null>(null);
+
+    async function saveInvoice(approve = false) {
         setMessage("");
+        // If a prior save committed successfully but approval failed, retry
+        // approval against that same invoice instead of creating a duplicate.
+        if (createdInvoiceId !== null) {
+            if (approve) {
+                setSaving(true);
+                try {
+                    const response = await fetch(`/api/admin/invoices/${createdInvoiceId}/approve`, { method: "POST" });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error || "Unable to approve draft.");
+                    router.push(`/admin/invoices/${createdInvoiceId}/preview`);
+                    router.refresh();
+                } catch (error) {
+                    setMessage(error instanceof Error ? error.message : "Unable to approve draft.");
+                } finally {
+                    setSaving(false);
+                }
+            } else {
+                router.push(`/admin/invoices/${createdInvoiceId}/preview`);
+                router.refresh();
+            }
+            return;
+        }
         if (!memberId) return setMessage("Select a member before saving the invoice.");
         if (items.some((item) => !item.description.trim() || item.quantity <= 0)) return setMessage("Complete all invoice line items before saving.");
         setSaving(true);
@@ -73,7 +97,15 @@ export default function NewInvoicePage() {
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data?.error || "Failed to save invoice.");
-            router.push("/admin/invoices");
+            const invoiceId = Number(data.invoice?.id);
+            if (!Number.isSafeInteger(invoiceId) || invoiceId <= 0) throw new Error("Invoice saved but its ID was not returned. Check the Invoices dashboard before trying again.");
+            setCreatedInvoiceId(invoiceId);
+            if (approve) {
+                const approveRes = await fetch(`/api/admin/invoices/${invoiceId}/approve`, { method: "POST" });
+                const approved = await approveRes.json();
+                if (!approveRes.ok) throw new Error(`Invoice was saved as a draft, but approval failed: ${approved.error || "Unknown error"}. Click Approve Draft again to retry without creating a duplicate.`);
+            }
+            router.push(`/admin/invoices/${invoiceId}/preview`);
             router.refresh();
         } catch (error) {
             setMessage(error instanceof Error ? error.message : "Failed to save invoice.");
@@ -89,7 +121,8 @@ export default function NewInvoicePage() {
                     <h1 className="text-4xl font-bold tracking-tight leading-tight text-white">New invoice</h1>
                     <div className="flex flex-wrap items-center gap-3">
                         <button type="button" onClick={() => window.print()} className="rounded-full border border-blue-600 bg-white px-5 py-3 font-semibold text-blue-700">Preview</button>
-                        <button type="button" onClick={saveInvoice} disabled={saving} className="rounded-full bg-black px-6 py-3 font-semibold text-white hover:bg-slate-900 disabled:opacity-60">{saving ? "Saving..." : "Save and continue"}</button>
+                        <button type="button" onClick={() => saveInvoice(false)} disabled={saving} className="rounded-full bg-black px-6 py-3 font-semibold text-white hover:bg-slate-900 disabled:opacity-60">{saving ? "Saving..." : "Save and continue"}</button>
+                        <button type="button" onClick={() => saveInvoice(true)} disabled={saving} className="rounded-full bg-emerald-700 px-6 py-3 font-semibold text-white hover:bg-emerald-800 disabled:opacity-60">{saving ? "Working..." : "Approve Draft"}</button>
                     </div>
                 </header>
 
