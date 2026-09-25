@@ -120,6 +120,19 @@ export async function ensureRecurringInvoiceSchema() {
             INDEX idx_recurring_run_invoice (invoice_id)
         )
     `);
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS recurring_invoice_test_sends (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            recurring_invoice_id BIGINT NOT NULL,
+            invoice_id BIGINT NOT NULL UNIQUE,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_recurring_test_sends (recurring_invoice_id),
+            CONSTRAINT fk_recurring_test_sends_recurring FOREIGN KEY (recurring_invoice_id)
+                REFERENCES recurring_invoices(id) ON DELETE CASCADE,
+            CONSTRAINT fk_recurring_test_sends_invoice FOREIGN KEY (invoice_id)
+                REFERENCES invoices(id) ON DELETE CASCADE
+        )
+    `);
 }
 
 export async function listRecurringInvoices(): Promise<RecurringInvoiceRecord[]> {
@@ -132,11 +145,16 @@ export async function listRecurringInvoices(): Promise<RecurringInvoiceRecord[]>
         FROM recurring_invoices r
         LEFT JOIN users u ON u.id = r.member_id
         LEFT JOIN invoices latest ON latest.id = (
-            SELECT i.id FROM recurring_invoice_runs run
-            JOIN invoices i ON i.id = run.invoice_id
-            WHERE run.recurring_invoice_id = r.id AND run.invoice_id IS NOT NULL
-              AND run.status = 'completed'
-            ORDER BY i.invoice_date DESC, i.id DESC LIMIT 1
+            SELECT ranked.id FROM (
+                SELECT i.id, i.invoice_date FROM recurring_invoice_runs run
+                JOIN invoices i ON i.id = run.invoice_id
+                WHERE run.recurring_invoice_id = r.id AND run.invoice_id IS NOT NULL
+                  AND run.status = 'completed'
+                UNION ALL
+                SELECT i.id, i.invoice_date FROM recurring_invoice_test_sends t
+                JOIN invoices i ON i.id = t.invoice_id
+                WHERE t.recurring_invoice_id = r.id
+            ) ranked ORDER BY ranked.invoice_date DESC, ranked.id DESC LIMIT 1
         )
         ORDER BY r.created_at DESC, r.id DESC
     `);
@@ -153,11 +171,16 @@ export async function getRecurringInvoiceById(id: number): Promise<RecurringInvo
         FROM recurring_invoices r
         LEFT JOIN users u ON u.id = r.member_id
         LEFT JOIN invoices latest ON latest.id = (
-            SELECT i.id FROM recurring_invoice_runs run
-            JOIN invoices i ON i.id = run.invoice_id
-            WHERE run.recurring_invoice_id = r.id AND run.invoice_id IS NOT NULL
-              AND run.status = 'completed'
-            ORDER BY i.invoice_date DESC, i.id DESC LIMIT 1
+            SELECT ranked.id FROM (
+                SELECT i.id, i.invoice_date FROM recurring_invoice_runs run
+                JOIN invoices i ON i.id = run.invoice_id
+                WHERE run.recurring_invoice_id = r.id AND run.invoice_id IS NOT NULL
+                  AND run.status = 'completed'
+                UNION ALL
+                SELECT i.id, i.invoice_date FROM recurring_invoice_test_sends t
+                JOIN invoices i ON i.id = t.invoice_id
+                WHERE t.recurring_invoice_id = r.id
+            ) ranked ORDER BY ranked.invoice_date DESC, ranked.id DESC LIMIT 1
         )
         WHERE r.id = ?
         LIMIT 1
@@ -252,6 +275,14 @@ export async function listDueRecurringInvoices(todayIso: string): Promise<Recurr
         ORDER BY r.next_invoice_date ASC, r.id ASC
     `, [todayIso]);
     return rows;
+}
+
+export async function recordRecurringTestSend(recurringInvoiceId: number, invoiceId: number) {
+    await ensureRecurringInvoiceSchema();
+    await pool.execute(`
+        INSERT IGNORE INTO recurring_invoice_test_sends (recurring_invoice_id, invoice_id)
+        VALUES (?, ?)
+    `, [recurringInvoiceId, invoiceId]);
 }
 
 export async function claimRecurringRun(recurringInvoiceId: number, scheduledFor: string) {
