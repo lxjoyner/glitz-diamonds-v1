@@ -120,19 +120,6 @@ export async function ensureRecurringInvoiceSchema() {
             INDEX idx_recurring_run_invoice (invoice_id)
         )
     `);
-    await pool.query(`
-        CREATE TABLE IF NOT EXISTS recurring_invoice_test_sends (
-            id BIGINT AUTO_INCREMENT PRIMARY KEY,
-            recurring_invoice_id BIGINT NOT NULL,
-            invoice_id BIGINT NOT NULL UNIQUE,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_recurring_test_sends (recurring_invoice_id),
-            CONSTRAINT fk_recurring_test_sends_recurring FOREIGN KEY (recurring_invoice_id)
-                REFERENCES recurring_invoices(id) ON DELETE CASCADE,
-            CONSTRAINT fk_recurring_test_sends_invoice FOREIGN KEY (invoice_id)
-                REFERENCES invoices(id) ON DELETE CASCADE
-        )
-    `);
 }
 
 export async function listRecurringInvoices(): Promise<RecurringInvoiceRecord[]> {
@@ -275,14 +262,6 @@ export async function listDueRecurringInvoices(todayIso: string): Promise<Recurr
         ORDER BY r.next_invoice_date ASC, r.id ASC
     `, [todayIso]);
     return rows;
-}
-
-export async function recordRecurringTestSend(recurringInvoiceId: number, invoiceId: number) {
-    await ensureRecurringInvoiceSchema();
-    await pool.execute(`
-        INSERT IGNORE INTO recurring_invoice_test_sends (recurring_invoice_id, invoice_id)
-        VALUES (?, ?)
-    `, [recurringInvoiceId, invoiceId]);
 }
 
 export async function claimRecurringRun(recurringInvoiceId: number, scheduledFor: string) {
