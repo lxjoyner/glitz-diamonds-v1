@@ -145,16 +145,17 @@ export async function listRecurringInvoices(): Promise<RecurringInvoiceRecord[]>
         FROM recurring_invoices r
         LEFT JOIN users u ON u.id = r.member_id
         LEFT JOIN invoices latest ON latest.id = (
-            SELECT ranked.id FROM (
-                SELECT i.id, i.invoice_date FROM recurring_invoice_runs run
-                JOIN invoices i ON i.id = run.invoice_id
-                WHERE run.recurring_invoice_id = r.id AND run.invoice_id IS NOT NULL
+            SELECT i.id FROM invoices i
+            WHERE i.id IN (
+                SELECT run.invoice_id FROM recurring_invoice_runs run
+                WHERE run.recurring_invoice_id = r.id
                   AND run.status = 'completed'
-                UNION ALL
-                SELECT i.id, i.invoice_date FROM recurring_invoice_test_sends t
-                JOIN invoices i ON i.id = t.invoice_id
-                WHERE t.recurring_invoice_id = r.id
-            ) ranked ORDER BY ranked.invoice_date DESC, ranked.id DESC LIMIT 1
+                  AND run.invoice_id IS NOT NULL
+                UNION
+                SELECT test.invoice_id FROM recurring_invoice_test_sends test
+                WHERE test.recurring_invoice_id = r.id
+            )
+            ORDER BY i.invoice_date DESC, i.id DESC LIMIT 1
         )
         ORDER BY r.created_at DESC, r.id DESC
     `);
@@ -171,16 +172,17 @@ export async function getRecurringInvoiceById(id: number): Promise<RecurringInvo
         FROM recurring_invoices r
         LEFT JOIN users u ON u.id = r.member_id
         LEFT JOIN invoices latest ON latest.id = (
-            SELECT ranked.id FROM (
-                SELECT i.id, i.invoice_date FROM recurring_invoice_runs run
-                JOIN invoices i ON i.id = run.invoice_id
-                WHERE run.recurring_invoice_id = r.id AND run.invoice_id IS NOT NULL
+            SELECT i.id FROM invoices i
+            WHERE i.id IN (
+                SELECT run.invoice_id FROM recurring_invoice_runs run
+                WHERE run.recurring_invoice_id = r.id
                   AND run.status = 'completed'
-                UNION ALL
-                SELECT i.id, i.invoice_date FROM recurring_invoice_test_sends t
-                JOIN invoices i ON i.id = t.invoice_id
-                WHERE t.recurring_invoice_id = r.id
-            ) ranked ORDER BY ranked.invoice_date DESC, ranked.id DESC LIMIT 1
+                  AND run.invoice_id IS NOT NULL
+                UNION
+                SELECT test.invoice_id FROM recurring_invoice_test_sends test
+                WHERE test.recurring_invoice_id = r.id
+            )
+            ORDER BY i.invoice_date DESC, i.id DESC LIMIT 1
         )
         WHERE r.id = ?
         LIMIT 1
