@@ -1,3 +1,5 @@
+import InvoiceOverdueTable from "@/components/InvoiceOverdueTable";
+import { getOverdueSummaryForInvoice } from "@/lib/invoice-overdue-summary";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { cookies } from "next/headers";
@@ -31,6 +33,7 @@ export default async function AdminInvoicePreviewPage({ params }: { params: Prom
     if (!invoice) notFound();
 
     const balance = Math.max(0, Number(invoice.total_cents) - Number(invoice.amount_paid_cents));
+    const overdue = await getOverdueSummaryForInvoice(invoice);
 
     return (
         <main className="min-h-screen bg-slate-100 px-4 py-10 text-slate-950 sm:px-8">
@@ -103,7 +106,9 @@ export default async function AdminInvoicePreviewPage({ params }: { params: Prom
                         <div className="flex justify-between text-lg"><span>Amount due</span><strong>{money(balance)}</strong></div>
                     </div>
 
-                    {invoice.notes ? <div className="mt-8"><h2 className="font-semibold">Notes</h2><p className="mt-2 whitespace-pre-line text-sm text-slate-600">{invoice.notes}</p></div> : null}
+                    <InvoiceOverdueTable summary={overdue} />
+
+                {invoice.notes ? <div className="mt-8"><h2 className="font-semibold">Notes</h2><p className="mt-2 whitespace-pre-line text-sm text-slate-600">{invoice.notes}</p></div> : null}
                     {invoice.terms ? <div className="mt-6"><h2 className="font-semibold">Payment terms</h2><p className="mt-2 whitespace-pre-line text-sm text-slate-600">{invoice.terms}</p></div> : null}
                     {invoice.footer_text ? <p className="mt-10 border-t border-slate-200 pt-6 text-center text-sm text-slate-500">{invoice.footer_text}</p> : null}
                 </div>

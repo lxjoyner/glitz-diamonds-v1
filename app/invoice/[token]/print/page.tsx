@@ -1,3 +1,5 @@
+import InvoiceOverdueTable from "@/components/InvoiceOverdueTable";
+import { getOverdueSummaryForInvoice } from "@/lib/invoice-overdue-summary";
 import { notFound } from "next/navigation";
 import { getInvoiceByPublicToken } from "@/lib/invoice-db";
 import PrintControls from "./PrintControls";
@@ -10,6 +12,7 @@ export default async function PrintableInvoicePage({ params }: { params: Promise
     if (!invoice) notFound();
 
     const balance = Math.max(0, Number(invoice.total_cents) - Number(invoice.amount_paid_cents));
+    const overdue = await getOverdueSummaryForInvoice(invoice);
 
     return (
         <main className="min-h-screen bg-white text-slate-950 print:min-h-0">
@@ -72,6 +75,8 @@ export default async function PrintableInvoicePage({ params }: { params: Promise
                     <div className="flex justify-between border-t border-slate-200 pt-4 text-xl"><span>Total</span><strong>{money(Number(invoice.total_cents))}</strong></div>
                     <div className="flex justify-between text-lg"><span>Amount due</span><strong>{money(balance)}</strong></div>
                 </div>
+
+                <InvoiceOverdueTable summary={overdue} />
 
                 {invoice.notes ? <div className="mt-8"><h2 className="font-semibold">Notes</h2><p className="mt-2 whitespace-pre-line text-sm text-slate-600">{invoice.notes}</p></div> : null}
                 {invoice.terms ? <div className="mt-6"><h2 className="font-semibold">Payment terms</h2><p className="mt-2 whitespace-pre-line text-sm text-slate-600">{invoice.terms}</p></div> : null}
