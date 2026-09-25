@@ -27,7 +27,7 @@ export async function prepareInvoiceEmailTracking(invoiceId: number) {
     const token = crypto.randomBytes(32).toString("hex");
     const [result] = await pool.execute<ResultSetHeader>(`
         INSERT INTO invoice_email_tracking (invoice_id, tracking_token, recipient_email)
-        SELECT id, ?, COALESCE(member_email, ?)
+        SELECT selected.id, ?, COALESCE(selected.member_email, ?)
         FROM (SELECT i.id, u.email AS member_email FROM invoices i
             LEFT JOIN users u ON u.id = i.member_id WHERE i.id = ?) selected
     `, [token, "", invoiceId]);
