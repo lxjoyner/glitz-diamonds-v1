@@ -18,7 +18,11 @@ export type TransactionEditInput = {
 export async function getTransactionAccounts() {
     const options = await listInvoicePaymentAccounts();
     const names = options.map((option) => String(option.name));
-    if (!names.includes("Cash on Hand")) names.unshift("Cash on Hand");
+    // The invoice payment settings seed Cash on Hand (USD); use the same actual
+    // persisted option rather than creating a second display-only account.
+    if (!names.some((name) => name === "Cash on Hand" || name === "Cash on Hand (USD)")) {
+        throw new Error("CASH_ACCOUNT_NOT_CONFIGURED");
+    }
     return names;
 }
 
