@@ -1,5 +1,5 @@
 import pool from "@/lib/db";
-import type { RowDataPacket } from "mysql2/promise";
+import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import { ensureInvoiceSchema } from "@/lib/invoice-db";
 import { ensureVendorBillPaymentSchema } from "@/lib/vendor-db";
 
@@ -16,9 +16,23 @@ export type TransactionRow = RowDataPacket & {
     direction: "income" | "expense";
 };
 
+export async function ensureTransactionEditSchema() {
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS transaction_edit_details (
+            transaction_key VARCHAR(120) PRIMARY KEY,
+            description VARCHAR(500) NULL,
+            category VARCHAR(500) NULL,
+            transaction_type VARCHAR(30) NULL,
+            is_reviewed TINYINT(1) NOT NULL DEFAULT 0,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+    `);
+}
+
 export async function listTransactions(): Promise<TransactionRow[]> {
     await ensureInvoiceSchema();
     await ensureVendorBillPaymentSchema();
+    await ensureTransactionEditSchema();
 
     const [rows] = await pool.query<TransactionRow[]>(`
         SELECT
@@ -102,7 +116,18 @@ export async function listTransactions(): Promise<TransactionRow[]> {
 
         ORDER BY transaction_date DESC, source_id DESC
     `);
-    return rows;
+    const [edits] = await pool.query<RowDataPacket[]>(
+        "SELECT transaction_key, description, category FROM transaction_edit_details"
+    );
+    const byKey = new Map(edits.map((edit) => [String(edit.transaction_key), edit]));
+    return rows.map((row) => {
+        const edit = byKey.get(row.transaction_key);
+        return edit ? {
+            ...row,
+            description: edit.description ?? row.description,
+            category: edit.category ?? row.category,
+        } : row;
+    });
 }
 
 

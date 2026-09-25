@@ -29,6 +29,9 @@ export default function EditTransactionPage() {
     const [amount, setAmount] = useState("");
     const [category, setCategory] = useState("");
     const [memo, setMemo] = useState("");
+    const [transactionType, setTransactionType] = useState<"Deposit" | "Withdrawal">("Withdrawal");
+    const [accounts, setAccounts] = useState<string[]>([]);
+    const [dateVerified, setDateVerified] = useState(false);
     const [message, setMessage] = useState("");
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -48,13 +51,18 @@ export default function EditTransactionPage() {
                 return;
             }
             const item = data.transaction as Transaction;
+            const optionsRes = await fetch("/api/admin/transactions/accounts", { cache: "no-store" });
+            const options = await optionsRes.json();
+            if (optionsRes.ok) setAccounts(options.accounts || []);
+            else setMessage(options.error || "Unable to load payment accounts.");
             setTransaction(item);
             setDate(String(item.transaction_date).slice(0, 10));
-            setDescription(item.description || "");
+            setDescription(key.startsWith("bill-history-") ? String(item.description || "").replace(" (actual date unknown)", "") : item.description || "");
             setAccount(item.account_name || "");
             setAmount((Number(item.amount_cents || 0) / 100).toFixed(2));
             setCategory(item.category || "");
-            setMemo(item.memo || "");
+            setMemo(key.startsWith("bill-history-") ? "" : item.memo || "");
+            setTransactionType(item.direction === "income" ? "Deposit" : "Withdrawal");
         }
         init();
     }, [key, router]);
@@ -74,6 +82,8 @@ export default function EditTransactionPage() {
                     category,
                     amount: Number(amount),
                     memo,
+                    transactionType,
+                    dateVerified,
                 }),
             });
             const data = await res.json();
@@ -108,7 +118,8 @@ export default function EditTransactionPage() {
         return <main className="min-h-screen bg-[#f7f9fc] px-4 py-8"><div className="mx-auto max-w-3xl">{message || "Loading transaction..."}</div></main>;
     }
 
-    const readOnly = key.startsWith("invoice-history-") || key.startsWith("bill-history-");
+    const readOnly = key.startsWith("invoice-history-");
+    const needsVerification = key.startsWith("bill-history-");
 
     return (
         <main className="min-h-screen bg-slate-100 px-4 py-8 text-slate-950">
@@ -130,17 +141,24 @@ export default function EditTransactionPage() {
 
                         <label className="grid gap-2">
                             <span className="font-semibold text-slate-600">Description</span>
-                            <input value={description} onChange={(e) => setDescription(e.target.value)} disabled className="rounded-xl border border-blue-300 bg-slate-100 px-4 py-3" />
+                            <input value={description} onChange={(e) => setDescription(e.target.value)} disabled={readOnly} className="rounded-xl border border-blue-300 bg-white px-4 py-3 disabled:bg-slate-100" />
                         </label>
 
                         <label className="grid gap-2">
                             <span className="font-semibold text-slate-600">Account</span>
-                            <input value={account} onChange={(e) => setAccount(e.target.value)} disabled={readOnly} className="rounded-xl border border-blue-300 px-4 py-3 disabled:bg-slate-100" />
+                            <select value={account} onChange={(e) => setAccount(e.target.value)} disabled={readOnly} className="rounded-xl border border-blue-300 bg-white px-4 py-3 disabled:bg-slate-100">
+                                <option value="">Select payment account...</option>
+                                {account && !accounts.includes(account) && <option value={account} disabled>{account} (select a valid account)</option>}
+                                {accounts.map((name) => <option key={name} value={name}>{name === "Cash on Hand (USD)" ? "Cash on Hand (USD)" : name}</option>)}
+                            </select>
                         </label>
 
                         <label className="grid gap-2">
                             <span className="font-semibold text-slate-600">Type</span>
-                            <input value={transaction.direction === "income" ? "Deposit" : "Withdrawal"} disabled className="rounded-xl border border-blue-300 bg-slate-100 px-4 py-3" />
+                            <select value={transactionType} onChange={(e) => setTransactionType(e.target.value as "Deposit" | "Withdrawal")} disabled={readOnly} className="rounded-xl border border-blue-300 bg-white px-4 py-3 disabled:bg-slate-100">
+                                <option value="Deposit">Deposit</option><option value="Withdrawal">Withdrawal</option>
+                            </select>
+                            <span className="text-xs text-slate-500">Changing the direction of a linked invoice or bill requires a separate reversal.</span>
                         </label>
 
                         <label className="grid gap-2">
@@ -153,7 +171,7 @@ export default function EditTransactionPage() {
 
                         <label className="grid gap-2">
                             <span className="font-semibold text-slate-600">Category</span>
-                            <input value={category} onChange={(e) => setCategory(e.target.value)} disabled className="rounded-xl border border-blue-300 bg-slate-100 px-4 py-3" />
+                            <input value={category} onChange={(e) => setCategory(e.target.value)} disabled={readOnly} className="rounded-xl border border-blue-300 bg-white px-4 py-3 disabled:bg-slate-100" />
                         </label>
 
                         <label className="grid gap-2 md:col-span-1">
@@ -189,7 +207,8 @@ export default function EditTransactionPage() {
                             </div>
                         </div>
 
-                        {readOnly && <p className="md:col-span-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">This historical imported payment is read-only because it does not have a payment-ledger record.</p>}
+                        {needsVerification && <label className="md:col-span-2 flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"><input type="checkbox" checked={dateVerified} onChange={(e) => setDateVerified(e.target.checked)} className="mt-1" /><span>I have verified the payment date, amount and account for this imported bill. Saving converts its historical entry to a recorded payment without adding another payment to the bill.</span></label>}
+                        {readOnly && <p className="md:col-span-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">Imported invoice payments without ledger details remain read-only.</p>}
                         {message && <p className="md:col-span-2 rounded-lg bg-slate-50 p-3 text-sm">{message}</p>}
                     </div>
 
@@ -197,7 +216,7 @@ export default function EditTransactionPage() {
                         <button type="button" className="rounded-full border border-blue-600 px-5 py-2.5 font-semibold text-blue-700">✓ Mark as reviewed</button>
                         <div className="flex gap-3">
                             <button type="button" onClick={() => router.push("/admin/transactions")} className="rounded-full border border-blue-600 px-6 py-2.5 font-semibold text-blue-700">Cancel</button>
-                            <button disabled={saving || readOnly} className="rounded-full bg-blue-700 px-7 py-2.5 font-semibold text-white disabled:bg-blue-200">{saving ? "Saving..." : "Save"}</button>
+                            <button disabled={saving || readOnly || (needsVerification && !dateVerified) || !accounts.includes(account)} className="rounded-full bg-blue-700 px-7 py-2.5 font-semibold text-white disabled:bg-blue-200">{saving ? "Saving..." : "Save"}</button>
                         </div>
                     </div>
                 </form>
