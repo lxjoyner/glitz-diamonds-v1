@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth";
 import { getInvoiceById, markInvoiceSent } from "@/lib/invoice-db";
 import { sendInvoiceEmail } from "@/lib/mailer";
+import { getOverdueSummaryForInvoice } from "@/lib/invoice-overdue-summary";
 
 function requireInvoiceManager(req: NextRequest) {
     const token = req.cookies.get("glitz_token")?.value;
@@ -43,6 +44,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
         if (!invoice.member_email) return NextResponse.json({ success: false, error: "The selected member does not have an email address." }, { status: 400 });
 
         const publicUrl = `${getBaseUrl(req)}/invoice/${invoice.public_token}`;
+        const overdue = await getOverdueSummaryForInvoice(invoice);
         await sendInvoiceEmail({
             toEmail: invoice.member_email,
             memberName: invoice.member_name || "Member",
@@ -50,6 +52,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
             amountDueCents: Math.max(0, invoice.total_cents - invoice.amount_paid_cents),
             dueDate: String(invoice.due_date),
             invoiceUrl: publicUrl,
+            overdue,
         });
 
         await markInvoiceSent(invoiceId);
