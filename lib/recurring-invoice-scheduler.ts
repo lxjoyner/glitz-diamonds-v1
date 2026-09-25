@@ -1,6 +1,7 @@
-import { createInvoice, getInvoiceById, markInvoiceSent } from "@/lib/invoice-db";
+import { createInvoice, getInvoiceById } from "@/lib/invoice-db";
 import { sendInvoiceEmail } from "@/lib/mailer";
 import { getMemberOverdueInvoiceSummary } from "@/lib/invoice-overdue-summary";
+import { prepareInvoiceEmailTracking, confirmInvoiceEmailSent, discardUnsentInvoiceTracking } from "@/lib/invoice-email-tracking";
 import {
     claimRecurringRun,
     completeRecurringRun,
@@ -104,7 +105,9 @@ export async function runRecurringInvoiceTestSend(recurringInvoiceId: number) {
 
     const invoiceUrl = `${baseUrl()}/invoice/${invoice.public_token}`;
     const overdue = await getMemberOverdueInvoiceSummary(row.member_id, testDate, invoice.id);
-    await sendInvoiceEmail({
+    const trackingToken = await prepareInvoiceEmailTracking(invoice.id);
+    try {
+        await sendInvoiceEmail({
         toEmail: row.member_email,
         memberName: row.member_name || "Member",
         invoiceNumber: invoice.invoice_number,
@@ -112,8 +115,13 @@ export async function runRecurringInvoiceTestSend(recurringInvoiceId: number) {
         dueDate: String(invoice.due_date),
         invoiceUrl,
         overdue,
+        emailOpenPixelUrl: `${baseUrl()}/api/invoice-email/open/${trackingToken}`,
     });
-    await markInvoiceSent(invoice.id);
+    await confirmInvoiceEmailSent(trackingToken);
+    } catch (sendError) {
+        await discardUnsentInvoiceTracking(trackingToken);
+        throw sendError;
+    }
 
     return {
         recurringInvoiceId: row.id,
@@ -157,7 +165,9 @@ export async function runRecurringInvoiceScheduler(todayIso = new Date().toISOSt
                 if (row.member_email) {
                     const invoiceUrl = `${baseUrl()}/invoice/${invoice.public_token}`;
                     const overdue = await getMemberOverdueInvoiceSummary(row.member_id, scheduledFor, invoice.id);
-                    await sendInvoiceEmail({
+                    const trackingToken = await prepareInvoiceEmailTracking(invoice.id);
+                    try {
+                        await sendInvoiceEmail({
                         toEmail: row.member_email,
                         memberName: row.member_name || "Member",
                         invoiceNumber: invoice.invoice_number,
@@ -165,8 +175,13 @@ export async function runRecurringInvoiceScheduler(todayIso = new Date().toISOSt
                         dueDate: String(invoice.due_date),
                         invoiceUrl,
                         overdue,
+                        emailOpenPixelUrl: `${baseUrl()}/api/invoice-email/open/${trackingToken}`,
                     });
-                    await markInvoiceSent(invoice.id);
+                    await confirmInvoiceEmailSent(trackingToken);
+                    } catch (sendError) {
+                        await discardUnsentInvoiceTracking(trackingToken);
+                        throw sendError;
+                    }
                 }
 
                 const nextInvoiceDate = nextOccurrence(row, scheduledFor);
