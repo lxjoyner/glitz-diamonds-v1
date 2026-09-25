@@ -42,7 +42,8 @@ export async function getMemberOverdueInvoiceSummary(
         WHERE i.member_id = ?
           AND i.id <> ?
           AND i.due_date < ?
-          AND i.status NOT IN ('draft', 'void')
+          AND i.status <> 'void'
+          AND (i.status <> 'draft' OR i.sent_at IS NOT NULL)
           AND i.total_cents > i.amount_paid_cents
         GROUP BY YEAR(i.due_date), MONTH(i.due_date)
         ORDER BY YEAR(i.due_date), MONTH(i.due_date)
