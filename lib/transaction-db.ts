@@ -32,6 +32,7 @@ export async function ensureTransactionEditSchema() {
 export async function listTransactions(): Promise<TransactionRow[]> {
     await ensureInvoiceSchema();
     await ensureVendorBillPaymentSchema();
+    await ensureTransactionEditSchema();
 
     const [rows] = await pool.query<TransactionRow[]>(`
         SELECT
@@ -115,7 +116,18 @@ export async function listTransactions(): Promise<TransactionRow[]> {
 
         ORDER BY transaction_date DESC, source_id DESC
     `);
-    return rows;
+    const [edits] = await pool.query<RowDataPacket[]>(
+        "SELECT transaction_key, description, category FROM transaction_edit_details"
+    );
+    const byKey = new Map(edits.map((edit) => [String(edit.transaction_key), edit]));
+    return rows.map((row) => {
+        const edit = byKey.get(row.transaction_key);
+        return edit ? {
+            ...row,
+            description: edit.description ?? row.description,
+            category: edit.category ?? row.category,
+        } : row;
+    });
 }
 
 
