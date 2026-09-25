@@ -21,6 +21,8 @@ export type RecurringInvoiceRecord = RowDataPacket & {
     first_invoice_date: string;
     next_invoice_date: string;
     previous_invoice_date: string | null;
+    previous_invoice_id: number | null;
+    previous_invoice_number: string | null;
     end_mode: RecurringEndMode;
     end_after_count: number | null;
     end_date: string | null;
@@ -123,9 +125,19 @@ export async function ensureRecurringInvoiceSchema() {
 export async function listRecurringInvoices(): Promise<RecurringInvoiceRecord[]> {
     await ensureRecurringInvoiceSchema();
     const [rows] = await pool.query<RecurringInvoiceRecord[]>(`
-        SELECT r.*, u.full_name AS member_name, u.email AS member_email
+        SELECT r.*, u.full_name AS member_name, u.email AS member_email,
+            latest.id AS previous_invoice_id,
+            latest.invoice_number AS previous_invoice_number,
+            COALESCE(latest.invoice_date, r.previous_invoice_date) AS previous_invoice_date
         FROM recurring_invoices r
         LEFT JOIN users u ON u.id = r.member_id
+        LEFT JOIN invoices latest ON latest.id = (
+            SELECT i.id FROM recurring_invoice_runs run
+            JOIN invoices i ON i.id = run.invoice_id
+            WHERE run.recurring_invoice_id = r.id AND run.invoice_id IS NOT NULL
+              AND run.status = 'completed'
+            ORDER BY i.invoice_date DESC, i.id DESC LIMIT 1
+        )
         ORDER BY r.created_at DESC, r.id DESC
     `);
     return rows;
@@ -134,9 +146,19 @@ export async function listRecurringInvoices(): Promise<RecurringInvoiceRecord[]>
 export async function getRecurringInvoiceById(id: number): Promise<RecurringInvoiceRecord | null> {
     await ensureRecurringInvoiceSchema();
     const [rows] = await pool.query<RecurringInvoiceRecord[]>(`
-        SELECT r.*, u.full_name AS member_name, u.email AS member_email
+        SELECT r.*, u.full_name AS member_name, u.email AS member_email,
+            latest.id AS previous_invoice_id,
+            latest.invoice_number AS previous_invoice_number,
+            COALESCE(latest.invoice_date, r.previous_invoice_date) AS previous_invoice_date
         FROM recurring_invoices r
         LEFT JOIN users u ON u.id = r.member_id
+        LEFT JOIN invoices latest ON latest.id = (
+            SELECT i.id FROM recurring_invoice_runs run
+            JOIN invoices i ON i.id = run.invoice_id
+            WHERE run.recurring_invoice_id = r.id AND run.invoice_id IS NOT NULL
+              AND run.status = 'completed'
+            ORDER BY i.invoice_date DESC, i.id DESC LIMIT 1
+        )
         WHERE r.id = ?
         LIMIT 1
     `, [id]);
@@ -219,7 +241,8 @@ export async function endRecurringInvoice(id: number) {
 export async function listDueRecurringInvoices(todayIso: string): Promise<RecurringInvoiceRecord[]> {
     await ensureRecurringInvoiceSchema();
     const [rows] = await pool.query<RecurringInvoiceRecord[]>(`
-        SELECT r.*, u.full_name AS member_name, u.email AS member_email
+        SELECT r.*, u.full_name AS member_name, u.email AS member_email,
+            NULL AS previous_invoice_id, NULL AS previous_invoice_number
         FROM recurring_invoices r
         LEFT JOIN users u ON u.id = r.member_id
         WHERE r.status = 'active'
