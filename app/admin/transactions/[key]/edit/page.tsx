@@ -206,7 +206,8 @@ export default function EditTransactionPage() {
                             </div>
                         </div>
 
-                        {readOnly && <p className="md:col-span-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">This historical imported payment is read-only because it does not have a payment-ledger record.</p>}
+                        {needsVerification && <label className="md:col-span-2 flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"><input type="checkbox" checked={dateVerified} onChange={(e) => setDateVerified(e.target.checked)} className="mt-1" /><span>I have verified the payment date, amount and account for this imported bill. Saving converts its historical entry to a recorded payment without adding another payment to the bill.</span></label>}
+                        {readOnly && <p className="md:col-span-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">Imported invoice payments without ledger details remain read-only.</p>}
                         {message && <p className="md:col-span-2 rounded-lg bg-slate-50 p-3 text-sm">{message}</p>}
                     </div>
 
@@ -214,7 +215,7 @@ export default function EditTransactionPage() {
                         <button type="button" className="rounded-full border border-blue-600 px-5 py-2.5 font-semibold text-blue-700">✓ Mark as reviewed</button>
                         <div className="flex gap-3">
                             <button type="button" onClick={() => router.push("/admin/transactions")} className="rounded-full border border-blue-600 px-6 py-2.5 font-semibold text-blue-700">Cancel</button>
-                            <button disabled={saving || readOnly} className="rounded-full bg-blue-700 px-7 py-2.5 font-semibold text-white disabled:bg-blue-200">{saving ? "Saving..." : "Save"}</button>
+                            <button disabled={saving || readOnly || (needsVerification && !dateVerified) || !accounts.includes(account)} className="rounded-full bg-blue-700 px-7 py-2.5 font-semibold text-white disabled:bg-blue-200">{saving ? "Saving..." : "Save"}</button>
                         </div>
                     </div>
                 </form>
