@@ -51,13 +51,17 @@ export default function EditTransactionPage() {
                 return;
             }
             const item = data.transaction as Transaction;
+            const optionsRes = await fetch("/api/admin/transactions/accounts", { cache: "no-store" });
+            const options = await optionsRes.json();
+            if (optionsRes.ok) setAccounts(options.accounts || []);
             setTransaction(item);
             setDate(String(item.transaction_date).slice(0, 10));
             setDescription(item.description || "");
             setAccount(item.account_name || "");
             setAmount((Number(item.amount_cents || 0) / 100).toFixed(2));
             setCategory(item.category || "");
-            setMemo(item.memo || "");
+            setMemo(key.startsWith("bill-history-") ? "" : item.memo || "");
+            setTransactionType(item.direction === "income" ? "Deposit" : "Withdrawal");
         }
         init();
     }, [key, router]);
@@ -77,6 +81,8 @@ export default function EditTransactionPage() {
                     category,
                     amount: Number(amount),
                     memo,
+                    transactionType,
+                    dateVerified,
                 }),
             });
             const data = await res.json();
@@ -111,7 +117,8 @@ export default function EditTransactionPage() {
         return <main className="min-h-screen bg-[#f7f9fc] px-4 py-8"><div className="mx-auto max-w-3xl">{message || "Loading transaction..."}</div></main>;
     }
 
-    const readOnly = key.startsWith("invoice-history-") || key.startsWith("bill-history-");
+    const readOnly = key.startsWith("invoice-history-");
+    const needsVerification = key.startsWith("bill-history-");
 
     return (
         <main className="min-h-screen bg-slate-100 px-4 py-8 text-slate-950">
