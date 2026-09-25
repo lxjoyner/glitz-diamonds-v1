@@ -1,5 +1,5 @@
 import pool from "@/lib/db";
-import type { RowDataPacket } from "mysql2/promise";
+import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import { ensureInvoiceSchema } from "@/lib/invoice-db";
 import { ensureVendorBillPaymentSchema } from "@/lib/vendor-db";
 
@@ -15,6 +15,19 @@ export type TransactionRow = RowDataPacket & {
     amount_cents: number;
     direction: "income" | "expense";
 };
+
+export async function ensureTransactionEditSchema() {
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS transaction_edit_details (
+            transaction_key VARCHAR(120) PRIMARY KEY,
+            description VARCHAR(500) NULL,
+            category VARCHAR(500) NULL,
+            transaction_type VARCHAR(30) NULL,
+            is_reviewed TINYINT(1) NOT NULL DEFAULT 0,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+    `);
+}
 
 export async function listTransactions(): Promise<TransactionRow[]> {
     await ensureInvoiceSchema();
