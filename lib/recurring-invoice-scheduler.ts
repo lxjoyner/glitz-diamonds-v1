@@ -1,5 +1,6 @@
 import { createInvoice, getInvoiceById, markInvoiceSent } from "@/lib/invoice-db";
 import { sendInvoiceEmail } from "@/lib/mailer";
+import { getMemberOverdueInvoiceSummary } from "@/lib/invoice-overdue-summary";
 import {
     claimRecurringRun,
     completeRecurringRun,
@@ -102,6 +103,7 @@ export async function runRecurringInvoiceTestSend(recurringInvoiceId: number) {
     if (!invoice) throw new Error("Generated test invoice could not be loaded.");
 
     const invoiceUrl = `${baseUrl()}/invoice/${invoice.public_token}`;
+    const overdue = await getMemberOverdueInvoiceSummary(row.member_id, testDate, invoice.id);
     await sendInvoiceEmail({
         toEmail: row.member_email,
         memberName: row.member_name || "Member",
@@ -109,6 +111,7 @@ export async function runRecurringInvoiceTestSend(recurringInvoiceId: number) {
         amountDueCents: Math.max(0, invoice.total_cents - invoice.amount_paid_cents),
         dueDate: String(invoice.due_date),
         invoiceUrl,
+        overdue,
     });
     await markInvoiceSent(invoice.id);
 
@@ -153,6 +156,7 @@ export async function runRecurringInvoiceScheduler(todayIso = new Date().toISOSt
 
                 if (row.member_email) {
                     const invoiceUrl = `${baseUrl()}/invoice/${invoice.public_token}`;
+                    const overdue = await getMemberOverdueInvoiceSummary(row.member_id, scheduledFor, invoice.id);
                     await sendInvoiceEmail({
                         toEmail: row.member_email,
                         memberName: row.member_name || "Member",
@@ -160,6 +164,7 @@ export async function runRecurringInvoiceScheduler(todayIso = new Date().toISOSt
                         amountDueCents: Math.max(0, invoice.total_cents - invoice.amount_paid_cents),
                         dueDate: String(invoice.due_date),
                         invoiceUrl,
+                        overdue,
                     });
                     await markInvoiceSent(invoice.id);
                 }
