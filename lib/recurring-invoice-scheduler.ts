@@ -8,6 +8,7 @@ import {
     failRecurringRun,
     getRecurringInvoiceById,
     listDueRecurringInvoices,
+    recordRecurringTestSend,
     type RecurringFrequency,
     type RecurringInvoiceRecord,
 } from "@/lib/recurring-invoice-db";
@@ -118,6 +119,7 @@ export async function runRecurringInvoiceTestSend(recurringInvoiceId: number) {
         emailOpenPixelUrl: `${baseUrl()}/api/invoice-email/open/${trackingToken}`,
     });
     await confirmInvoiceEmailSent(trackingToken);
+    await recordRecurringTestSend(row.id, invoice.id);
     } catch (sendError) {
         await discardUnsentInvoiceTracking(trackingToken);
         throw sendError;
