@@ -54,6 +54,7 @@ export default function EditTransactionPage() {
             const optionsRes = await fetch("/api/admin/transactions/accounts", { cache: "no-store" });
             const options = await optionsRes.json();
             if (optionsRes.ok) setAccounts(options.accounts || []);
+            else setMessage(options.error || "Unable to load payment accounts.");
             setTransaction(item);
             setDate(String(item.transaction_date).slice(0, 10));
             setDescription(item.description || "");
@@ -148,7 +149,7 @@ export default function EditTransactionPage() {
                             <select value={account} onChange={(e) => setAccount(e.target.value)} disabled={readOnly} className="rounded-xl border border-blue-300 bg-white px-4 py-3 disabled:bg-slate-100">
                                 <option value="">Select payment account...</option>
                                 {account && !accounts.includes(account) && <option value={account} disabled>{account} (select a valid account)</option>}
-                                {accounts.map((name) => <option key={name} value={name}>{name}</option>)}
+                                {accounts.map((name) => <option key={name} value={name}>{name === "Cash on Hand (USD)" ? "Cash on Hand (USD)" : name}</option>)}
                             </select>
                         </label>
 
