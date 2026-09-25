@@ -75,6 +75,7 @@ export async function sendInvoiceEmail(params: {
     amountDueCents: number;
     dueDate: string;
     invoiceUrl: string;
+    emailOpenPixelUrl?: string;
     overdue?: {
         rows: Array<{ year: number; month: number; amountDueCents: number }>;
         totalCents: number;
@@ -141,7 +142,7 @@ export async function sendInvoiceEmail(params: {
             to: params.toEmail,
             subject,
             text: `Hello ${params.memberName},\n\nYou have a new invoice from Glitz Of Diamonds.\n\n${membershipPolicy}\n\nInvoice: ${params.invoiceNumber}\nAmount Due: ${amountDue}\nDue Date: ${dueDate}\n${overdueText}\nView your invoice:\n${params.invoiceUrl}\n\nThank you,\nGlitz Of Diamonds`,
-            html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937"><h2>Glitz Of Diamonds</h2><p>Hello ${params.memberName},</p><p>You have a new invoice from Glitz Of Diamonds.</p><p>Please be advised that if your account becomes three (3) payments past due, your membership will be temporarily deactivated. Membership privileges will be restored once all outstanding payments have been received and your account is brought current.</p><p>Thank you for your understanding and for being a valued member of the Glitz Of Diamonds Women’s Group.</p><p><strong>Invoice:</strong> ${params.invoiceNumber}<br/><strong>Amount Due:</strong> ${amountDue}<br/><strong>Due Date:</strong> ${dueDate}</p>${overdueHtml}<p style="margin:28px 0"><a href="${params.invoiceUrl}" style="background:#1d4ed8;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600">View Invoice</a></p><p>Thank you,<br/>Glitz Of Diamonds</p></div>`,
+            html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937"><h2>Glitz Of Diamonds</h2><p>Hello ${params.memberName},</p><p>You have a new invoice from Glitz Of Diamonds.</p><p>Please be advised that if your account becomes three (3) payments past due, your membership will be temporarily deactivated. Membership privileges will be restored once all outstanding payments have been received and your account is brought current.</p><p>Thank you for your understanding and for being a valued member of the Glitz Of Diamonds Women’s Group.</p><p><strong>Invoice:</strong> ${params.invoiceNumber}<br/><strong>Amount Due:</strong> ${amountDue}<br/><strong>Due Date:</strong> ${dueDate}</p>${overdueHtml}<p style="margin:28px 0"><a href="${params.invoiceUrl}" style="background:#1d4ed8;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600">View Invoice</a></p><p>Thank you,<br/>Glitz Of Diamonds</p>${params.emailOpenPixelUrl ? `<img src="${params.emailOpenPixelUrl}" width="1" height="1" alt="" style="border:0;display:block;width:1px;height:1px" />` : ""}</div>`,
         });
         writeEmailLog({ channel: "invoice", status: "success", to: params.toEmail, subject });
         return { sent: true as const };
