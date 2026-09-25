@@ -60,3 +60,17 @@ export async function getMemberOverdueInvoiceSummary(
         asOfDate,
     };
 }
+
+/** Use each rendered invoice's own date as the reference for its overdue
+ * section, rather than the viewer's current date. This keeps print and web
+ * views consistent with the original billing period. */
+export async function getOverdueSummaryForInvoice(invoice: {
+    id: number;
+    member_id: number;
+    invoice_date: string;
+}) {
+    const date = invoice.invoice_date instanceof Date
+        ? invoice.invoice_date.toISOString().slice(0, 10)
+        : String(invoice.invoice_date).slice(0, 10);
+    return getMemberOverdueInvoiceSummary(Number(invoice.member_id), date, Number(invoice.id));
+}
