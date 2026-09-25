@@ -101,9 +101,9 @@ export async function sendInvoiceEmail(params: {
     }).format(cents / 100);
     const overdueRows = params.overdue?.rows || [];
     const overdueText = overdueRows.length > 0
-        ? "\\nOver Due Invoice Payments\\nYear  Month  Amount Due\\n" +
-          overdueRows.map((row) => `${row.year}  ${new Date(Date.UTC(2000, row.month - 1, 1)).toLocaleString("en-US", { month: "long", timeZone: "UTC" })}  ${overdueMoney(row.amountDueCents)}`).join("\\n") +
-          `\\nTotal Over Due: ${overdueMoney(params.overdue?.totalCents || 0)}\\n`
+        ? "\nOver Due Invoice Payments\nYear  Month  Amount Due\n" +
+          overdueRows.map((row) => `${row.year}  ${new Date(Date.UTC(2000, row.month - 1, 1)).toLocaleString("en-US", { month: "long", timeZone: "UTC" })}  ${overdueMoney(row.amountDueCents)}`).join("\n") +
+          `\nTotal Over Due: ${overdueMoney(params.overdue?.totalCents || 0)}\n`
         : "";
     const overdueHtml = overdueRows.length > 0
         ? `<div style="margin:22px 0;max-width:380px">
