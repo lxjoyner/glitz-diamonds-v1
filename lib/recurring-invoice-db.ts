@@ -139,24 +139,23 @@ export async function listRecurringInvoices(): Promise<RecurringInvoiceRecord[]>
     await ensureRecurringInvoiceSchema();
     const [rows] = await pool.query<RecurringInvoiceRecord[]>(`
         SELECT r.*, u.full_name AS member_name, u.email AS member_email,
-            latest.id AS previous_invoice_id,
-            latest.invoice_number AS previous_invoice_number,
-            COALESCE(latest.invoice_date, r.previous_invoice_date) AS previous_invoice_date
+            (SELECT i.id FROM recurring_invoice_runs run
+             JOIN invoices i ON i.id = run.invoice_id
+             WHERE run.recurring_invoice_id = r.id AND run.status = 'completed'
+             ORDER BY run.scheduled_for DESC, run.id DESC LIMIT 1) AS previous_invoice_id,
+            (SELECT i.invoice_number FROM recurring_invoice_runs run
+             JOIN invoices i ON i.id = run.invoice_id
+             WHERE run.recurring_invoice_id = r.id AND run.status = 'completed'
+             ORDER BY run.scheduled_for DESC, run.id DESC LIMIT 1) AS previous_invoice_number,
+            COALESCE(
+                (SELECT DATE_FORMAT(i.invoice_date, '%Y-%m-%d') FROM recurring_invoice_runs run
+                 JOIN invoices i ON i.id = run.invoice_id
+                 WHERE run.recurring_invoice_id = r.id AND run.status = 'completed'
+                 ORDER BY run.scheduled_for DESC, run.id DESC LIMIT 1),
+                DATE_FORMAT(r.previous_invoice_date, '%Y-%m-%d')
+            ) AS previous_invoice_date
         FROM recurring_invoices r
         LEFT JOIN users u ON u.id = r.member_id
-        LEFT JOIN invoices latest ON latest.id = (
-            SELECT i.id FROM invoices i
-            WHERE i.id IN (
-                SELECT run.invoice_id FROM recurring_invoice_runs run
-                WHERE run.recurring_invoice_id = r.id
-                  AND run.status = 'completed'
-                  AND run.invoice_id IS NOT NULL
-                UNION
-                SELECT test.invoice_id FROM recurring_invoice_test_sends test
-                WHERE test.recurring_invoice_id = r.id
-            )
-            ORDER BY i.invoice_date DESC, i.id DESC LIMIT 1
-        )
         ORDER BY r.created_at DESC, r.id DESC
     `);
     return rows;
@@ -166,24 +165,23 @@ export async function getRecurringInvoiceById(id: number): Promise<RecurringInvo
     await ensureRecurringInvoiceSchema();
     const [rows] = await pool.query<RecurringInvoiceRecord[]>(`
         SELECT r.*, u.full_name AS member_name, u.email AS member_email,
-            latest.id AS previous_invoice_id,
-            latest.invoice_number AS previous_invoice_number,
-            COALESCE(latest.invoice_date, r.previous_invoice_date) AS previous_invoice_date
+            (SELECT i.id FROM recurring_invoice_runs run
+             JOIN invoices i ON i.id = run.invoice_id
+             WHERE run.recurring_invoice_id = r.id AND run.status = 'completed'
+             ORDER BY run.scheduled_for DESC, run.id DESC LIMIT 1) AS previous_invoice_id,
+            (SELECT i.invoice_number FROM recurring_invoice_runs run
+             JOIN invoices i ON i.id = run.invoice_id
+             WHERE run.recurring_invoice_id = r.id AND run.status = 'completed'
+             ORDER BY run.scheduled_for DESC, run.id DESC LIMIT 1) AS previous_invoice_number,
+            COALESCE(
+                (SELECT DATE_FORMAT(i.invoice_date, '%Y-%m-%d') FROM recurring_invoice_runs run
+                 JOIN invoices i ON i.id = run.invoice_id
+                 WHERE run.recurring_invoice_id = r.id AND run.status = 'completed'
+                 ORDER BY run.scheduled_for DESC, run.id DESC LIMIT 1),
+                DATE_FORMAT(r.previous_invoice_date, '%Y-%m-%d')
+            ) AS previous_invoice_date
         FROM recurring_invoices r
         LEFT JOIN users u ON u.id = r.member_id
-        LEFT JOIN invoices latest ON latest.id = (
-            SELECT i.id FROM invoices i
-            WHERE i.id IN (
-                SELECT run.invoice_id FROM recurring_invoice_runs run
-                WHERE run.recurring_invoice_id = r.id
-                  AND run.status = 'completed'
-                  AND run.invoice_id IS NOT NULL
-                UNION
-                SELECT test.invoice_id FROM recurring_invoice_test_sends test
-                WHERE test.recurring_invoice_id = r.id
-            )
-            ORDER BY i.invoice_date DESC, i.id DESC LIMIT 1
-        )
         WHERE r.id = ?
         LIMIT 1
     `, [id]);
