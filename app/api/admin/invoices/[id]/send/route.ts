@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth";
-import { getInvoiceById, markInvoiceSent } from "@/lib/invoice-db";
+import { getInvoiceById } from "@/lib/invoice-db";
 import { sendInvoiceEmail } from "@/lib/mailer";
 import { getOverdueSummaryForInvoice } from "@/lib/invoice-overdue-summary";
+import { prepareInvoiceEmailTracking, confirmInvoiceEmailSent, discardUnsentInvoiceTracking } from "@/lib/invoice-email-tracking";
 
 function requireInvoiceManager(req: NextRequest) {
     const token = req.cookies.get("glitz_token")?.value;
@@ -45,7 +46,9 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
         const publicUrl = `${getBaseUrl(req)}/invoice/${invoice.public_token}`;
         const overdue = await getOverdueSummaryForInvoice(invoice);
-        await sendInvoiceEmail({
+        const trackingToken = await prepareInvoiceEmailTracking(invoice.id);
+        try {
+            await sendInvoiceEmail({
             toEmail: invoice.member_email,
             memberName: invoice.member_name || "Member",
             invoiceNumber: invoice.invoice_number,
@@ -53,9 +56,13 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
             dueDate: String(invoice.due_date),
             invoiceUrl: publicUrl,
             overdue,
+            emailOpenPixelUrl: `${getBaseUrl(req)}/api/invoice-email/open/${trackingToken}`,
         });
-
-        await markInvoiceSent(invoiceId);
+        await confirmInvoiceEmailSent(trackingToken);
+        } catch (sendError) {
+            await discardUnsentInvoiceTracking(trackingToken);
+            throw sendError;
+        }
         return NextResponse.json({ success: true, invoiceUrl: publicUrl });
     } catch (error) {
         console.error("Invoice send error:", error);

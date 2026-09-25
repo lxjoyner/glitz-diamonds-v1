@@ -44,6 +44,10 @@ export type InvoiceRecord = RowDataPacket & {
     footer_text: string | null;
     sent_at: string | null;
     viewed_at: string | null;
+    email_opened_at: string | null;
+    customer_viewed_at: string | null;
+    customer_view_count: number;
+    email_send_count?: number;
 };
 
 export type InvoiceWithDisplayStatus = InvoiceRecord & {
@@ -114,6 +118,9 @@ export async function ensureInvoiceSchema() {
             public_token VARCHAR(96) UNIQUE NULL,
             sent_at DATETIME NULL,
             viewed_at DATETIME NULL,
+            email_opened_at DATETIME NULL,
+            customer_viewed_at DATETIME NULL,
+            customer_view_count INT NOT NULL DEFAULT 0,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             INDEX idx_invoices_member (member_id),
@@ -129,6 +136,9 @@ export async function ensureInvoiceSchema() {
     if (!columnNames.has("public_token")) await pool.query(`ALTER TABLE invoices ADD COLUMN public_token VARCHAR(96) UNIQUE NULL`);
     if (!columnNames.has("sent_at")) await pool.query(`ALTER TABLE invoices ADD COLUMN sent_at DATETIME NULL`);
     if (!columnNames.has("viewed_at")) await pool.query(`ALTER TABLE invoices ADD COLUMN viewed_at DATETIME NULL`);
+    if (!columnNames.has("email_opened_at")) await pool.query(`ALTER TABLE invoices ADD COLUMN email_opened_at DATETIME NULL`);
+    if (!columnNames.has("customer_viewed_at")) await pool.query(`ALTER TABLE invoices ADD COLUMN customer_viewed_at DATETIME NULL`);
+    if (!columnNames.has("customer_view_count")) await pool.query(`ALTER TABLE invoices ADD COLUMN customer_view_count INT NOT NULL DEFAULT 0`);
 
     await pool.query(`
         CREATE TABLE IF NOT EXISTS invoice_items (
@@ -208,8 +218,25 @@ function computedStatus(row: { status: string; due_date: string; total_cents: nu
 
 export async function listInvoices(): Promise<InvoiceWithDisplayStatus[]> {
     await ensureInvoiceSchema();
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS invoice_email_tracking (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            invoice_id BIGINT NOT NULL,
+            tracking_token CHAR(64) NOT NULL UNIQUE,
+            recipient_email VARCHAR(180) NOT NULL,
+            sent_at DATETIME NULL,
+            opened_at DATETIME NULL,
+            open_count INT NOT NULL DEFAULT 0,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_invoice_email_tracking_invoice (invoice_id),
+            CONSTRAINT fk_invoice_email_tracking_invoice FOREIGN KEY (invoice_id)
+                REFERENCES invoices(id) ON DELETE CASCADE
+        )
+    `);
     const [rows] = await pool.query<InvoiceRecord[]>(`
-        SELECT i.*, u.full_name AS member_name, u.email AS member_email
+        SELECT i.*, u.full_name AS member_name, u.email AS member_email,
+            (SELECT COUNT(*) FROM invoice_email_tracking t
+             WHERE t.invoice_id = i.id AND t.sent_at IS NOT NULL) AS email_send_count
         FROM invoices i
         LEFT JOIN users u ON u.id = i.member_id
         ORDER BY i.created_at DESC, i.id DESC
@@ -379,9 +406,31 @@ export async function markInvoiceSent(invoiceId: number) {
     await pool.query(`UPDATE invoices SET status = IF(status = 'draft', 'sent', status), sent_at = NOW() WHERE id = ?`, [invoiceId]);
 }
 
-export async function markInvoiceViewed(token: string) {
+/**
+ * The legacy markInvoiceViewed() function is deliberately not used by public
+ * server rendering. Email scanners and admin previews must not count as
+ * customer views; a browser event from the invoice page records the view.
+ */
+export async function recordCustomerInvoiceView(token: string) {
     await ensureInvoiceSchema();
-    await pool.query(`UPDATE invoices SET status = IF(status IN ('sent','draft'), 'viewed', status), viewed_at = COALESCE(viewed_at, NOW()) WHERE public_token = ?`, [token]);
+    const [result] = await pool.execute<ResultSetHeader>(`
+        UPDATE invoices
+        SET customer_viewed_at = COALESCE(customer_viewed_at, NOW()),
+            customer_view_count = customer_view_count + 1,
+            viewed_at = COALESCE(viewed_at, NOW()),
+            status = IF(status = 'sent', 'viewed', status)
+        WHERE public_token = ? AND sent_at IS NOT NULL
+    `, [token]);
+    return result.affectedRows === 1;
+}
+
+export async function recordInvoiceEmailOpen(invoiceId: number) {
+    await ensureInvoiceSchema();
+    const [result] = await pool.execute<ResultSetHeader>(`
+        UPDATE invoices SET email_opened_at = COALESCE(email_opened_at, NOW())
+        WHERE id = ? AND sent_at IS NOT NULL
+    `, [invoiceId]);
+    return result.affectedRows === 1;
 }
 
 export async function deleteInvoice(invoiceId: number) {
