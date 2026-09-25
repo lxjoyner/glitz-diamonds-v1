@@ -108,7 +108,7 @@ export default function EditTransactionPage() {
         return <main className="min-h-screen bg-[#f7f9fc] px-4 py-8"><div className="mx-auto max-w-3xl">{message || "Loading transaction..."}</div></main>;
     }
 
-    const readOnly = key.startsWith("invoice-history-");
+    const readOnly = key.startsWith("invoice-history-") || key.startsWith("bill-history-");
 
     return (
         <main className="min-h-screen bg-slate-100 px-4 py-8 text-slate-950">
