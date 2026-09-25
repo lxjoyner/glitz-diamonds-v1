@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getInvoiceByPublicToken } from "@/lib/invoice-db";
+import { getOverdueSummaryForInvoice } from "@/lib/invoice-overdue-summary";
 
 function toPdfSafeText(value: string) {
     return value
@@ -102,6 +103,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tok
     }
 
     const balance = Math.max(0, Number(invoice.total_cents) - Number(invoice.amount_paid_cents));
+    const overdue = await getOverdueSummaryForInvoice(invoice);
     const lines = [
         invoice.business_name || "Glitz Of Diamonds",
         `Invoice ${invoice.invoice_number}`,
@@ -121,6 +123,18 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tok
         `Tax: ${money(Number(invoice.tax_cents))}`,
         `Total: ${money(Number(invoice.total_cents))}`,
         `Amount due: ${money(balance)}`,
+        ...(overdue.rows.length ? [
+            "",
+            "OVER DUE INVOICE PAYMENTS",
+            "Year     Month                Amount Due",
+            ...overdue.rows.map((row) =>
+                `${row.year}     ${new Date(Date.UTC(2000, row.month - 1, 1))
+                    .toLocaleString("en-US", { month: "long", timeZone: "UTC" })
+                    .padEnd(20)} ${money(row.amountDueCents)}`
+            ),
+            `TOTAL OVER DUE: ${money(overdue.totalCents)}`,
+            "Previous overdue invoices only; current invoice amount is separate.",
+        ] : []),
         invoice.notes ? `Notes: ${invoice.notes}` : "",
         invoice.terms ? `Payment terms: ${invoice.terms}` : "",
         invoice.footer_text || "",
