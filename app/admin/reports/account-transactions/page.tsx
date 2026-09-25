@@ -10,6 +10,7 @@ type Contact = {
 
 type TransactionRow = {
     id: number;
+    transaction_key: string;
     transaction_date: string;
     invoice_id: number;
     invoice_number: string;
@@ -48,9 +49,11 @@ function AccountTransactionsContent() {
     const initialTo = searchParams.get("to") || todayLocal();
 
     const [rows, setRows] = useState<TransactionRow[]>([]);
+    const [openingBalanceCents, setOpeningBalanceCents] = useState(0);
     const [contacts, setContacts] = useState<Contact[]>([]);
     const [memberId, setMemberId] = useState(initialMemberId);
     const [reportType, setReportType] = useState(initialType);
+    const [loadedReportType, setLoadedReportType] = useState(initialType);
     const [fromDate, setFromDate] = useState(initialFrom);
     const [toDate, setToDate] = useState(initialTo);
     const [loading, setLoading] = useState(true);
@@ -66,6 +69,8 @@ function AccountTransactionsContent() {
             const data = await res.json();
             if (!res.ok) throw new Error(data?.error || "Failed to load transactions.");
             setRows(data.rows || []);
+            setOpeningBalanceCents(Number(data.openingBalanceCents || 0));
+            setLoadedReportType(reportType);
             setContacts(data.contacts || []);
         } catch (error) {
             setMessage(error instanceof Error ? error.message : "Failed to load transactions.");
@@ -106,7 +111,8 @@ function AccountTransactionsContent() {
         credit: acc.credit + Number(row.credit_cents || 0),
     }), { debit: 0, credit: 0 }), [rows]);
 
-    let runningBalance = 0;
+    const isAccrual = loadedReportType === "accrual";
+    let runningBalance = isAccrual ? openingBalanceCents : 0;
 
     return (
         <main className="min-h-screen bg-[#f7f9fc] px-4 py-8 text-slate-950 sm:px-8">
@@ -250,13 +256,13 @@ function AccountTransactionsContent() {
                             </tr>
                             <tr className="bg-slate-200/80">
                                 <th colSpan={5} className="px-5 py-4 text-left">
-                                    <div className="font-semibold">Cash on Hand</div>
-                                    <div className="text-sm font-normal text-slate-600">Under: Asset &gt; Cash and Bank</div>
+                                    <div className="font-semibold">{isAccrual ? "Customer invoice receivables" : "Customer payments received"}</div>
+                                    <div className="text-sm font-normal text-slate-600">{isAccrual ? "Invoice charges (debits) less payment credits. Historical payments without a recorded payment date are placed on their invoice date." : "Dated payment-ledger entries only. Historical imports without a payment date are excluded."}</div>
                                 </th>
                             </tr>
                             <tr className="bg-slate-100">
-                                <th className="px-5 py-3 text-left" colSpan={4}>Starting Balance</th>
-                                <th className="px-5 py-3 text-right">{money(0)}</th>
+                                <th className="px-5 py-3 text-left" colSpan={4}>{isAccrual ? "Opening outstanding balance" : "Starting payments received"}</th>
+                                <th className="px-5 py-3 text-right">{money(isAccrual ? openingBalanceCents : 0)}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -265,9 +271,11 @@ function AccountTransactionsContent() {
                             ) : rows.length === 0 ? (
                                 <tr><td colSpan={5} className="px-5 py-10 text-center text-slate-400">No transactions found for this selection.</td></tr>
                             ) : rows.map((row) => {
-                                runningBalance += Number(row.credit_cents || 0) - Number(row.debit_cents || 0);
+                                runningBalance += isAccrual
+                                    ? Number(row.debit_cents || 0) - Number(row.credit_cents || 0)
+                                    : Number(row.credit_cents || 0) - Number(row.debit_cents || 0);
                                 return (
-                                    <tr key={`${row.id}-${row.transaction_date}`} className="border-b border-slate-100">
+                                    <tr key={row.transaction_key} className="border-b border-slate-100">
                                         <td className="px-5 py-4">{displayDate(row.transaction_date)}</td>
                                         <td className="px-5 py-4 font-semibold text-blue-700">
                                             {row.invoice_id ? (
@@ -293,7 +301,7 @@ function AccountTransactionsContent() {
                                 <td colSpan={2} className="px-5 py-4">Totals and Ending Balance</td>
                                 <td className="px-5 py-4 text-right">{money(totals.debit)}</td>
                                 <td className="px-5 py-4 text-right">{money(totals.credit)}</td>
-                                <td className="px-5 py-4 text-right">{money(totals.credit - totals.debit)}</td>
+                                <td className="px-5 py-4 text-right">{money(isAccrual ? openingBalanceCents + totals.debit - totals.credit : totals.credit - totals.debit)}</td>
                             </tr>
                         </tfoot>
                     </table>

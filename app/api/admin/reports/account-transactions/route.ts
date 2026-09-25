@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ success: false, error: "Invalid report type." }, { status: 400 });
     }
 
-    const rows = await getAccountTransactionsReport({
+    const report = await getAccountTransactionsReport({
         memberId,
         fromDate: from,
         toDate: to,
@@ -44,5 +44,5 @@ export async function GET(req: NextRequest) {
     });
     const contacts = await listAccountTransactionContacts();
 
-    return NextResponse.json({ success: true, rows, contacts });
+    return NextResponse.json({ success: true, rows: report.rows, openingBalanceCents: report.openingBalanceCents, contacts });
 }

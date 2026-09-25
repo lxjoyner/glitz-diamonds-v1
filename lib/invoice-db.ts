@@ -616,6 +616,7 @@ export async function getIncomeByCustomerReport(fromDate: string, toDate: string
 
 export type AccountTransactionRow = RowDataPacket & {
     id: number;
+    transaction_key: string;
     transaction_date: string;
     invoice_id: number;
     invoice_number: string;
@@ -627,19 +628,29 @@ export type AccountTransactionRow = RowDataPacket & {
     description: string;
 };
 
+export type AccountTransactionsReport = {
+    rows: AccountTransactionRow[];
+    openingBalanceCents: number;
+};
+
 export async function getAccountTransactionsReport(input: {
     memberId: number;
     fromDate: string;
     toDate: string;
     reportType: "accrual" | "cash" | "cash_only";
-}): Promise<AccountTransactionRow[]> {
+}): Promise<AccountTransactionsReport> {
     await ensureInvoiceSchema();
 
-    if (input.reportType === "cash") {
+    // Cash reports contain dated payment-ledger entries only. Historical imported
+    // invoices have amounts paid, but no known payment date/method: counting them
+    // as dated cash receipts would invent accounting data.
+    if (input.reportType === "cash" || input.reportType === "cash_only") {
+        const cashOnly = input.reportType === "cash_only" ? "AND LOWER(p.method) = 'cash'" : "";
         const [rows] = await pool.query<AccountTransactionRow[]>(`
             SELECT
                 p.id,
-                p.payment_date AS transaction_date,
+                CONCAT('payment-', p.id) AS transaction_key,
+                DATE_FORMAT(p.payment_date, '%Y-%m-%d') AS transaction_date,
                 p.invoice_id,
                 i.invoice_number,
                 i.public_token,
@@ -653,55 +664,122 @@ export async function getAccountTransactionsReport(input: {
             LEFT JOIN users u ON u.id = p.member_id
             WHERE (? = 0 OR p.member_id = ?)
               AND p.payment_date BETWEEN ? AND ?
+              ${cashOnly}
             ORDER BY p.payment_date, p.id
         `, [input.memberId, input.memberId, input.fromDate, input.toDate]);
-        return rows;
+        return { rows, openingBalanceCents: 0 };
     }
 
-    if (input.reportType === "cash_only") {
-        const [rows] = await pool.query<AccountTransactionRow[]>(`
-            SELECT
-                p.id,
-                p.payment_date AS transaction_date,
-                p.invoice_id,
-                i.invoice_number,
-                i.public_token,
-                p.member_id,
-                COALESCE(u.full_name, CONCAT('Member #', p.member_id)) AS customer_name,
-                0 AS debit_cents,
-                p.amount_cents AS credit_cents,
-                CONCAT(COALESCE(u.full_name, CONCAT('Member #', p.member_id)), ' - Payment for Invoice ', i.invoice_number) AS description
-            FROM invoice_payments p
-            JOIN invoices i ON i.id = p.invoice_id
-            LEFT JOIN users u ON u.id = p.member_id
-            WHERE (? = 0 OR p.member_id = ?)
-              AND p.payment_date BETWEEN ? AND ?
-              AND LOWER(p.method) = 'cash'
-            ORDER BY p.payment_date, p.id
-        `, [input.memberId, input.memberId, input.fromDate, input.toDate]);
-        return rows;
-    }
-
-    const [rows] = await pool.query<AccountTransactionRow[]>(`
-        SELECT
-            i.id,
-            i.invoice_date AS transaction_date,
-            i.id AS invoice_id,
-            i.invoice_number,
-            i.public_token,
-            i.member_id,
+    // Accrual must contain BOTH the invoice charge and a separate credit for
+    // each recorded payment. Each row uses its actual event date.
+    //
+    // The historical invoice importer saves amount_paid_cents without a matching
+    // invoice_payments record. Recover only that unitemized paid portion, after
+    // subtracting all itemized payment rows to prevent double-counting. Because
+    // historical payment dates were not imported, the invoice date is used as
+    // the report placement date and the row is explicitly labeled as such.
+    const historicalPaid = `
+        SELECT i.id, i.invoice_date, i.invoice_number, i.public_token, i.member_id,
             COALESCE(u.full_name, CONCAT('Member #', i.member_id)) AS customer_name,
-            i.total_cents AS debit_cents,
-            0 AS credit_cents,
-            CONCAT(COALESCE(u.full_name, CONCAT('Member #', i.member_id)), ' - ', i.invoice_number) AS description
+            (i.amount_paid_cents - COALESCE(paid.itemized_cents, 0)) AS historical_cents
         FROM invoices i
         LEFT JOIN users u ON u.id = i.member_id
-        WHERE (? = 0 OR i.member_id = ?)
-          AND i.invoice_date BETWEEN ? AND ?
-          AND i.status <> 'void'
-        ORDER BY i.invoice_date, i.id
-    `, [input.memberId, input.memberId, input.fromDate, input.toDate]);
-    return rows;
+        LEFT JOIN (
+            SELECT invoice_id, SUM(amount_cents) AS itemized_cents
+            FROM invoice_payments
+            GROUP BY invoice_id
+        ) paid ON paid.invoice_id = i.id
+        WHERE i.status <> 'void'
+          AND i.amount_paid_cents > COALESCE(paid.itemized_cents, 0)
+    `;
+
+    const [rows] = await pool.query<AccountTransactionRow[]>(`
+        SELECT activity.id, activity.transaction_key, activity.transaction_date,
+            activity.invoice_id, activity.invoice_number, activity.public_token,
+            activity.member_id, activity.customer_name, activity.debit_cents,
+            activity.credit_cents, activity.description
+        FROM (
+            SELECT i.id,
+                CONCAT('invoice-', i.id) AS transaction_key,
+                DATE_FORMAT(i.invoice_date, '%Y-%m-%d') AS transaction_date,
+                i.id AS invoice_id, i.invoice_number, i.public_token, i.member_id,
+                COALESCE(u.full_name, CONCAT('Member #', i.member_id)) AS customer_name,
+                i.total_cents AS debit_cents, 0 AS credit_cents,
+                CONCAT(COALESCE(u.full_name, CONCAT('Member #', i.member_id)), ' - ', i.invoice_number) AS description,
+                0 AS entry_order
+            FROM invoices i
+            LEFT JOIN users u ON u.id = i.member_id
+            WHERE (? = 0 OR i.member_id = ?)
+              AND i.invoice_date BETWEEN ? AND ?
+              AND i.status <> 'void'
+
+            UNION ALL
+
+            SELECT p.id,
+                CONCAT('payment-', p.id) AS transaction_key,
+                DATE_FORMAT(p.payment_date, '%Y-%m-%d') AS transaction_date,
+                p.invoice_id, i.invoice_number, i.public_token, p.member_id,
+                COALESCE(u.full_name, CONCAT('Member #', p.member_id)) AS customer_name,
+                0 AS debit_cents, p.amount_cents AS credit_cents,
+                CONCAT(COALESCE(u.full_name, CONCAT('Member #', p.member_id)),
+                    ' - Payment for Invoice ', i.invoice_number) AS description,
+                1 AS entry_order
+            FROM invoice_payments p
+            JOIN invoices i ON i.id = p.invoice_id
+            LEFT JOIN users u ON u.id = p.member_id
+            WHERE (? = 0 OR p.member_id = ?)
+              AND p.payment_date BETWEEN ? AND ?
+              AND i.status <> 'void'
+
+            UNION ALL
+
+            SELECT h.id,
+                CONCAT('historical-payment-', h.id) AS transaction_key,
+                DATE_FORMAT(h.invoice_date, '%Y-%m-%d') AS transaction_date,
+                h.id AS invoice_id, h.invoice_number, h.public_token, h.member_id,
+                h.customer_name, 0 AS debit_cents,
+                h.historical_cents AS credit_cents,
+                CONCAT(h.customer_name, ' - Historical payment for Invoice ',
+                    h.invoice_number, ' (payment date unavailable)') AS description,
+                2 AS entry_order
+            FROM (${historicalPaid}) h
+            WHERE (? = 0 OR h.member_id = ?)
+              AND h.invoice_date BETWEEN ? AND ?
+        ) activity
+        ORDER BY activity.transaction_date, activity.invoice_id,
+            activity.entry_order, activity.id
+    `, [
+        input.memberId, input.memberId, input.fromDate, input.toDate,
+        input.memberId, input.memberId, input.fromDate, input.toDate,
+        input.memberId, input.memberId, input.fromDate, input.toDate,
+    ]);
+
+    // The date filter must not reset an existing customer receivable to zero.
+    // Bring forward charges and credits from before the requested start date.
+    const [opening] = await pool.query<RowDataPacket[]>(`
+        SELECT (
+            (SELECT COALESCE(SUM(i.total_cents), 0)
+             FROM invoices i
+             WHERE (? = 0 OR i.member_id = ?)
+               AND i.invoice_date < ? AND i.status <> 'void')
+            -
+            (SELECT COALESCE(SUM(p.amount_cents), 0)
+             FROM invoice_payments p
+             JOIN invoices i ON i.id = p.invoice_id
+             WHERE (? = 0 OR p.member_id = ?)
+               AND p.payment_date < ? AND i.status <> 'void')
+            -
+            (SELECT COALESCE(SUM(h.historical_cents), 0)
+             FROM (${historicalPaid}) h
+             WHERE (? = 0 OR h.member_id = ?) AND h.invoice_date < ?)
+        ) AS opening_cents
+    `, [
+        input.memberId, input.memberId, input.fromDate,
+        input.memberId, input.memberId, input.fromDate,
+        input.memberId, input.memberId, input.fromDate,
+    ]);
+
+    return { rows, openingBalanceCents: Number(opening[0]?.opening_cents || 0) };
 }
 
 
