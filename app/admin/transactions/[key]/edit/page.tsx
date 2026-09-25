@@ -29,6 +29,9 @@ export default function EditTransactionPage() {
     const [amount, setAmount] = useState("");
     const [category, setCategory] = useState("");
     const [memo, setMemo] = useState("");
+    const [transactionType, setTransactionType] = useState<"Deposit" | "Withdrawal">("Withdrawal");
+    const [accounts, setAccounts] = useState<string[]>([]);
+    const [dateVerified, setDateVerified] = useState(false);
     const [message, setMessage] = useState("");
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
