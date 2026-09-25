@@ -69,9 +69,8 @@ export async function getOverdueSummaryForInvoice(invoice: {
     member_id: number;
     invoice_date: string;
 }) {
-    const raw = invoice.invoice_date;
-    // MySQL DATE may reach application code as a Date or an ISO string.
-    const date = raw instanceof Date ? raw.toISOString().slice(0, 10)
-        : String(raw).slice(0, 10);
+    // Invoice records expose this field as a string. Normalize its ISO date
+    // portion without an instanceof check on a statically string-typed value.
+    const date = String(invoice.invoice_date).slice(0, 10);
     return getMemberOverdueInvoiceSummary(Number(invoice.member_id), date, Number(invoice.id));
 }
