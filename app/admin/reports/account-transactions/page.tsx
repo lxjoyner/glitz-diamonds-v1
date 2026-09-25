@@ -53,6 +53,7 @@ function AccountTransactionsContent() {
     const [contacts, setContacts] = useState<Contact[]>([]);
     const [memberId, setMemberId] = useState(initialMemberId);
     const [reportType, setReportType] = useState(initialType);
+    const [loadedReportType, setLoadedReportType] = useState(initialType);
     const [fromDate, setFromDate] = useState(initialFrom);
     const [toDate, setToDate] = useState(initialTo);
     const [loading, setLoading] = useState(true);
@@ -69,6 +70,7 @@ function AccountTransactionsContent() {
             if (!res.ok) throw new Error(data?.error || "Failed to load transactions.");
             setRows(data.rows || []);
             setOpeningBalanceCents(Number(data.openingBalanceCents || 0));
+            setLoadedReportType(reportType);
             setContacts(data.contacts || []);
         } catch (error) {
             setMessage(error instanceof Error ? error.message : "Failed to load transactions.");
@@ -109,7 +111,7 @@ function AccountTransactionsContent() {
         credit: acc.credit + Number(row.credit_cents || 0),
     }), { debit: 0, credit: 0 }), [rows]);
 
-    const isAccrual = reportType === "accrual";
+    const isAccrual = loadedReportType === "accrual";
     let runningBalance = isAccrual ? openingBalanceCents : 0;
 
     return (
