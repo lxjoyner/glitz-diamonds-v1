@@ -57,7 +57,7 @@ export default function EditTransactionPage() {
             else setMessage(options.error || "Unable to load payment accounts.");
             setTransaction(item);
             setDate(String(item.transaction_date).slice(0, 10));
-            setDescription(item.description || "");
+            setDescription(key.startsWith("bill-history-") ? String(item.description || "").replace(" (actual date unknown)", "") : item.description || "");
             setAccount(item.account_name || "");
             setAmount((Number(item.amount_cents || 0) / 100).toFixed(2));
             setCategory(item.category || "");
