@@ -47,6 +47,7 @@ export type InvoiceRecord = RowDataPacket & {
     email_opened_at: string | null;
     customer_viewed_at: string | null;
     customer_view_count: number;
+    email_send_count?: number;
 };
 
 export type InvoiceWithDisplayStatus = InvoiceRecord & {
@@ -217,8 +218,25 @@ function computedStatus(row: { status: string; due_date: string; total_cents: nu
 
 export async function listInvoices(): Promise<InvoiceWithDisplayStatus[]> {
     await ensureInvoiceSchema();
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS invoice_email_tracking (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            invoice_id BIGINT NOT NULL,
+            tracking_token CHAR(64) NOT NULL UNIQUE,
+            recipient_email VARCHAR(180) NOT NULL,
+            sent_at DATETIME NULL,
+            opened_at DATETIME NULL,
+            open_count INT NOT NULL DEFAULT 0,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_invoice_email_tracking_invoice (invoice_id),
+            CONSTRAINT fk_invoice_email_tracking_invoice FOREIGN KEY (invoice_id)
+                REFERENCES invoices(id) ON DELETE CASCADE
+        )
+    `);
     const [rows] = await pool.query<InvoiceRecord[]>(`
-        SELECT i.*, u.full_name AS member_name, u.email AS member_email
+        SELECT i.*, u.full_name AS member_name, u.email AS member_email,
+            (SELECT COUNT(*) FROM invoice_email_tracking t
+             WHERE t.invoice_id = i.id AND t.sent_at IS NOT NULL) AS email_send_count
         FROM invoices i
         LEFT JOIN users u ON u.id = i.member_id
         ORDER BY i.created_at DESC, i.id DESC
