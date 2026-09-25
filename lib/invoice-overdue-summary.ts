@@ -61,16 +61,34 @@ export async function getMemberOverdueInvoiceSummary(
     };
 }
 
-/** Use each rendered invoice's own date as the reference for its overdue
- * section, rather than the viewer's current date. This keeps print and web
- * views consistent with the original billing period. */
+/**
+ * MySQL DATE columns are often returned as JavaScript Date objects at runtime,
+ * even though InvoiceRecord declares invoice_date as a string. Read the real
+ * runtime value before passing an as-of date into the overdue report.
+ */
+export function normalizeInvoiceOverdueDate(value: string | Date): string {
+    if (value instanceof Date) {
+        if (Number.isNaN(value.getTime())) throw new Error("INVALID_DATE");
+        return value.toISOString().slice(0, 10);
+    }
+    const input = String(value).trim();
+    // Accept SQL/ISO dates, ISO datetime, and serialized MySQL dates. Do not
+    // feed locale-formatted or invalid input into the overdue query.
+    const match = /^(\d{4})-(\d{2})-(\d{2})(?:[T ]|$)/.exec(input);
+    if (!match) throw new Error("INVALID_DATE");
+    const iso = `${match[1]}-${match[2]}-${match[3]}`;
+    const parsed = new Date(iso + "T00:00:00Z");
+    if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== iso) {
+        throw new Error("INVALID_DATE");
+    }
+    return iso;
+}
+
 export async function getOverdueSummaryForInvoice(invoice: {
     id: number;
     member_id: number;
-    invoice_date: string;
+    invoice_date: string | Date;
 }) {
-    // Invoice records expose this field as a string. Normalize its ISO date
-    // portion without an instanceof check on a statically string-typed value.
-    const date = String(invoice.invoice_date).slice(0, 10);
+    const date = normalizeInvoiceOverdueDate(invoice.invoice_date);
     return getMemberOverdueInvoiceSummary(Number(invoice.member_id), date, Number(invoice.id));
 }
