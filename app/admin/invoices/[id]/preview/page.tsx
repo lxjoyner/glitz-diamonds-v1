@@ -5,6 +5,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { verifyAdminToken } from "@/lib/auth";
 import { getInvoiceForEdit } from "@/lib/invoice-db";
+import ApproveDraftButton from "@/components/ApproveDraftButton";
 
 const money = (cents: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format((Number(cents) || 0) / 100);
 
@@ -45,6 +46,7 @@ export default async function AdminInvoicePreviewPage({ params }: { params: Prom
                     <Link href={`/admin/invoices/${invoice.id}/edit`} className="rounded-full bg-blue-700 px-5 py-2.5 font-semibold text-white hover:bg-blue-800">
                         Edit invoice
                     </Link>
+                    {invoice.status === "draft" && <ApproveDraftButton invoiceId={invoice.id} />}
                 </div>
 
                 <div className="rounded-2xl bg-white p-6 shadow-lg sm:p-10">

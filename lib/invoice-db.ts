@@ -440,6 +440,21 @@ export async function deleteInvoice(invoiceId: number) {
     return result.affectedRows === 1;
 }
 
+/** Approving a draft makes it ready for sending; it does not email the member. */
+export async function approveDraftInvoice(invoiceId: number) {
+    await ensureInvoiceSchema();
+    const [result] = await pool.execute<ResultSetHeader>(`
+        UPDATE invoices SET status = 'sent'
+        WHERE id = ? AND status = 'draft'
+    `, [invoiceId]);
+    if (result.affectedRows === 1) return "approved" as const;
+    const [rows] = await pool.query<RowDataPacket[]>(
+        "SELECT status FROM invoices WHERE id = ? LIMIT 1", [invoiceId]
+    );
+    if (!rows.length) return "not_found" as const;
+    return "not_draft" as const;
+}
+
 export async function createInvoice(input: InvoiceInput) {
     await ensureInvoiceSchema();
     const subtotalCents = input.items.reduce((sum, item) => sum + Math.round(item.quantity * item.unitPriceCents), 0);
