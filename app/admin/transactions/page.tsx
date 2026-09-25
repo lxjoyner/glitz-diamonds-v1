@@ -223,7 +223,7 @@ export default function TransactionsPage() {
                                                             <div className="absolute right-0 z-50 mt-2 w-48 rounded-xl border border-slate-200 bg-white py-2 text-left shadow-xl">
                                                                 <Link href={`/admin/transactions/${encodeURIComponent(row.transaction_key)}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit more details</Link>
                                                                 <button type="button" onClick={() => { setUploadKey(row.transaction_key); fileInputRef.current?.click(); setOpenActionKey(null); }} className="block w-full px-4 py-2 text-left hover:bg-slate-50">Upload receipt</button>
-                                                                <button type="button" onClick={() => deleteTransaction(row)} className="block w-full px-4 py-2 text-left text-red-700 hover:bg-red-50">Delete</button>
+                                                                {!row.transaction_key.startsWith("invoice-history-") && !row.transaction_key.startsWith("bill-history-") && <button type="button" onClick={() => deleteTransaction(row)} className="block w-full px-4 py-2 text-left text-red-700 hover:bg-red-50">Delete</button>}
                                                             </div>
                                                         )}
                                                     </div>

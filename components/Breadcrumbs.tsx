@@ -14,6 +14,7 @@ const LABELS: Record<string, string> = {
     vendors: "Vendors",
     bills: "Bills",
     transactions: "Transactions",
+    "historical-import": "Historical Import",
     recurring: "Recurring Invoices",
     new: "New Invoice",
     edit: "Edit",
