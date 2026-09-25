@@ -158,7 +158,7 @@ export default function BillsPage() {
             <div className="mx-auto max-w-[1500px]">
                 <div className="mb-8 flex items-center justify-between gap-4">
                     <h1 className="text-4xl font-bold tracking-tight">Bills</h1>
-                    <Link href="/admin/vendors" className="rounded-full bg-blue-700 px-6 py-3 font-semibold text-white hover:bg-blue-800">Create a bill</Link>
+                    <div className="flex flex-wrap gap-3"><Link href="/admin/vendors/bills/historical-import" className="rounded-full border border-blue-600 bg-white px-6 py-3 font-semibold text-blue-700 hover:bg-blue-50">Historical Bills Import</Link><Link href="/admin/vendors" className="rounded-full bg-blue-700 px-6 py-3 font-semibold text-white hover:bg-blue-800">Create a bill</Link></div>
                 </div>
 
                 <section className="mb-6 grid gap-4 rounded-2xl bg-white p-5 shadow-sm lg:grid-cols-[1fr_1fr]">
