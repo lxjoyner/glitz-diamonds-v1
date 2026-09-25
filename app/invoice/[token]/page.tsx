@@ -1,7 +1,8 @@
 import InvoiceOverdueTable from "@/components/InvoiceOverdueTable";
 import { getOverdueSummaryForInvoice } from "@/lib/invoice-overdue-summary";
 import { notFound } from "next/navigation";
-import { getInvoiceByPublicToken, markInvoiceViewed } from "@/lib/invoice-db";
+import { getInvoiceByPublicToken } from "@/lib/invoice-db";
+import CustomerInvoiceViewTracker from "@/components/CustomerInvoiceViewTracker";
 
 const money = (cents: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format((cents || 0) / 100);
 
@@ -9,13 +10,13 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
     const { token } = await params;
     const invoice = await getInvoiceByPublicToken(token);
     if (!invoice) notFound();
-    await markInvoiceViewed(token);
 
     const balance = Math.max(0, Number(invoice.total_cents) - Number(invoice.amount_paid_cents));
     const overdue = await getOverdueSummaryForInvoice(invoice);
 
     return (
         <main className="min-h-screen bg-slate-100 px-4 py-10 text-slate-950 sm:px-8">
+            {invoice.sent_at ? <CustomerInvoiceViewTracker token={token} /> : null}
             <div className="mx-auto max-w-4xl rounded-2xl bg-white p-6 shadow-lg sm:p-10">
                 <div className="border-b border-slate-200 pb-6">
                     <div className="flex flex-wrap items-start justify-between gap-6">
