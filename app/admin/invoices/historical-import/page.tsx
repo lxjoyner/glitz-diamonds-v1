@@ -10,6 +10,7 @@ type Row = {
     oldInvoiceNumber: string;
     invoiceDate: string;
     dueDate: string;
+    paymentDate?: string;
     amount: string;
     amountPaid: string;
     status: "paid" | "unpaid" | "overdue";
@@ -67,7 +68,7 @@ export default function HistoricalInvoiceImportPage() {
         setRows(getYolandaInvoicePreset());
         setYolandaPresetLoaded(true);
         setPreview([]);
-        setMessage("Loaded 47 Paid historical invoices totaling $2,225.00. The screenshots do not show due dates, so the invoice dates were used as editable placeholders. Verify the selected member, due dates, special amounts and non-recurring entries before preview and import.");
+        setMessage("Loaded 47 Paid historical invoices totaling $2,225.00. As confirmed, the invoice date, due date and payment date match the date on each source row. Verify the selected member, amounts and payment account before import.");
     }
 
     function addRows(count = 1) {
@@ -116,7 +117,7 @@ export default function HistoricalInvoiceImportPage() {
             if (!selectedMember || !selectedMember.full_name.toLowerCase().includes("yolanda")) {
                 return setMessage("Confirm the correct Yolanda member record before importing. Do not select another member based only on the uploaded filename.");
             }
-            if (!window.confirm(`Import ${rows.length} paid invoice rows into member ${selectedMember.full_name} (${selectedMember.email})? Please confirm the member, amounts and the assumed due dates are correct. This does not send invoices or create dated payment-ledger entries.`)) return;
+            if (!window.confirm(`Import ${rows.length} paid invoice rows into member ${selectedMember.full_name} (${selectedMember.email})? Confirm the member and amounts. Due dates and payment dates match the source row dates per your instructions. No emails will be sent.`)) return;
         }
         setBusy(true);
         try {
@@ -128,6 +129,7 @@ export default function HistoricalInvoiceImportPage() {
                     mode,
                     invoices: rows.map((row) => ({
                         ...row,
+                        paymentDate: row.paymentDate || undefined,
                         amount: Number(row.amount),
                         amountPaid: Number(row.amountPaid),
                     })),
@@ -176,7 +178,7 @@ export default function HistoricalInvoiceImportPage() {
                     {selectedMember && <p className="mt-2 text-sm text-slate-500">Importing into member #{selectedMember.id}: {selectedMember.full_name}</p>}
                     {yolandaPresetLoaded && <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
                         <p className="font-semibold">Yolanda screenshot import loaded: {rows.length} editable rows; source total {(YOLANDA_SOURCE_TOTAL_CENTS / 100).toLocaleString("en-US", { style: "currency", currency: "USD" })} across {YOLANDA_SOURCE_COUNT} source records.</p>
-                        <p className="mt-1">The screenshots identify the customer only as Yolanda; confirm the correct existing member yourself. All 47 rows show Paid with $0.00 remaining. Actual due dates, payment dates and item descriptions were not supplied. Due dates currently match the visible invoice dates as review placeholders; no payment-ledger entries or emails will be created by this import.</p>
+                        <p className="mt-1">The screenshots identify the customer only as Yolanda; confirm the correct existing member yourself. All 47 rows show Paid with $0.00 remaining. You confirmed the invoice, due and payment dates are identical on every row. Payment account, method and original line-item details were not shown. No emails are sent by the import.</p>
                         <p className="mt-1">Pay particular attention to legacy #27 ($1,000), #77 ($100), and the seven rows without a visible Recurring label.</p>
                     </div>}}
                 </section>
