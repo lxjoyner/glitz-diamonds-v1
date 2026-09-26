@@ -294,6 +294,7 @@ export async function claimRecurringRun(recurringInvoiceId: number, scheduledFor
         const status = String(previous.status);
         // A process that died without updating the row should not lock
         // billing forever. Another worker can reclaim after 30 minutes.
+        // MySQL DATETIME values may be parsed in Node's local timezone.
         const updated = new Date(previous.updated_at).getTime();
         const stale = Number.isFinite(updated) && updated < Date.now() - 30 * 60 * 1000;
         if (status === "completed" || (status === "processing" && !stale)) {
