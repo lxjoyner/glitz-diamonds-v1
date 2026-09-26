@@ -37,11 +37,10 @@ async function ensureDonationsTable() {
         )
     `);
 
-    await pool.query("ALTER TABLE donations ADD COLUMN IF NOT EXISTS stripe_payment_intent_id VARCHAR(128) NULL UNIQUE");
-    await pool.query("ALTER TABLE donations ADD COLUMN IF NOT EXISTS payment_status VARCHAR(40) NOT NULL DEFAULT 'pending'");
-
     const [columns] = await pool.query<import("mysql2/promise").RowDataPacket[]>( "SHOW COLUMNS FROM donations" );
     const names = new Set(columns.map(column => String(column.Field)));
+    if (!names.has("stripe_payment_intent_id")) await pool.query("ALTER TABLE donations ADD COLUMN stripe_payment_intent_id VARCHAR(128) NULL UNIQUE");
+    if (!names.has("payment_status")) await pool.query("ALTER TABLE donations ADD COLUMN payment_status VARCHAR(40) NOT NULL DEFAULT 'pending'");
     if (!names.has("donation_date")) await pool.query("ALTER TABLE donations ADD COLUMN donation_date DATE NULL");
     if (!names.has("account_name")) await pool.query("ALTER TABLE donations ADD COLUMN account_name VARCHAR(120) NULL");
     if (!names.has("payment_method")) await pool.query("ALTER TABLE donations ADD COLUMN payment_method VARCHAR(80) NULL");
