@@ -25,6 +25,11 @@ export default function BalanceSheetPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [exportOpen, setExportOpen] = useState(false);
+    const [canSetOpening, setCanSetOpening] = useState(false);
+    const [openingDate, setOpeningDate] = useState("");
+    const [openingAmount, setOpeningAmount] = useState("");
+    const [openingSaved, setOpeningSaved] = useState("");
+    const [openingBusy, setOpeningBusy] = useState(false);
 
     async function load(date = asOf, type = reportType) {
         setError(""); setLoading(true);
@@ -45,6 +50,16 @@ export default function BalanceSheetPage() {
                 const me = await response.json();
                 if (!me.authenticated) { router.push("/admin/login"); return; }
                 if (!["admin","treasurer"].includes(me.user?.role)) throw new Error("Access denied.");
+                setCanSetOpening(me.user.role === "admin");
+                const openingResponse = await fetch("/api/admin/reports/balance-sheet/opening", { cache: "no-store" });
+                if (openingResponse.ok) {
+                    const openingResult = await openingResponse.json();
+                    if (openingResult.opening) {
+                        setOpeningDate(openingResult.opening.balanceDate);
+                        setOpeningAmount((Number(openingResult.opening.openingCents)/100).toFixed(2));
+                        setOpeningSaved("Opening balance configured.");
+                    }
+                }
                 if (active) await load();
             } catch (err) { if (active) { setError(err instanceof Error ? err.message : "Access denied."); setLoading(false); } }
         })();
@@ -52,6 +67,28 @@ export default function BalanceSheetPage() {
     // Initial request only. All later requests use Update Report.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [router]);
+
+    async function saveOpening() {
+        setError("");setOpeningSaved("");setOpeningBusy(true);
+        const amount = Number(openingAmount);
+        if (!openingDate || !Number.isFinite(amount) || amount < 0 ||
+            !/^\\d+(?:\\.\\d{1,2})?$/.test(openingAmount.trim())) {
+            setError("Enter a verified date and valid nonnegative cash/bank amount.");
+            setOpeningBusy(false);return;
+        }
+        try {
+            const response = await fetch("/api/admin/reports/balance-sheet/opening", {
+                method:"PUT",headers:{"Content-Type":"application/json"},
+                body:JSON.stringify({balanceDate:openingDate,openingCents:Math.round(amount*100)})
+            });
+            const result = await response.json();
+            if(!response.ok) throw new Error(result.error || "Unable to save opening balance.");
+            setOpeningSaved("Opening balance saved. Report recalculated.");
+            await load();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Unable to save opening balance.");
+        } finally {setOpeningBusy(false);}
+    }
 
     function exportReport(format: "csv" | "pdf") {
         if (!report) return;
@@ -107,6 +144,20 @@ export default function BalanceSheetPage() {
                 <button type="button" onClick={() => load()} disabled={loading || !asOf}
                     className="rounded-full bg-blue-700 px-6 py-3 font-semibold text-white disabled:opacity-50">{loading?"Loading...":"Update Report"}</button>
             </div>
+            {canSetOpening && <details className="mb-5 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+                <summary className="cursor-pointer font-semibold text-blue-800">Configure opening Cash and Bank balance</summary>
+                <p className="mt-3 text-sm text-slate-600">Enter the independently verified closing balance for all cash/bank accounts on a known date. Later recorded in-app receipts and vendor payments are applied after that date. Do not enter the sample amounts unless they match your own accounts.</p>
+                <div className="mt-4 flex flex-wrap items-end gap-3">
+                    <label className="grid gap-1 text-sm font-medium">Verified balance date
+                        <input type="date" value={openingDate} onChange={e=>setOpeningDate(e.target.value)} className="rounded-lg border px-3 py-2" />
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium">Combined Cash and Bank ($)
+                        <input type="text" inputMode="decimal" placeholder="0.00" value={openingAmount} onChange={e=>setOpeningAmount(e.target.value)} className="rounded-lg border px-3 py-2" />
+                    </label>
+                    <button type="button" disabled={openingBusy} onClick={saveOpening} className="rounded-full bg-blue-700 px-5 py-2.5 font-semibold text-white disabled:opacity-50">{openingBusy?"Saving...":"Save opening balance"}</button>
+                </div>
+                {openingSaved && <p role="status" className="mt-3 text-sm font-medium text-emerald-700">{openingSaved}</p>}
+            </details>}
             {error && <div role="alert" className="mb-5 rounded-lg bg-red-50 p-4 text-red-700">{error}</div>}
             {report && <>
                 <div className="mb-8 flex flex-wrap items-center justify-center gap-4 text-center">
