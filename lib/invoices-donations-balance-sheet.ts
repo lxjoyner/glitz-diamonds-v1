@@ -68,7 +68,6 @@ export async function getInvoicesDonationsBalanceSheet(
     if (reportType !== "accrual" && reportType !== "cash") throw new Error("INVALID_REPORT_TYPE");
     await ensureInvoiceSchema();
     await ensureVendorBillPaymentSchema();
-    const opening = await getBalanceSheetOpening();
 
     // Invoice outstanding is aggregated at the report date using the actual
     // payment dates when they exist. Historic paid amounts without transaction
@@ -111,53 +110,78 @@ export async function getInvoicesDonationsBalanceSheet(
         WHERE b.bill_date <= ? AND b.status <> 'void'
     `, [asOf, asOf]);
 
-    // Cash ledger = recorded dated invoice inflows minus dated vendor bill
-    // outflows. Historic imported paid values are NOT booked as dated cash.
-    // Without opening account balances this is *net recorded cash movement*,
-    // NOT Cash on Hand. Keep it separately labeled as a disclosed metric.
+
+    // Cash and Bank is an operational total of paid invoices plus recorded
+    // donations (currently donations can only appear as invoice payments),
+    // less paid vendor bills. Use each persisted paid amount once.
+    //
+    // A ledger row is dated; an imported historical remainder has no actual
+    // payment date, so place only that undated remainder on its parent invoice
+    // or bill date for historical as-of reporting. This is explicitly disclosed.
+    //
+    // Ledger amounts are not counted twice after historic reconciliation:
+    // parent paid balance - ALL ledger entries = undated imported remainder.
     const [cashRows] = await pool.query<RowDataPacket[]>(`
         SELECT
             (SELECT COALESCE(SUM(p.amount_cents), 0)
              FROM invoice_payments p JOIN invoices i ON i.id = p.invoice_id
-             WHERE p.payment_date > ? AND p.payment_date <= ? AND i.status <> 'void')
+             WHERE p.payment_date <= ? AND i.invoice_date <= ?
+               AND i.status <> 'void')
+            +
+            (SELECT COALESCE(SUM(GREATEST(0, i.amount_paid_cents -
+                COALESCE(posted.total_cents, 0))), 0)
+             FROM invoices i
+             LEFT JOIN (
+                 SELECT invoice_id, SUM(amount_cents) AS total_cents
+                 FROM invoice_payments GROUP BY invoice_id
+             ) posted ON posted.invoice_id = i.id
+             WHERE i.invoice_date <= ? AND i.status <> 'void')
             -
             (SELECT COALESCE(SUM(p.amount_cents), 0)
              FROM vendor_bill_payments p JOIN vendor_bills b ON b.id = p.bill_id
-             WHERE p.payment_date > ? AND p.payment_date <= ? AND b.status <> 'void')
+             WHERE p.payment_date <= ? AND b.bill_date <= ?
+               AND b.status <> 'void')
+            -
+            (SELECT COALESCE(SUM(GREATEST(0, b.amount_paid_cents -
+                COALESCE(posted.total_cents, 0))), 0)
+             FROM vendor_bills b
+             LEFT JOIN (
+                 SELECT bill_id, SUM(amount_cents) AS total_cents
+                 FROM vendor_bill_payments GROUP BY bill_id
+             ) posted ON posted.bill_id = b.id
+             WHERE b.bill_date <= ? AND b.status <> 'void')
             AS net_cash_cents
-    `, [opening?.balanceDate ?? "1000-01-01", asOf,
-        opening?.balanceDate ?? "1000-01-01", asOf]);
-
+    `, [asOf, asOf, asOf, asOf, asOf, asOf]);
     const receivables = Number(invoiceRows[0]?.receivable_cents || 0);
     const pastDue = Number(invoiceRows[0]?.overdue_cents || 0);
     const netRecordedCash = Number(cashRows[0]?.net_cash_cents || 0);
     const totalPayables = Number(billRows[0]?.payable_cents || 0);
-    // The opening represents the close of that day, so only subsequent
-    // dated activity is added. If no opening exists or the report date is
-    // earlier, no calculated Cash + Bank total is asserted.
-    const hasVerifiedCashBalance = Boolean(opening && opening.balanceDate <= asOf);
-    const cash = hasVerifiedCashBalance ? Number(opening?.openingCents || 0) + netRecordedCash : 0;
-    const outstanding = reportType === "accrual" ? receivables : 0;
+    // "Verified" here means the requested source-derived report total is
+    // available; no claim is made about reconciliation with a bank statement.
+    const hasVerifiedCashBalance = true;
+    const cash = netRecordedCash;
+    // "To be received" combines all eligible outstanding invoices, whether
+    // they are past due or have upcoming due dates. Past due is a subset and
+    // is presented separately as information rather than added again.
+    const outstanding = receivables;
     return {
         asOf, reportType,
         cashOnHandCents: cash,
         netRecordedCashMovementCents: netRecordedCash,
         hasVerifiedCashBalance,
-        openingBalanceDate: opening?.balanceDate ?? null,
+        openingBalanceDate: null,
         accountsReceivableCents: outstanding,
-        pastDueCents: reportType === "accrual" ? pastDue : 0,
-        currentReceivablesCents: reportType === "accrual" ? Math.max(0, receivables - pastDue) : 0,
+        pastDueCents: pastDue,
+        currentReceivablesCents: Math.max(0, receivables - pastDue),
         totalInvoicesDonationsCents: cash + outstanding,
         currentPayablesCents: totalPayables,
         outstandingBillsCents: totalPayables,
         notes: [
-            hasVerifiedCashBalance
-                ? "Cash and Bank is the entered closing balance dated " + opening?.balanceDate + " plus recorded in-app payments afterward. Verify all unrecorded outside activity separately."
-                : "Cash and Bank and the combined grand total are unavailable until you enter a verified opening cash/bank balance. N/A does not mean zero.",
-            "Historical imported payments without actual payment dates are applied using their stored balances. Prior-period results are therefore estimates until those dates are reconciled.",
-            "Net recorded cash movement since the entered opening date (or all recorded dates if none is set) is informational. No bank connection or independent reconciliation is available.",
-            "Donations are included only when recorded through existing invoice payments. No separate donations ledger currently exists.",
-            ...(reportType === "cash" ? ["Cash Basis hides receivables; outstanding invoices remain available in Accrual."] : []),
+            "Cash and Bank is the requested operational calculation: all eligible recorded paid invoice amounts minus all eligible paid vendor bills. It is not a reconciled bank account balance.",
+            "Historical paid imports without actual payment dates are included based on their source invoice or bill dates. Historical as-of periods may differ until these payments are dated.",
+            "To be received includes overdue and not-yet-due outstanding invoices. The past-due amount is an informational subset, not an additional charge.",
+            "There is no separate donations ledger yet; payments recorded as invoices are included, but independently received donations cannot be added automatically.",
+            ...(reportType === "cash" ? ["Cash Basis selected: the requested outstanding-invoice figure remains visible because To be received includes unpaid invoices."] : []),
         ],
     };
 }

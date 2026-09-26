@@ -15,16 +15,16 @@ function makeCsv(report: Awaited<ReturnType<typeof getInvoicesDonationsBalanceSh
         [`View: ${view}`],
         [],
         ["Label", "Amount USD"],
-        ["Cash and Bank*", report.hasVerifiedCashBalance ? number(report.cashOnHandCents) : "N/A*"],
+        ["Cash and Bank", number(report.cashOnHandCents)],
         ["To be received", number(report.accountsReceivableCents)],
-        ["Total Invoices and Donations", report.hasVerifiedCashBalance ? number(report.totalInvoicesDonationsCents) : "N/A*"],
+        ["Total Invoices and Donations", number(report.totalInvoicesDonationsCents)],
         [],
         ["ACCOUNTS", report.asOf],
         ...balanceSheetRows(report, view === "details").map(row => [
-            `${"  ".repeat(row.level)}${row.label}`, row.amount == null ? (row.label.includes("Cash") || row.label === "Total Invoices and Donations" ? "N/A*" : "") : number(row.amount),
+            `${"  ".repeat(row.level)}${row.label}`, row.amount == null ? "" : number(row.amount),
         ]),
         [],
-        ["Net recorded cash movement (not an account balance)", number(report.netRecordedCashMovementCents)],
+        ["Calculated Cash and Bank (not a reconciled bank balance)", number(report.netRecordedCashMovementCents)],
         ["Report notes"],
         ...report.notes.map(note => [note]),
     ];
@@ -70,12 +70,12 @@ function makePdf(report: Awaited<ReturnType<typeof getInvoicesDonationsBalanceSh
     };
     header();
     fill(45, y - 60, 522, 70, "0.95 0.97 0.99");
-    addText(56, y - 8, "Cash and Bank*", 10, true);
-    right(report.hasVerifiedCashBalance ? dollars(report.cashOnHandCents) : "N/A*", y - 8, true);
+    addText(56, y - 8, "Cash and Bank", 10, true);
+    right(dollars(report.cashOnHandCents), y - 8, true);
     addText(56, y - 27, "To be received", 10);
     right(dollars(report.accountsReceivableCents), y - 27);
     addText(56, y - 47, "Total Invoices and Donations", 11, true);
-    right(report.hasVerifiedCashBalance ? dollars(report.totalInvoicesDonationsCents) : "N/A*", y - 47, true);
+    right(dollars(report.totalInvoicesDonationsCents), y - 47, true);
     y -= 88;
     addText(45, y, "ACCOUNTS", 10, true);
     right(report.asOf, y, true);
@@ -91,13 +91,13 @@ function makePdf(report: Awaited<ReturnType<typeof getInvoicesDonationsBalanceSh
             continue;
         }
         const bold = row.label.startsWith("Total ");
-        const amount = row.amount === null ? "N/A*" : dollars(row.amount);
+        const amount = row.amount === null ? "" : dollars(row.amount);
         addText(56 + row.level * 17, y - 2, row.label, 10, bold);
         right(amount, y - 2, bold);
         rule(y - 13); y -= 30;
     }
     y -= 8;
-    const info = "Net recorded cash movement (not an account balance): " +
+    const info = "Calculated Cash and Bank (not a reconciled bank balance): " +
         dollars(report.netRecordedCashMovementCents);
     if (y < 95) nextPage();
     addText(45, y, info, 9); y -= 25;
