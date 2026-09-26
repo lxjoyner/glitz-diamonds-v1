@@ -91,7 +91,7 @@ function makePdf(report: Awaited<ReturnType<typeof getInvoicesDonationsBalanceSh
             continue;
         }
         const bold = row.label.startsWith("Total ");
-        const amount = row.amount === null ? "N/A*" : dollars(row.amount);
+        const amount = row.amount === null ? "" : dollars(row.amount);
         addText(56 + row.level * 17, y - 2, row.label, 10, bold);
         right(amount, y - 2, bold);
         rule(y - 13); y -= 30;
