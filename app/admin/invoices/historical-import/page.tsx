@@ -201,7 +201,7 @@ export default function HistoricalInvoiceImportPage() {
                         <p className="font-semibold">Yolanda screenshot import loaded: {rows.length} editable rows; source total {(YOLANDA_SOURCE_TOTAL_CENTS / 100).toLocaleString("en-US", { style: "currency", currency: "USD" })} across {YOLANDA_SOURCE_COUNT} source records.</p>
                         <p className="mt-1">The screenshots identify the customer only as Yolanda; confirm the correct existing member yourself. All 47 rows show Paid with $0.00 remaining. You confirmed the invoice, due and payment dates are identical on every row. Payment account, method and original line-item details were not shown. No emails are sent by the import.</p>
                         <p className="mt-1">Pay particular attention to legacy #27 ($1,000), #77 ($100), and the seven rows without a visible Recurring label.</p>
-                    </div>}}
+                    </div>}
                 </section>
 
                 <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
