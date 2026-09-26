@@ -138,7 +138,19 @@ export async function runRecurringInvoiceScheduler(todayIso = new Date().toISOSt
     const dueRows = await listDueRecurringInvoices(todayIso);
     const results: Array<{ recurringInvoiceId: number; scheduledFor: string; status: string; invoiceId?: number; error?: string }> = [];
     for (const row of dueRows) {
-        let scheduledFor = String(row.next_invoice_date).slice(0, 10);
+        // MySQL DATE may arrive as a Date object even if TypeScript says string.
+        // Never slice String(Date): it becomes "Sat Sep 26" and silently skips
+        // the entire run because it is lexically greater than YYYY-MM-DD.
+        const rawNextDate: string | Date = row.next_invoice_date;
+        const scheduledForDate = rawNextDate instanceof Date
+            ? rawNextDate.toISOString().slice(0, 10)
+            : String(rawNextDate).slice(0, 10);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(scheduledForDate) ||
+            Number.isNaN(Date.parse(scheduledForDate + "T00:00:00Z")) ||
+            new Date(scheduledForDate + "T00:00:00Z").toISOString().slice(0,10) !== scheduledForDate) {
+            throw new Error(`INVALID_RECURRING_NEXT_DATE for schedule ${row.id}`);
+        }
+        let scheduledFor = scheduledForDate;
         let safety = 0;
         // One dated cycle per scheduler invocation limits bursts if an old
         // schedule has months of backlog. Subsequent cron checks catch up.
