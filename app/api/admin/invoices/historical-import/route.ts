@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth";
 import pool from "@/lib/db";
-import { createInvoice, ensureInvoiceSchema } from "@/lib/invoice-db";
+import { createInvoice, ensureInvoiceSchema, recordInvoicePayment } from "@/lib/invoice-db";
 import type { RowDataPacket } from "mysql2/promise";
 
 function requireAdmin(req: NextRequest) {
@@ -207,11 +207,10 @@ export async function POST(req: NextRequest) {
                 // Record the user's confirmed real payment date through the
                 // existing transactional payment service, rather than
                 // creating an undated historical balance in addition.
-                const { recordInvoicePayment } = await import("@/lib/invoice-db");
                 await recordInvoicePayment(created.id, {
                     paymentDate: row.paymentDate,
                     amountCents: Math.round(row.amountPaid * 100),
-                    method: "Historical import (method unknown)",
+                    method: "Historical import",
                     accountName: paymentAccount,
                     memo: "Legacy paid invoice " + row.oldInvoiceNumber + " - date confirmed by administrator",
                 });
