@@ -13,6 +13,7 @@ export type BalanceSheetReport = {
     currentReceivablesCents: number;
     netRecordedCashMovementCents: number;
     hasVerifiedCashBalance: boolean;
+    openingBalanceDate: string | null;
     totalInvoicesDonationsCents: number;
     currentPayablesCents: number;
     outstandingBillsCents: number;
@@ -25,6 +26,40 @@ export type BalanceSheetReport = {
  * donations ledger, or full expense allocations exist in this application.
  * We do not manufacture a balancing Equity or Cash number.
  */
+/** A user-entered, reconciled starting Cash + Bank total.
+ * This is deliberately optional; imported bills/invoices lack complete
+ * historical dated payments so the report cannot invent opening balances.
+ */
+export async function ensureBalanceSheetOpeningSchema() {
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS balance_sheet_cash_opening (
+            id INT PRIMARY KEY,
+            balance_date DATE NOT NULL,
+            opening_cents BIGINT NOT NULL,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+    `);
+}
+export async function getBalanceSheetOpening() {
+    await ensureBalanceSheetOpeningSchema();
+    const [rows] = await pool.query<RowDataPacket[]>(
+        "SELECT DATE_FORMAT(balance_date, '%Y-%m-%d') AS balanceDate, opening_cents AS openingCents FROM balance_sheet_cash_opening WHERE id = 1"
+    );
+    return rows[0] ? { balanceDate: String(rows[0].balanceDate), openingCents: Number(rows[0].openingCents) } : null;
+}
+export async function saveBalanceSheetOpening(balanceDate: string, openingCents: number) {
+    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(balanceDate) ||
+        !Number.isFinite(Date.parse(balanceDate + "T00:00:00Z")) ||
+        new Date(balanceDate + "T00:00:00Z").toISOString().slice(0,10) !== balanceDate ||
+        !Number.isSafeInteger(openingCents) || openingCents < 0) throw new Error("INVALID_OPENING");
+    await ensureBalanceSheetOpeningSchema();
+    await pool.execute(
+        `INSERT INTO balance_sheet_cash_opening (id,balance_date,opening_cents) VALUES (1,?,?)
+         ON DUPLICATE KEY UPDATE balance_date=VALUES(balance_date),opening_cents=VALUES(opening_cents)`,
+        [balanceDate,openingCents]
+    );
+}
+
 export async function getInvoicesDonationsBalanceSheet(
     asOf: string, reportType: BalanceSheetType
 ): Promise<BalanceSheetReport> {
@@ -33,6 +68,7 @@ export async function getInvoicesDonationsBalanceSheet(
     if (reportType !== "accrual" && reportType !== "cash") throw new Error("INVALID_REPORT_TYPE");
     await ensureInvoiceSchema();
     await ensureVendorBillPaymentSchema();
+    const opening = await getBalanceSheetOpening();
 
     // Invoice outstanding is aggregated at the report date using the actual
     // payment dates when they exist. Historic paid amounts without transaction
@@ -83,38 +119,43 @@ export async function getInvoicesDonationsBalanceSheet(
         SELECT
             (SELECT COALESCE(SUM(p.amount_cents), 0)
              FROM invoice_payments p JOIN invoices i ON i.id = p.invoice_id
-             WHERE p.payment_date <= ? AND i.status <> 'void')
+             WHERE p.payment_date > ? AND p.payment_date <= ? AND i.status <> 'void')
             -
             (SELECT COALESCE(SUM(p.amount_cents), 0)
              FROM vendor_bill_payments p JOIN vendor_bills b ON b.id = p.bill_id
-             WHERE p.payment_date <= ? AND b.status <> 'void')
+             WHERE p.payment_date > ? AND p.payment_date <= ? AND b.status <> 'void')
             AS net_cash_cents
-    `, [asOf, asOf]);
+    `, [opening?.balanceDate ?? "1000-01-01", asOf,
+        opening?.balanceDate ?? "1000-01-01", asOf]);
 
     const receivables = Number(invoiceRows[0]?.receivable_cents || 0);
     const pastDue = Number(invoiceRows[0]?.overdue_cents || 0);
     const netRecordedCash = Number(cashRows[0]?.net_cash_cents || 0);
     const totalPayables = Number(billRows[0]?.payable_cents || 0);
-    // An opening account balance is unavailable; never display net movement
-    // as a fabricated cash balance. Cash on Hand and any combined grand
-    // total remain unavailable until an actual balance can be reconciled.
-    const cash = 0;
+    // The opening represents the close of that day, so only subsequent
+    // dated activity is added. If no opening exists or the report date is
+    // earlier, no calculated Cash + Bank total is asserted.
+    const hasVerifiedCashBalance = Boolean(opening && opening.balanceDate <= asOf);
+    const cash = hasVerifiedCashBalance ? Number(opening?.openingCents || 0) + netRecordedCash : 0;
     const outstanding = reportType === "accrual" ? receivables : 0;
     return {
         asOf, reportType,
         cashOnHandCents: cash,
         netRecordedCashMovementCents: netRecordedCash,
-        hasVerifiedCashBalance: false,
+        hasVerifiedCashBalance,
+        openingBalanceDate: opening?.balanceDate ?? null,
         accountsReceivableCents: outstanding,
         pastDueCents: reportType === "accrual" ? pastDue : 0,
         currentReceivablesCents: reportType === "accrual" ? Math.max(0, receivables - pastDue) : 0,
-        totalInvoicesDonationsCents: outstanding,
+        totalInvoicesDonationsCents: cash + outstanding,
         currentPayablesCents: totalPayables,
         outstandingBillsCents: totalPayables,
         notes: [
-            "Cash on Hand and a combined grand total cannot be verified: opening balances, bank reconciliations, and historical payments without dates are unavailable. Cash is displayed as N/A, not as zero.",
+            hasVerifiedCashBalance
+                ? "Cash and Bank is the entered closing balance dated " + opening?.balanceDate + " plus recorded in-app payments afterward. Verify all unrecorded outside activity separately."
+                : "Cash and Bank and the combined grand total are unavailable until you enter a verified opening cash/bank balance. N/A does not mean zero.",
             "Historical imported payments without actual payment dates are applied using their stored balances. Prior-period results are therefore estimates until those dates are reconciled.",
-            "Net recorded cash movement is shown separately and is NOT an account balance. The displayed total includes only verified invoice receivables; no unverified cash is added.",
+            "Net recorded cash movement since the entered opening date (or all recorded dates if none is set) is informational. No bank connection or independent reconciliation is available.",
             "Donations are included only when recorded through existing invoice payments. No separate donations ledger currently exists.",
             ...(reportType === "cash" ? ["Cash Basis hides receivables; outstanding invoices remain available in Accrual."] : []),
         ],
