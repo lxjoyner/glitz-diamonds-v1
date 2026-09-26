@@ -40,6 +40,7 @@ export default function HistoricalInvoiceImportPage() {
     const [message, setMessage] = useState("");
     const [busy, setBusy] = useState(false);
     const [yolandaPresetLoaded, setYolandaPresetLoaded] = useState(false);
+    const [paymentAccount, setPaymentAccount] = useState("");
 
     useEffect(() => {
         async function load() {
