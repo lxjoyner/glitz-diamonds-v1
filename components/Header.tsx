@@ -184,6 +184,7 @@ export default function Header() {
                                     <Link href="/admin/reports/income-by-customer" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>Income By Customer</Link>
                                     <Link href="/admin/reports/account-transactions" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>Account Transactions</Link>
                                     <Link href="/admin/reports/balance-sheet" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>Balance Sheet</Link>
+                                    <Link href="/admin/donations" className="rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white transition" onClick={() => setOpen(false)}>Donations</Link>
                                 </div>
                             )}
                         </div>

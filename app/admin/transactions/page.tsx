@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 type Transaction = {
     transaction_key: string;
-    source_type: "invoice_payment" | "vendor_bill_payment";
+    source_type: "invoice_payment" | "vendor_bill_payment" | "donation";
     source_id: number;
     linked_id: number;
     transaction_date: string;
@@ -221,9 +221,9 @@ export default function TransactionsPage() {
                                                         <button type="button" onClick={() => setOpenActionKey((current) => current === row.transaction_key ? null : row.transaction_key)} className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-800">⌄</button>
                                                         {openActionKey === row.transaction_key && (
                                                             <div className="absolute right-0 z-50 mt-2 w-48 rounded-xl border border-slate-200 bg-white py-2 text-left shadow-xl">
-                                                                <Link href={`/admin/transactions/${encodeURIComponent(row.transaction_key)}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit more details</Link>
-                                                                <button type="button" onClick={() => { setUploadKey(row.transaction_key); fileInputRef.current?.click(); setOpenActionKey(null); }} className="block w-full px-4 py-2 text-left hover:bg-slate-50">Upload receipt</button>
-                                                                {!row.transaction_key.startsWith("invoice-history-") && !row.transaction_key.startsWith("bill-history-") && <button type="button" onClick={() => deleteTransaction(row)} className="block w-full px-4 py-2 text-left text-red-700 hover:bg-red-50">Delete</button>}
+                                                                {row.source_type === "donation" ? <Link href="/admin/donations" className="block px-4 py-2 hover:bg-slate-50">View donation record</Link> : <Link href={`/admin/transactions/${encodeURIComponent(row.transaction_key)}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit more details</Link>}
+                                                                {row.source_type !== "donation" && <button type="button" onClick={() => { setUploadKey(row.transaction_key); fileInputRef.current?.click(); setOpenActionKey(null); }} className="block w-full px-4 py-2 text-left hover:bg-slate-50">Upload receipt</button>}
+                                                                {row.source_type !== "donation" && !row.transaction_key.startsWith("invoice-history-") && !row.transaction_key.startsWith("bill-history-") && <button type="button" onClick={() => deleteTransaction(row)} className="block w-full px-4 py-2 text-left text-red-700 hover:bg-red-50">Delete</button>}
                                                             </div>
                                                         )}
                                                     </div>
