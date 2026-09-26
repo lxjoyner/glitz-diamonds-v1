@@ -2,10 +2,11 @@ import pool from "@/lib/db";
 import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import { ensureInvoiceSchema } from "@/lib/invoice-db";
 import { ensureVendorBillPaymentSchema } from "@/lib/vendor-db";
+import { getAllDonations } from "@/lib/donation-db";
 
 export type TransactionRow = RowDataPacket & {
     transaction_key: string;
-    source_type: "invoice_payment" | "vendor_bill_payment";
+    source_type: "invoice_payment" | "vendor_bill_payment" | "donation";
     source_id: number;
     linked_id: number;
     transaction_date: string;
@@ -116,11 +117,27 @@ export async function listTransactions(): Promise<TransactionRow[]> {
 
         ORDER BY transaction_date DESC, source_id DESC
     `);
+    // Donations are genuine receipts, not member invoice charges.
+    const donationRecords = await getAllDonations();
+    const donationRows: TransactionRow[] = donationRecords
+        .filter(d => ["manual","succeeded"].includes(d.payment_status))
+        .map(d => ({
+            transaction_key: "donation-" + d.id,
+            source_type: "donation" as const,
+            source_id: d.id,
+            linked_id: d.id,
+            transaction_date: d.donation_date || String(d.created_at).slice(0,10),
+            description: "Donation from " + (d.donor_name || "Anonymous"),
+            account_name: d.account_name || "Unknown (online donation)",
+            category: "Donations",
+            amount_cents: Number(d.amount_cents),
+            direction: "income" as const,
+        } as TransactionRow));
     const [edits] = await pool.query<RowDataPacket[]>(
         "SELECT transaction_key, description, category FROM transaction_edit_details"
     );
     const byKey = new Map(edits.map((edit) => [String(edit.transaction_key), edit]));
-    return rows.map((row) => {
+    return [...rows, ...donationRows].sort((a,b) => String(b.transaction_date).localeCompare(String(a.transaction_date))).map((row) => {
         const edit = byKey.get(row.transaction_key);
         return edit ? {
             ...row,
