@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { getYolandaInvoicePreset, YOLANDA_SOURCE_COUNT, YOLANDA_SOURCE_TOTAL_CENTS } from "@/lib/historical-invoice-presets/yolanda";
 
 type Member = { id: number; full_name: string; email: string };
 type Row = {
     oldInvoiceNumber: string;
     invoiceDate: string;
     dueDate: string;
+    paymentDate?: string;
     amount: string;
     amountPaid: string;
     status: "paid" | "unpaid" | "overdue";
@@ -37,6 +39,8 @@ export default function HistoricalInvoiceImportPage() {
     const [preview, setPreview] = useState<PreviewRow[]>([]);
     const [message, setMessage] = useState("");
     const [busy, setBusy] = useState(false);
+    const [yolandaPresetLoaded, setYolandaPresetLoaded] = useState(false);
+    const [paymentAccount, setPaymentAccount] = useState("");
 
     useEffect(() => {
         async function load() {
@@ -54,9 +58,25 @@ export default function HistoricalInvoiceImportPage() {
 
     const selectedMember = useMemo(() => members.find((member) => String(member.id) === memberId), [members, memberId]);
 
+    function changeInvoiceDate(index: number, date: string) {
+        setRows(current => current.map((row, i) => i === index
+            ? { ...row, invoiceDate: date, ...(yolandaPresetLoaded ? { dueDate: date, paymentDate: date } : {}) }
+            : row));
+        setPreview([]);
+    }
+
     function updateRow(index: number, field: keyof Row, value: string | boolean) {
         setRows((current) => current.map((row, i) => i === index ? { ...row, [field]: value } : row));
         setPreview([]);
+    }
+
+    function loadYolandaPreset() {
+        const hasData = rows.some((row) => row.oldInvoiceNumber || row.invoiceDate);
+        if (hasData && !window.confirm("Replace the current draft rows with Yolanda's 47 screenshot invoices? Unsaved edits will be lost.")) return;
+        setRows(getYolandaInvoicePreset());
+        setYolandaPresetLoaded(true);
+        setPreview([]);
+        setMessage("Loaded 47 Paid historical invoices totaling $2,225.00. As confirmed, the invoice date, due date and payment date match the date on each source row. Verify the selected member, amounts and payment account before import.");
     }
 
     function addRows(count = 1) {
@@ -91,13 +111,25 @@ export default function HistoricalInvoiceImportPage() {
                 description: recurring ? "Recurring membership invoice" : "Historical membership invoice",
             } satisfies Row;
         });
-        if (parsed.length) setRows(parsed);
+        if (parsed.length) {
+            setRows(parsed);
+            setYolandaPresetLoaded(false);
+        }
         setPreview([]);
     }
 
     async function submit(mode: "preview" | "import") {
         setMessage("");
         if (!memberId) return setMessage("Select a member first.");
+        if (mode === "import" && yolandaPresetLoaded && !paymentAccount) {
+            return setMessage("Select the actual payment account before posting historical payment ledger entries.");
+        }
+        if (mode === "import" && yolandaPresetLoaded) {
+            if (!selectedMember || !selectedMember.full_name.toLowerCase().includes("yolanda")) {
+                return setMessage("Confirm the correct Yolanda member record before importing. Do not select another member based only on the uploaded filename.");
+            }
+            if (!window.confirm(`Import ${rows.length} paid invoice rows into member ${selectedMember.full_name} (${selectedMember.email})? Confirm the member and amounts. Due dates and payment dates match the source row dates per your instructions. No emails will be sent.`)) return;
+        }
         setBusy(true);
         try {
             const response = await fetch("/api/admin/invoices/historical-import", {
@@ -106,8 +138,10 @@ export default function HistoricalInvoiceImportPage() {
                 body: JSON.stringify({
                     memberId,
                     mode,
+                    paymentAccount: yolandaPresetLoaded ? paymentAccount : undefined,
                     invoices: rows.map((row) => ({
                         ...row,
+                        paymentDate: row.paymentDate || undefined,
                         amount: Number(row.amount),
                         amountPaid: Number(row.amountPaid),
                     })),
@@ -140,6 +174,7 @@ export default function HistoricalInvoiceImportPage() {
                         <p className="mt-1 text-sm text-white">Import prior invoices while preserving the old invoice number as a reference.</p>
                     </div>
                     <div className="flex flex-wrap gap-3">
+                        <button type="button" onClick={loadYolandaPreset} disabled={busy} className="rounded-full border border-emerald-700 bg-white px-5 py-3 font-semibold text-emerald-800 hover:bg-emerald-50 disabled:opacity-50">Load Yolanda ({YOLANDA_SOURCE_COUNT})</button>
                         <button type="button" onClick={parsePaste} className="rounded-full border border-blue-600 bg-white px-5 py-3 font-semibold text-blue-700 hover:bg-blue-50">Paste rows</button>
                         <button type="button" onClick={() => submit("preview")} disabled={busy} className="rounded-full border border-blue-600 bg-white px-5 py-3 font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50">Preview</button>
                         <button type="button" onClick={() => submit("import")} disabled={busy || preview.length === 0} className="rounded-full bg-black px-6 py-3 font-semibold text-white hover:bg-slate-900 disabled:opacity-50">{busy ? "Working..." : "Import invoices"}</button>
@@ -153,6 +188,20 @@ export default function HistoricalInvoiceImportPage() {
                         {members.map((member) => <option key={member.id} value={member.id}>{member.full_name} — {member.email}</option>)}
                     </select>
                     {selectedMember && <p className="mt-2 text-sm text-slate-500">Importing into member #{selectedMember.id}: {selectedMember.full_name}</p>}
+                    {yolandaPresetLoaded && <label className="mt-4 block max-w-lg text-sm font-semibold text-slate-700">
+                        Account used for these historical payments
+                        <select value={paymentAccount} onChange={e => setPaymentAccount(e.target.value)}
+                            className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3">
+                            <option value="">Select the actual payment account</option>
+                            <option value="Cash on Hand (USD)">Cash on Hand (USD)</option>
+                        </select>
+                        <span className="mt-1 block text-xs font-normal text-slate-500">Choose Cash on Hand only if that was the actual account for these payments. Do not assume an account based on invoice dates.</span>
+                    </label>}
+                    {yolandaPresetLoaded && <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+                        <p className="font-semibold">Yolanda screenshot import loaded: {rows.length} editable rows; source total {(YOLANDA_SOURCE_TOTAL_CENTS / 100).toLocaleString("en-US", { style: "currency", currency: "USD" })} across {YOLANDA_SOURCE_COUNT} source records.</p>
+                        <p className="mt-1">The screenshots identify the customer only as Yolanda; confirm the correct existing member yourself. All 47 rows show Paid with $0.00 remaining. You confirmed the invoice, due and payment dates are identical on every row. Payment account, method and original line-item details were not shown. No emails are sent by the import.</p>
+                        <p className="mt-1">Pay particular attention to legacy #27 ($1,000), #77 ($100), and the seven rows without a visible Recurring label.</p>
+                    </div>}}
                 </section>
 
                 <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -168,7 +217,7 @@ export default function HistoricalInvoiceImportPage() {
                                     const previewRow = preview[index];
                                     return <tr key={index} className="border-t border-slate-200 align-top">
                                         <td className="px-3 py-3"><input value={row.oldInvoiceNumber} onChange={(event) => updateRow(index, "oldInvoiceNumber", event.target.value)} className="w-28 rounded-lg border border-slate-300 px-2 py-2" /></td>
-                                        <td className="px-3 py-3"><input type="date" value={row.invoiceDate} onChange={(event) => updateRow(index, "invoiceDate", event.target.value)} className="rounded-lg border border-slate-300 px-2 py-2" /></td>
+                                        <td className="px-3 py-3"><input type="date" value={row.invoiceDate} onChange={(event) => changeInvoiceDate(index, event.target.value)} className="rounded-lg border border-slate-300 px-2 py-2" /></td>
                                         <td className="px-3 py-3"><input type="date" value={row.dueDate} onChange={(event) => updateRow(index, "dueDate", event.target.value)} className="rounded-lg border border-slate-300 px-2 py-2" /></td>
                                         <td className="px-3 py-3"><input type="number" min="0.01" step="0.01" value={row.amount} onChange={(event) => updateRow(index, "amount", event.target.value)} className="w-28 rounded-lg border border-slate-300 px-2 py-2 text-right" /></td>
                                         <td className="px-3 py-3"><select value={row.status} onChange={(event) => updateRow(index, "status", event.target.value)} className="rounded-lg border border-slate-300 px-2 py-2"><option value="paid">Paid</option><option value="overdue">Overdue</option><option value="unpaid">Unpaid</option></select></td>

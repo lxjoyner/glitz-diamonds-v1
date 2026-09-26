@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth";
 import pool from "@/lib/db";
-import { createInvoice, ensureInvoiceSchema } from "@/lib/invoice-db";
+import { createInvoice, ensureInvoiceSchema, recordInvoicePayment } from "@/lib/invoice-db";
 import type { RowDataPacket } from "mysql2/promise";
 
 function requireAdmin(req: NextRequest) {
@@ -16,6 +16,7 @@ type HistoricalInvoiceInput = {
     oldInvoiceNumber?: string;
     invoiceDate: string;
     dueDate?: string;
+    paymentDate?: string;
     amount: number;
     amountPaid?: number;
     status?: "paid" | "unpaid" | "overdue";
@@ -27,6 +28,7 @@ type PreviewResult = {
     oldInvoiceNumber: string;
     invoiceDate: string;
     dueDate: string;
+    paymentDate?: string;
     amount: number;
     amountPaid: number;
     status: "paid" | "unpaid" | "overdue";
@@ -100,6 +102,7 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const memberId = Number(body?.memberId);
         const mode = body?.mode === "import" ? "import" : "preview";
+        const paymentAccount = String(body?.paymentAccount || "").trim();
         const invoices = Array.isArray(body?.invoices) ? (body.invoices as HistoricalInvoiceInput[]) : [];
 
         if (!Number.isInteger(memberId) || memberId <= 0) {
@@ -125,6 +128,7 @@ export async function POST(req: NextRequest) {
         for (const raw of invoices) {
             const invoiceDate = normalizeDate(raw.invoiceDate);
             const dueDate = normalizeDate(raw.dueDate || raw.invoiceDate);
+            const paymentDate = raw.paymentDate ? normalizeDate(raw.paymentDate) : undefined;
             const oldInvoiceNumber = String(raw.oldInvoiceNumber || "").trim();
             const amount = Number(raw.amount || 0);
             const amountPaid = Number(raw.amountPaid || 0);
@@ -132,7 +136,7 @@ export async function POST(req: NextRequest) {
             const recurring = Boolean(raw.recurring);
             const description = String(raw.description || (recurring ? "Recurring membership invoice" : "Historical membership invoice")).trim();
 
-            if (!invoiceDate || !dueDate || !Number.isFinite(amount) || amount <= 0) {
+            if (!invoiceDate || !dueDate || (raw.paymentDate && !paymentDate) || !Number.isFinite(amount) || amount <= 0) {
                 return NextResponse.json(
                     { success: false, error: "Every row needs a valid invoice date, due date, and amount greater than 0." },
                     { status: 400 }
@@ -144,6 +148,7 @@ export async function POST(req: NextRequest) {
                 oldInvoiceNumber,
                 invoiceDate,
                 dueDate,
+                paymentDate,
                 amount,
                 amountPaid,
                 status,
@@ -156,6 +161,25 @@ export async function POST(req: NextRequest) {
 
         if (mode === "preview") {
             return NextResponse.json({ success: true, member: memberRows[0], preview });
+        }
+
+        const datedPaidRows = preview.filter(row => row.status === "paid" && Boolean(row.paymentDate));
+        if (datedPaidRows.length && paymentAccount !== "Cash on Hand (USD)") {
+            return NextResponse.json({ success: false,
+                error: "Before importing dated payments, explicitly verify that Cash on Hand (USD) is the account actually used."
+            }, { status: 400 });
+        }
+        for (const row of datedPaidRows) {
+            if (!row.paymentDate || row.paymentDate !== row.invoiceDate || row.dueDate !== row.invoiceDate) {
+                return NextResponse.json({ success: false,
+                    error: "For Yolanda's confirmed records, invoice, due and payment dates must match the source row."
+                }, { status: 400 });
+            }
+            if (Math.round(row.amountPaid * 100) !== Math.round(row.amount * 100)) {
+                return NextResponse.json({ success: false,
+                    error: "Every dated Paid row must have the full invoice amount paid."
+                }, { status: 400 });
+            }
         }
 
         const imported: Array<{ oldInvoiceNumber: string; invoiceNumber: string; invoiceId: number }> = [];
@@ -176,12 +200,25 @@ export async function POST(req: NextRequest) {
                 items: [{ description: row.description, quantity: 1, unitPriceCents: Math.round(row.amount * 100) }],
             });
 
+            if (row.status === "paid" && row.paymentDate) {
+                // Record the user's confirmed real payment date through the
+                // existing transactional payment service, rather than
+                // creating an undated historical balance in addition.
+                await recordInvoicePayment(created.id, {
+                    paymentDate: row.paymentDate,
+                    amountCents: Math.round(row.amountPaid * 100),
+                    method: "Historical import",
+                    accountName: paymentAccount,
+                    memo: "Legacy paid invoice " + row.oldInvoiceNumber + " - date confirmed by administrator",
+                });
+            } else {
             await setHistoricalPaymentState(
                 created.id,
                 row.status,
                 Math.round(row.amountPaid * 100),
                 Math.round(row.amount * 100)
             );
+            }
 
             imported.push({ oldInvoiceNumber: row.oldInvoiceNumber, invoiceNumber: created.invoiceNumber, invoiceId: created.id });
         }
