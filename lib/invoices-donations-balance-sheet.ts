@@ -2,6 +2,7 @@ import pool from "@/lib/db";
 import type { RowDataPacket } from "mysql2/promise";
 import { ensureInvoiceSchema } from "@/lib/invoice-db";
 import { ensureVendorBillPaymentSchema } from "@/lib/vendor-db";
+import { getAllDonations } from "@/lib/donation-db";
 
 export type BalanceSheetType = "accrual" | "cash";
 export type BalanceSheetReport = {
@@ -68,6 +69,13 @@ export async function getInvoicesDonationsBalanceSheet(
     if (reportType !== "accrual" && reportType !== "cash") throw new Error("INVALID_REPORT_TYPE");
     await ensureInvoiceSchema();
     await ensureVendorBillPaymentSchema();
+    const donationRecords = await getAllDonations();
+    const donationsCents = donationRecords.reduce((sum, donation) => {
+        if (!["manual", "succeeded"].includes(donation.payment_status)) return sum;
+        const date = donation.donation_date || String(donation.created_at).slice(0, 10);
+        if (date > asOf) return sum;
+        return sum + Number(donation.amount_cents || 0);
+    }, 0);
 
     // Invoice outstanding is aggregated at the report date using the actual
     // payment dates when they exist. Historic paid amounts without transaction
@@ -159,7 +167,7 @@ export async function getInvoicesDonationsBalanceSheet(
     // "Verified" here means the requested source-derived report total is
     // available; no claim is made about reconciliation with a bank statement.
     const hasVerifiedCashBalance = true;
-    const cash = netRecordedCash;
+    const cash = netRecordedCash + donationsCents;
     // "To be received" combines all eligible outstanding invoices, whether
     // they are past due or have upcoming due dates. Past due is a subset and
     // is presented separately as information rather than added again.
@@ -167,7 +175,7 @@ export async function getInvoicesDonationsBalanceSheet(
     return {
         asOf, reportType,
         cashOnHandCents: cash,
-        netRecordedCashMovementCents: netRecordedCash,
+        netRecordedCashMovementCents: cash,
         hasVerifiedCashBalance,
         openingBalanceDate: null,
         accountsReceivableCents: outstanding,
@@ -177,10 +185,10 @@ export async function getInvoicesDonationsBalanceSheet(
         currentPayablesCents: totalPayables,
         outstandingBillsCents: totalPayables,
         notes: [
-            "Cash and Bank is the requested operational calculation: all eligible recorded paid invoice amounts minus all eligible paid vendor bills. It is not a reconciled bank account balance.",
+            "Cash and Bank = recorded paid invoices plus manual and succeeded Stripe donations minus paid vendor bills. Donations are maintained in their own ledger, not inserted as invoice payments.",
             "Historical paid imports without actual payment dates are included based on their source invoice or bill dates. Historical as-of periods may differ until these payments are dated.",
             "To be received includes overdue and not-yet-due outstanding invoices. The past-due amount is an informational subset, not an additional charge.",
-            "There is no separate donations ledger yet; payments recorded as invoices are included, but independently received donations cannot be added automatically.",
+            "Manual donation dates use the entered receipt date; completed Stripe donations without an entered receipt date use their recorded creation date. Avoid entering the same donation manually and importing it from Stripe.",
             ...(reportType === "cash" ? ["Cash Basis selected: the requested outstanding-invoice figure remains visible because To be received includes unpaid invoices."] : []),
         ],
     };
