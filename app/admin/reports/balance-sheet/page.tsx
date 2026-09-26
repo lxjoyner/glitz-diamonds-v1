@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 type Report = {
     asOf: string; reportType: "accrual" | "cash";
     cashOnHandCents: number; accountsReceivableCents: number; pastDueCents: number;
-    currentReceivablesCents: number; totalInvoicesDonationsCents: number;
+    currentReceivablesCents: number; netRecordedCashMovementCents: number; hasVerifiedCashBalance: boolean; totalInvoicesDonationsCents: number;
     currentPayablesCents: number; notes: string[];
 };
 const currency = (cents: number) => new Intl.NumberFormat("en-US", {
@@ -64,10 +64,10 @@ export default function BalanceSheetPage() {
     }) : "";
     const section = (label: string) => <tr className="bg-slate-200"><th colSpan={2} className="px-5 py-3 text-left text-base">{label}</th></tr>;
     const subsection = (label: string) => <tr className="bg-slate-50"><th colSpan={2} className="px-8 py-3 text-left">{label}</th></tr>;
-    const line = (label: string, amount: number, level = 1, bold = false, help?: string) =>
+    const line = (label: string, amount: number | null, level = 1, bold = false, help?: string) =>
         <tr key={label} className="border-b border-slate-200">
             <td className={`py-3 pr-4 ${level === 2 ? "pl-12" : "pl-7"} ${bold ? "font-bold" : ""}`} title={help}>{label}</td>
-            <td className={`py-3 pr-5 text-right ${bold ? "font-bold" : ""}`}>{currency(amount)}</td>
+            <td className={`py-3 pr-5 text-right ${bold ? "font-bold" : ""}`}>{amount === null ? "N/A*" : currency(amount)}</td>
         </tr>;
     return <main className="min-h-screen bg-slate-50 px-5 py-8 text-slate-900 sm:px-8">
         <div className="mx-auto max-w-6xl">
@@ -110,11 +110,11 @@ export default function BalanceSheetPage() {
             {error && <div role="alert" className="mb-5 rounded-lg bg-red-50 p-4 text-red-700">{error}</div>}
             {report && <>
                 <div className="mb-8 flex flex-wrap items-center justify-center gap-4 text-center">
-                    <div><p className="text-sm font-semibold text-slate-600">Cash and Bank*</p><p className="mt-2 text-3xl">{currency(report.cashOnHandCents)}</p></div>
+                    <div><p className="text-sm font-semibold text-slate-600">Cash and Bank*</p><p className="mt-2 text-3xl">{report.hasVerifiedCashBalance ? currency(report.cashOnHandCents) : "N/A*"}</p></div>
                     <span className="text-3xl text-slate-300">+</span>
                     <div><p className="text-sm font-semibold text-slate-600">To be received</p><p className="mt-2 text-3xl">{currency(report.accountsReceivableCents)}</p></div>
                     <span className="text-3xl text-slate-300">=</span>
-                    <div><p className="text-sm font-semibold text-slate-600">Total Invoices and Donations</p><p className="mt-2 text-3xl font-bold text-green-700">{currency(report.totalInvoicesDonationsCents)}</p></div>
+                    <div><p className="text-sm font-semibold text-slate-600">Total Invoices and Donations</p><p className="mt-2 text-3xl font-bold text-green-700">{report.hasVerifiedCashBalance ? currency(report.totalInvoicesDonationsCents) : "N/A*"}</p></div>
                 </div>
                 <div className="mb-7 flex justify-center border-b border-slate-200 pb-3">
                     <div className="inline-flex rounded-2xl bg-blue-50 p-1">
@@ -126,8 +126,8 @@ export default function BalanceSheetPage() {
                 <table className="w-full border-collapse bg-white text-base"><tbody>
                     {section("Invoices & Donations")}
                     {view==="details" && subsection("Cash and Bank")}
-                    {line(view==="details"?"Cash on Hand*":"Total Cash and Bank*",report.cashOnHandCents,view==="details"?2:1,view==="summary")}
-                    {view==="details" && line("Total Cash and Bank*",report.cashOnHandCents,1,true)}
+                    {line(view==="details"?"Cash on Hand*":"Total Cash and Bank*",report.hasVerifiedCashBalance ? report.cashOnHandCents : null,view==="details"?2:1,view==="summary")}
+                    {view==="details" && line("Total Cash and Bank*",report.hasVerifiedCashBalance ? report.cashOnHandCents : null,1,true)}
                     {view==="details" ? <>
                         {subsection("Other Invoices & Donations")}
                         {line("Accounts Receivable",report.accountsReceivableCents,2)}
@@ -137,8 +137,9 @@ export default function BalanceSheetPage() {
                         {line("Total Past Due Payments (part of receivables)",report.pastDueCents)}
                         {line("Total Other Current Invoices & Donations",report.accountsReceivableCents)}
                     </>}
-                    {line("Total Invoices and Donations",report.totalInvoicesDonationsCents,1,true)}
+                    {line("Total Invoices and Donations",report.hasVerifiedCashBalance ? report.totalInvoicesDonationsCents : null,1,true)}
                 </tbody></table>
+                <p className="mt-5 text-sm text-slate-700">Net recorded cash movement (not an account balance): <strong>{currency(report.netRecordedCashMovementCents)}</strong></p>
                 <aside className="mt-7 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-slate-700">
                     <p className="mb-2 font-bold">Report data notes</p>
                     {report.notes.map(note=><p className="mb-1" key={note}>{note}</p>)}
