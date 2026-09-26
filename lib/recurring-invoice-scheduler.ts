@@ -141,7 +141,10 @@ export async function runRecurringInvoiceScheduler(todayIso = new Date().toISOSt
         // MySQL DATE may arrive as a Date object even if TypeScript says string.
         // Never slice String(Date): it becomes "Sat Sep 26" and silently skips
         // the entire run because it is lexically greater than YYYY-MM-DD.
-        const rawNextDate: string | Date = row.next_invoice_date;
+        // SQL formats this DATE column as YYYY-MM-DD. Normalize its value
+        // without instanceof: TypeScript's declared field is a string, but
+        // mysql2 can still return a Date at runtime in other query paths.
+        const rawNextDate: unknown = row.next_invoice_date;
         const scheduledForDate = rawNextDate instanceof Date
             ? rawNextDate.toISOString().slice(0, 10)
             : String(rawNextDate).slice(0, 10);
