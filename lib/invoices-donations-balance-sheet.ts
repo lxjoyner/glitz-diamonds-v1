@@ -111,49 +111,44 @@ export async function getInvoicesDonationsBalanceSheet(
     `, [asOf, asOf]);
 
 
-    // Requested report metric: all invoice payments received, including the
-    // paid portion of historical imports, less all paid vendor bills. The
-    // imported balance may have no actual payment date: include that
-    // undated portion only after its source invoice/bill date and disclose
-    // that historical as-of allocation is approximate.
+    // Cash and Bank is an operational total of paid invoices plus recorded
+    // donations (currently donations can only appear as invoice payments),
+    // less paid vendor bills. Use each persisted paid amount once.
     //
-    // Each paid balance includes both dated ledger rows and any unitemized
-    // historic portion. Subtract ALL ledger rows before adding historic paid
-    // amounts to avoid counting a reconciled historical payment twice.
+    // A ledger row is dated; an imported historical remainder has no actual
+    // payment date, so place only that undated remainder on its parent invoice
+    // or bill date for historical as-of reporting. This is explicitly disclosed.
+    //
+    // Ledger amounts are not counted twice after historic reconciliation:
+    // parent paid balance - ALL ledger entries = undated imported remainder.
     const [cashRows] = await pool.query<RowDataPacket[]>(`
         SELECT
             (SELECT COALESCE(SUM(p.amount_cents), 0)
-             FROM invoice_payments p
-             JOIN invoices i ON i.id = p.invoice_id
+             FROM invoice_payments p JOIN invoices i ON i.id = p.invoice_id
              WHERE p.payment_date <= ? AND i.invoice_date <= ?
-               AND i.status <> 'void'
-               AND (i.status <> 'draft' OR i.sent_at IS NOT NULL))
+               AND i.status <> 'void')
             +
-            (SELECT COALESCE(SUM(GREATEST(0,
-                    i.amount_paid_cents - COALESCE(allpaid.total_paid_cents, 0)
-                )), 0)
+            (SELECT COALESCE(SUM(GREATEST(0, i.amount_paid_cents -
+                COALESCE(posted.total_cents, 0))), 0)
              FROM invoices i
              LEFT JOIN (
-                 SELECT invoice_id, SUM(amount_cents) AS total_paid_cents
+                 SELECT invoice_id, SUM(amount_cents) AS total_cents
                  FROM invoice_payments GROUP BY invoice_id
-             ) allpaid ON allpaid.invoice_id = i.id
-             WHERE i.invoice_date <= ? AND i.status <> 'void'
-               AND (i.status <> 'draft' OR i.sent_at IS NOT NULL))
+             ) posted ON posted.invoice_id = i.id
+             WHERE i.invoice_date <= ? AND i.status <> 'void')
             -
             (SELECT COALESCE(SUM(p.amount_cents), 0)
-             FROM vendor_bill_payments p
-             JOIN vendor_bills b ON b.id = p.bill_id
+             FROM vendor_bill_payments p JOIN vendor_bills b ON b.id = p.bill_id
              WHERE p.payment_date <= ? AND b.bill_date <= ?
                AND b.status <> 'void')
             -
-            (SELECT COALESCE(SUM(GREATEST(0,
-                    b.amount_paid_cents - COALESCE(allpaid.total_paid_cents, 0)
-                )), 0)
+            (SELECT COALESCE(SUM(GREATEST(0, b.amount_paid_cents -
+                COALESCE(posted.total_cents, 0))), 0)
              FROM vendor_bills b
              LEFT JOIN (
-                 SELECT bill_id, SUM(amount_cents) AS total_paid_cents
+                 SELECT bill_id, SUM(amount_cents) AS total_cents
                  FROM vendor_bill_payments GROUP BY bill_id
-             ) allpaid ON allpaid.bill_id = b.id
+             ) posted ON posted.bill_id = b.id
              WHERE b.bill_date <= ? AND b.status <> 'void')
             AS net_cash_cents
     `, [asOf, asOf, asOf, asOf, asOf, asOf]);
