@@ -184,6 +184,15 @@ export default function HistoricalInvoiceImportPage() {
                         {members.map((member) => <option key={member.id} value={member.id}>{member.full_name} — {member.email}</option>)}
                     </select>
                     {selectedMember && <p className="mt-2 text-sm text-slate-500">Importing into member #{selectedMember.id}: {selectedMember.full_name}</p>}
+                    {yolandaPresetLoaded && <label className="mt-4 block max-w-lg text-sm font-semibold text-slate-700">
+                        Account used for these historical payments
+                        <select value={paymentAccount} onChange={e => setPaymentAccount(e.target.value)}
+                            className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3">
+                            <option value="">Select the actual payment account</option>
+                            <option value="Cash on Hand (USD)">Cash on Hand (USD)</option>
+                        </select>
+                        <span className="mt-1 block text-xs font-normal text-slate-500">Choose Cash on Hand only if that was the actual account for these payments. Do not assume an account based on invoice dates.</span>
+                    </label>}
                     {yolandaPresetLoaded && <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
                         <p className="font-semibold">Yolanda screenshot import loaded: {rows.length} editable rows; source total {(YOLANDA_SOURCE_TOTAL_CENTS / 100).toLocaleString("en-US", { style: "currency", currency: "USD" })} across {YOLANDA_SOURCE_COUNT} source records.</p>
                         <p className="mt-1">The screenshots identify the customer only as Yolanda; confirm the correct existing member yourself. All 47 rows show Paid with $0.00 remaining. You confirmed the invoice, due and payment dates are identical on every row. Payment account, method and original line-item details were not shown. No emails are sent by the import.</p>
