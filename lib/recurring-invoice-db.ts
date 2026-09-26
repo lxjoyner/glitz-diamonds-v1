@@ -319,6 +319,21 @@ export async function claimRecurringRun(recurringInvoiceId: number, scheduledFor
     }
 }
 
+export async function listRecurringRunDiagnostics(limit = 30) {
+    await ensureRecurringInvoiceSchema();
+    const [rows] = await pool.query<RowDataPacket[]>(`
+        SELECT run.id, run.recurring_invoice_id, run.invoice_id,
+            DATE_FORMAT(run.scheduled_for, '%Y-%m-%d') AS scheduled_for,
+            run.status, run.error_message, run.attempt_count,
+            run.updated_at, COALESCE(u.full_name, CONCAT('Member #', r.member_id)) AS member_name
+        FROM recurring_invoice_runs run
+        JOIN recurring_invoices r ON r.id = run.recurring_invoice_id
+        LEFT JOIN users u ON u.id = r.member_id
+        ORDER BY run.updated_at DESC, run.id DESC LIMIT ?
+    `, [Math.min(Math.max(limit, 1), 100)]);
+    return rows;
+}
+
 export async function attachRecurringRunInvoice(recurringInvoiceId: number, scheduledFor: string, invoiceId: number) {
     await ensureRecurringInvoiceSchema();
     const [result] = await pool.execute<ResultSetHeader>(`
