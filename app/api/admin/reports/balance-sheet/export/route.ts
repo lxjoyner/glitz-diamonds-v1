@@ -13,15 +13,16 @@ function makeCsv(report: Awaited<ReturnType<typeof getInvoicesDonationsBalanceSh
         [`Report Type: ${report.reportType === "accrual" ? "Accrual (Paid & Unpaid)" : "Cash Basis (Recorded Payments)"}`],
         [`View: ${view}`],
         [],
-        ["Cash and Bank (net recorded movement)*", dollars(report.cashOnHandCents)],
+        ["Cash and Bank*", report.hasVerifiedCashBalance ? dollars(report.cashOnHandCents) : "N/A*"],
         ["To be received", dollars(report.accountsReceivableCents)],
-        ["Total Invoices and Donations", dollars(report.totalInvoicesDonationsCents)],
+        ["Total Invoices and Donations", report.hasVerifiedCashBalance ? dollars(report.totalInvoicesDonationsCents) : "N/A*"],
         [],
         ["ACCOUNTS", report.asOf],
         ...balanceSheetRows(report, view === "details").map(row => [
-            `${"  ".repeat(row.level)}${row.label}`, row.amount == null ? "" : dollars(row.amount),
+            `${"  ".repeat(row.level)}${row.label}`, row.amount == null ? (row.label.includes("Cash") || row.label === "Total Invoices and Donations" ? "N/A*" : "") : dollars(row.amount),
         ]),
         [],
+        ["Net recorded cash movement (not an account balance)", dollars(report.netRecordedCashMovementCents)],
         ["Report notes"],
         ...report.notes.map(note => [note]),
     ];
@@ -41,15 +42,16 @@ function makePdf(report: Awaited<ReturnType<typeof getInvoicesDonationsBalanceSh
         "Balance Sheet - Invoices & Donations",
         `As of ${report.asOf}  |  ${report.reportType === "accrual" ? "Accrual (Paid & Unpaid)" : "Cash Basis (Recorded Payments)"}  |  ${view}`,
         "",
-        `Cash and Bank*                     ${dollars(report.cashOnHandCents)}`,
+        `Cash and Bank*                     ${report.hasVerifiedCashBalance ? dollars(report.cashOnHandCents) : "N/A*"}`,
         `To be received                    ${dollars(report.accountsReceivableCents)}`,
-        `Total Invoices and Donations      ${dollars(report.totalInvoicesDonationsCents)}`,
+        `Total Invoices and Donations      ${report.hasVerifiedCashBalance ? dollars(report.totalInvoicesDonationsCents) : "N/A*"}`,
         "",
         "ACCOUNTS",
         ...balanceSheetRows(report, view === "details").map(row =>
-            `${"  ".repeat(row.level)}${row.label}${row.amount === null ? "" : "  " + dollars(row.amount)}`
+            `${"  ".repeat(row.level)}${row.label}${row.amount === null ? ((row.label.includes("Cash") || row.label === "Total Invoices and Donations") ? "  N/A*" : "") : "  " + dollars(row.amount)}`
         ),
         "",
+        `Net recorded cash movement (not an account balance): ${dollars(report.netRecordedCashMovementCents)}`,
         "REPORT DATA NOTES",
         ...report.notes,
     ];
