@@ -163,6 +163,28 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true, member: memberRows[0], preview });
         }
 
+        const datedPaidRows = preview.filter(row => row.status === "paid" && Boolean(row.paymentDate));
+        if (datedPaidRows.length && paymentAccount !== "Cash on Hand (USD)") {
+            return NextResponse.json({
+                success: false,
+                error: "Select and verify Cash on Hand (USD) as the actual payment account to record dated historical payments."
+            }, { status: 400 });
+        }
+        for (const row of datedPaidRows) {
+            if (!row.paymentDate || row.paymentDate !== row.invoiceDate || row.dueDate !== row.invoiceDate) {
+                return NextResponse.json({
+                    success: false,
+                    error: "The confirmed Yolanda preset requires identical invoice, due and payment dates on each paid row."
+                }, { status: 400 });
+            }
+            if (Math.round(row.amountPaid * 100) !== Math.round(row.amount * 100)) {
+                return NextResponse.json({
+                    success: false,
+                    error: "Dated paid rows must have the full invoice amount paid before a ledger entry can be imported."
+                }, { status: 400 });
+            }
+        }
+
         const imported: Array<{ oldInvoiceNumber: string; invoiceNumber: string; invoiceId: number }> = [];
         const skipped: PreviewResult[] = [];
 
@@ -181,12 +203,26 @@ export async function POST(req: NextRequest) {
                 items: [{ description: row.description, quantity: 1, unitPriceCents: Math.round(row.amount * 100) }],
             });
 
+            if (row.status === "paid" && row.paymentDate) {
+                // Record the user's confirmed real payment date through the
+                // existing transactional payment service, rather than
+                // creating an undated historical balance in addition.
+                const { recordInvoicePayment } = await import("@/lib/invoice-db");
+                await recordInvoicePayment(created.id, {
+                    paymentDate: row.paymentDate,
+                    amountCents: Math.round(row.amountPaid * 100),
+                    method: "Historical import (method unknown)",
+                    accountName: paymentAccount,
+                    memo: "Legacy paid invoice " + row.oldInvoiceNumber + " - date confirmed by administrator",
+                });
+            } else {
             await setHistoricalPaymentState(
                 created.id,
                 row.status,
                 Math.round(row.amountPaid * 100),
                 Math.round(row.amount * 100)
             );
+            }
 
             imported.push({ oldInvoiceNumber: row.oldInvoiceNumber, invoiceNumber: created.invoiceNumber, invoiceId: created.id });
         }
