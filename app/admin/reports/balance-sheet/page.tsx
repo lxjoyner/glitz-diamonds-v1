@@ -72,7 +72,7 @@ export default function BalanceSheetPage() {
         setError("");setOpeningSaved("");setOpeningBusy(true);
         const amount = Number(openingAmount);
         if (!openingDate || !Number.isFinite(amount) || amount < 0 ||
-            !/^\\d+(?:\\.\\d{1,2})?$/.test(openingAmount.trim())) {
+            !/^\d+(?:\.\d{1,2})?$/.test(openingAmount.trim())) {
             setError("Enter a verified date and valid nonnegative cash/bank amount.");
             setOpeningBusy(false);return;
         }
