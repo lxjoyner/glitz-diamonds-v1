@@ -165,22 +165,19 @@ export async function POST(req: NextRequest) {
 
         const datedPaidRows = preview.filter(row => row.status === "paid" && Boolean(row.paymentDate));
         if (datedPaidRows.length && paymentAccount !== "Cash on Hand (USD)") {
-            return NextResponse.json({
-                success: false,
-                error: "Select and verify Cash on Hand (USD) as the actual payment account to record dated historical payments."
+            return NextResponse.json({ success: false,
+                error: "Before importing dated payments, explicitly verify that Cash on Hand (USD) is the account actually used."
             }, { status: 400 });
         }
         for (const row of datedPaidRows) {
             if (!row.paymentDate || row.paymentDate !== row.invoiceDate || row.dueDate !== row.invoiceDate) {
-                return NextResponse.json({
-                    success: false,
-                    error: "The confirmed Yolanda preset requires identical invoice, due and payment dates on each paid row."
+                return NextResponse.json({ success: false,
+                    error: "For Yolanda's confirmed records, invoice, due and payment dates must match the source row."
                 }, { status: 400 });
             }
             if (Math.round(row.amountPaid * 100) !== Math.round(row.amount * 100)) {
-                return NextResponse.json({
-                    success: false,
-                    error: "Dated paid rows must have the full invoice amount paid before a ledger entry can be imported."
+                return NextResponse.json({ success: false,
+                    error: "Every dated Paid row must have the full invoice amount paid."
                 }, { status: 400 });
             }
         }
