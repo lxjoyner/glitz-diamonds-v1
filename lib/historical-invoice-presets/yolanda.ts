@@ -276,25 +276,25 @@ const screenshotRows: ReadonlyArray<readonly [date: string, legacyNumber: string
         "2023-05-01",
         "5",
         "25.00",
-        true
+        false
     ],
     [
         "2023-04-01",
         "26",
         "25.00",
-        true
+        false
     ],
     [
         "2023-03-01",
         "25",
         "25.00",
-        true
+        false
     ],
     [
         "2023-02-01",
         "24",
         "25.00",
-        true
+        false
     ],
     [
         "2023-01-01",
