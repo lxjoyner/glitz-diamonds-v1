@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type Report = {
     asOf: string; reportType: "accrual" | "cash";
@@ -69,9 +70,23 @@ export default function BalanceSheetPage() {
     }) : "";
     const section = (label: string) => <tr className="bg-slate-200"><th colSpan={2} className="px-5 py-3 text-left text-base">{label}</th></tr>;
     const subsection = (label: string) => <tr className="bg-slate-50"><th colSpan={2} className="px-8 py-3 text-left">{label}</th></tr>;
-    const line = (label: string, amount: number | null, level = 1, bold = false, help?: string) =>
+    // Preserve the selected Balance Sheet as-of date and carry it to the
+    // existing Account Transactions report. Cash on Hand links to its cash
+    // view, while Accounts Receivable links to its accrual view.
+    const transactionsHref = (type: "cash" | "accrual") => {
+        const params = new URLSearchParams({
+            memberId: "0",
+            type,
+            from: "2000-01-01",
+            to: report?.asOf || asOf,
+        });
+        return `/admin/reports/account-transactions?${params.toString()}`;
+    };
+    const line = (label: string, amount: number | null, level = 1, bold = false, help?: string, href?: string) =>
         <tr key={label} className="border-b border-slate-200">
-            <td className={`py-3 pr-4 ${level === 2 ? "pl-12" : "pl-7"} ${bold ? "font-bold" : ""}`} title={help}>{label}</td>
+            <td className={`py-3 pr-4 ${level === 2 ? "pl-12" : "pl-7"} ${bold ? "font-bold" : ""}`} title={help}>
+                {href ? <Link href={href} className="font-semibold text-blue-700 underline-offset-2 hover:underline focus-visible:underline">{label} <span aria-hidden="true">↗</span></Link> : label}
+            </td>
             <td className={`py-3 pr-5 text-right ${bold ? "font-bold" : ""}`}>{amount === null ? "N/A*" : currency(amount)}</td>
         </tr>;
     return <main className="min-h-screen bg-slate-50 px-5 py-8 text-slate-900 sm:px-8">
@@ -131,11 +146,11 @@ export default function BalanceSheetPage() {
                 <table className="w-full border-collapse bg-white text-base"><tbody>
                     {section("Invoices & Donations")}
                     {view==="details" && subsection("Cash and Bank")}
-                    {line(view==="details"?"Cash on Hand":"Total Cash and Bank",report.cashOnHandCents,view==="details"?2:1,view==="summary")}
+                    {line(view==="details"?"Cash on Hand":"Total Cash and Bank",report.cashOnHandCents,view==="details"?2:1,view==="summary",undefined,view==="details"?transactionsHref("cash"):undefined)}
                     {view==="details" && line("Total Cash and Bank",report.cashOnHandCents,1,true)}
                     {view==="details" ? <>
                         {subsection("Other Invoices & Donations")}
-                        {line("Accounts Receivable",report.accountsReceivableCents,2)}
+                        {line("Accounts Receivable",report.accountsReceivableCents,2,false,undefined,transactionsHref("accrual"))}
                         {line("Past Due Payments (included in receivables)",report.pastDueCents,2,false,"Informational breakdown; not added a second time.")}
                         {line("Total Current Invoices & Donations",report.accountsReceivableCents,1,true)}
                     </> : <>
