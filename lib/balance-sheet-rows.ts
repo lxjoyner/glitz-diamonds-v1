@@ -21,8 +21,10 @@ export function balanceSheetRows(report: BalanceSheetReport, detail: boolean): B
     return [
         { label: "Invoices & Donations", amount: null, level: 0 },
         { label: "Total Cash and Bank*", amount: report.cashOnHandCents, level: 1 },
-        { label: "Total Past Due Payments (part of receivables)", amount: report.pastDueCents, level: 1, informational: true },
-        { label: "Total Other Current Invoices & Donations", amount: report.accountsReceivableCents, level: 1 },
+        { label: "Total Past Due Payments", amount: report.pastDueCents, level: 1, informational: true },
+        ...(report.currentReceivablesCents > 0
+            ? [{ label: "Invoices Not Yet Due", amount: report.currentReceivablesCents, level: 1, informational: true }]
+            : []),
         { label: "Total Invoices and Donations", amount: report.totalInvoicesDonationsCents, level: 0 },
     ];
 }
