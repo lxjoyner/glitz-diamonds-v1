@@ -58,6 +58,13 @@ export default function HistoricalInvoiceImportPage() {
 
     const selectedMember = useMemo(() => members.find((member) => String(member.id) === memberId), [members, memberId]);
 
+    function changeInvoiceDate(index: number, date: string) {
+        setRows(current => current.map((row, i) => i === index
+            ? { ...row, invoiceDate: date, ...(yolandaPresetLoaded ? { dueDate: date, paymentDate: date } : {}) }
+            : row));
+        setPreview([]);
+    }
+
     function updateRow(index: number, field: keyof Row, value: string | boolean) {
         setRows((current) => current.map((row, i) => i === index ? { ...row, [field]: value } : row));
         setPreview([]);
@@ -197,7 +204,7 @@ export default function HistoricalInvoiceImportPage() {
                                     const previewRow = preview[index];
                                     return <tr key={index} className="border-t border-slate-200 align-top">
                                         <td className="px-3 py-3"><input value={row.oldInvoiceNumber} onChange={(event) => updateRow(index, "oldInvoiceNumber", event.target.value)} className="w-28 rounded-lg border border-slate-300 px-2 py-2" /></td>
-                                        <td className="px-3 py-3"><input type="date" value={row.invoiceDate} onChange={(event) => updateRow(index, "invoiceDate", event.target.value)} className="rounded-lg border border-slate-300 px-2 py-2" /></td>
+                                        <td className="px-3 py-3"><input type="date" value={row.invoiceDate} onChange={(event) => changeInvoiceDate(index, event.target.value)} className="rounded-lg border border-slate-300 px-2 py-2" /></td>
                                         <td className="px-3 py-3"><input type="date" value={row.dueDate} onChange={(event) => updateRow(index, "dueDate", event.target.value)} className="rounded-lg border border-slate-300 px-2 py-2" /></td>
                                         <td className="px-3 py-3"><input type="number" min="0.01" step="0.01" value={row.amount} onChange={(event) => updateRow(index, "amount", event.target.value)} className="w-28 rounded-lg border border-slate-300 px-2 py-2 text-right" /></td>
                                         <td className="px-3 py-3"><select value={row.status} onChange={(event) => updateRow(index, "status", event.target.value)} className="rounded-lg border border-slate-300 px-2 py-2"><option value="paid">Paid</option><option value="overdue">Overdue</option><option value="unpaid">Unpaid</option></select></td>
