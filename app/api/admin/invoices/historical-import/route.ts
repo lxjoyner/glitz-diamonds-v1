@@ -16,6 +16,7 @@ type HistoricalInvoiceInput = {
     oldInvoiceNumber?: string;
     invoiceDate: string;
     dueDate?: string;
+    paymentDate?: string;
     amount: number;
     amountPaid?: number;
     status?: "paid" | "unpaid" | "overdue";
@@ -27,6 +28,7 @@ type PreviewResult = {
     oldInvoiceNumber: string;
     invoiceDate: string;
     dueDate: string;
+    paymentDate?: string;
     amount: number;
     amountPaid: number;
     status: "paid" | "unpaid" | "overdue";
@@ -100,6 +102,7 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const memberId = Number(body?.memberId);
         const mode = body?.mode === "import" ? "import" : "preview";
+        const paymentAccount = String(body?.paymentAccount || "").trim();
         const invoices = Array.isArray(body?.invoices) ? (body.invoices as HistoricalInvoiceInput[]) : [];
 
         if (!Number.isInteger(memberId) || memberId <= 0) {
@@ -125,6 +128,7 @@ export async function POST(req: NextRequest) {
         for (const raw of invoices) {
             const invoiceDate = normalizeDate(raw.invoiceDate);
             const dueDate = normalizeDate(raw.dueDate || raw.invoiceDate);
+            const paymentDate = raw.paymentDate ? normalizeDate(raw.paymentDate) : undefined;
             const oldInvoiceNumber = String(raw.oldInvoiceNumber || "").trim();
             const amount = Number(raw.amount || 0);
             const amountPaid = Number(raw.amountPaid || 0);
@@ -132,7 +136,7 @@ export async function POST(req: NextRequest) {
             const recurring = Boolean(raw.recurring);
             const description = String(raw.description || (recurring ? "Recurring membership invoice" : "Historical membership invoice")).trim();
 
-            if (!invoiceDate || !dueDate || !Number.isFinite(amount) || amount <= 0) {
+            if (!invoiceDate || !dueDate || (raw.paymentDate && !paymentDate) || !Number.isFinite(amount) || amount <= 0) {
                 return NextResponse.json(
                     { success: false, error: "Every row needs a valid invoice date, due date, and amount greater than 0." },
                     { status: 400 }
@@ -144,6 +148,7 @@ export async function POST(req: NextRequest) {
                 oldInvoiceNumber,
                 invoiceDate,
                 dueDate,
+                paymentDate,
                 amount,
                 amountPaid,
                 status,
