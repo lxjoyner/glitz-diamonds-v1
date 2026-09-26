@@ -257,6 +257,9 @@ export async function listDueRecurringInvoices(todayIso: string): Promise<Recurr
     await ensureRecurringInvoiceSchema();
     const [rows] = await pool.query<RecurringInvoiceRecord[]>(`
         SELECT r.*, u.full_name AS member_name, u.email AS member_email,
+            DATE_FORMAT(r.next_invoice_date, '%Y-%m-%d') AS next_invoice_date,
+            DATE_FORMAT(r.first_invoice_date, '%Y-%m-%d') AS first_invoice_date,
+            DATE_FORMAT(r.end_date, '%Y-%m-%d') AS end_date,
             NULL AS previous_invoice_id, NULL AS previous_invoice_number
         FROM recurring_invoices r
         LEFT JOIN users u ON u.id = r.member_id
