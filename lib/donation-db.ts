@@ -111,6 +111,8 @@ export function validDonationDate(date: string) {
 
 export async function getDonationPaymentAccounts() {
     await ensureDonationsTable();
+    const { ensureInvoiceSchema } = await import("@/lib/invoice-db");
+    await ensureInvoiceSchema();
     const [rows] = await pool.query<import("mysql2/promise").RowDataPacket[]>(
         "SELECT name FROM invoice_payment_accounts WHERE is_active=1 ORDER BY sort_order, name"
     );
