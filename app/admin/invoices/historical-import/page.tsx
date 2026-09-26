@@ -121,6 +121,9 @@ export default function HistoricalInvoiceImportPage() {
     async function submit(mode: "preview" | "import") {
         setMessage("");
         if (!memberId) return setMessage("Select a member first.");
+        if (mode === "import" && yolandaPresetLoaded && !paymentAccount) {
+            return setMessage("Select the actual payment account before posting historical payment ledger entries.");
+        }
         if (mode === "import" && yolandaPresetLoaded) {
             if (!selectedMember || !selectedMember.full_name.toLowerCase().includes("yolanda")) {
                 return setMessage("Confirm the correct Yolanda member record before importing. Do not select another member based only on the uploaded filename.");
@@ -135,6 +138,7 @@ export default function HistoricalInvoiceImportPage() {
                 body: JSON.stringify({
                     memberId,
                     mode,
+                    paymentAccount: yolandaPresetLoaded ? paymentAccount : undefined,
                     invoices: rows.map((row) => ({
                         ...row,
                         paymentDate: row.paymentDate || undefined,
