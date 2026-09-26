@@ -6,17 +6,17 @@
  *   - Screenshots identify the list customer as "Yolanda"; the uploaded file
  *     names say "Yolanda D Joyner". Neither establishes the user's internal
  *     member_id. Admin MUST select/verify the existing member before preview.
- *   - Screenshots show invoice DATE but no DUE DATE. dueDate defaults to the
- *     visible invoice date solely to meet the existing import form contract;
- *     review/correct dates before import.
- *   - Actual payment dates, payment methods, and purposes are not provided.
- *     These are historical paid balances, not dated payment ledger events.
+ *   - Per administrator confirmation, the visible invoice DATE is also the
+ *     actual DUE DATE and PAYMENT DATE for every row.
+ *   - The administrator confirmed payment dates equal the row dates. Payment
+ *     account, method, and purposes are not shown in the source images.
  *   - Labels "Recurring" are preserved only where visible in the images.
  */
 export type HistoricalInvoicePresetRow = {
     oldInvoiceNumber: string;
     invoiceDate: string;
     dueDate: string;
+    paymentDate: string;
     amount: string;
     amountPaid: string;
     status: "paid";
@@ -317,8 +317,8 @@ export function getYolandaInvoicePreset(): HistoricalInvoicePresetRow[] {
     return screenshotRows.map(([invoiceDate, oldInvoiceNumber, amount, recurring]) => ({
         oldInvoiceNumber,
         invoiceDate,
-        // Source screenshots do not show due dates: admin should verify.
         dueDate: invoiceDate,
+        paymentDate: invoiceDate,
         amount,
         amountPaid: amount,
         status: "paid",
