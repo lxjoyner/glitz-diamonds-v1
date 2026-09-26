@@ -161,6 +161,8 @@ export async function getInvoicesDonationsBalanceSheet(
     const pastDue = Number(invoiceRows[0]?.overdue_cents || 0);
     const netRecordedCash = Number(cashRows[0]?.net_cash_cents || 0);
     const totalPayables = Number(billRows[0]?.payable_cents || 0);
+    // "Verified" here means the requested source-derived report total is
+    // available; no claim is made about reconciliation with a bank statement.
     const hasVerifiedCashBalance = true;
     const cash = netRecordedCash;
     // "To be received" combines all eligible outstanding invoices, whether
