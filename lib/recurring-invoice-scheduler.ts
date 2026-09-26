@@ -4,6 +4,7 @@ import { getMemberOverdueInvoiceSummary } from "@/lib/invoice-overdue-summary";
 import { prepareInvoiceEmailTracking, confirmInvoiceEmailSent, discardUnsentInvoiceTracking } from "@/lib/invoice-email-tracking";
 import {
     claimRecurringRun,
+    attachRecurringRunInvoice,
     completeRecurringRun,
     failRecurringRun,
     getRecurringInvoiceById,
@@ -136,72 +137,73 @@ export async function runRecurringInvoiceTestSend(recurringInvoiceId: number) {
 export async function runRecurringInvoiceScheduler(todayIso = new Date().toISOString().slice(0, 10)) {
     const dueRows = await listDueRecurringInvoices(todayIso);
     const results: Array<{ recurringInvoiceId: number; scheduledFor: string; status: string; invoiceId?: number; error?: string }> = [];
-
     for (const row of dueRows) {
         let scheduledFor = String(row.next_invoice_date).slice(0, 10);
         let safety = 0;
-
-        while (scheduledFor <= todayIso && safety < 366) {
-            safety += 1;
-            const claimed = await claimRecurringRun(row.id, scheduledFor);
-            if (!claimed) {
-                scheduledFor = nextOccurrence(row, scheduledFor);
-                continue;
+        // One dated cycle per scheduler invocation limits bursts if an old
+        // schedule has months of backlog. Subsequent cron checks catch up.
+        while (scheduledFor <= todayIso && safety < 1) {
+            safety++;
+            const claim = await claimRecurringRun(row.id, scheduledFor);
+            if (!claim.claimed) {
+                results.push({ recurringInvoiceId: row.id, scheduledFor, status: "skipped_existing" });
+                break;
             }
-
+            let invoiceId = claim.invoiceId;
             try {
-                const invoiceResult = await createInvoice({
-                    memberId: row.member_id,
-                    invoiceDate: scheduledFor,
-                    dueDate: dueDateFor(scheduledFor),
-                    notes: row.notes || "",
-                    terms: "On Receipt",
-                    items: [{ description: "Dues", quantity: 1, unitPriceCents: Number(row.amount_cents) }],
-                });
+                // Persist the invoice ID to the run before sending: a failed
+                // SMTP attempt can retry the SAME invoice rather than billing
+                // the member twice.
+                if (invoiceId === null) {
+                    const created = await createInvoice({
+                        memberId: row.member_id,
+                        invoiceDate: scheduledFor,
+                        dueDate: dueDateFor(scheduledFor),
+                        notes: row.notes || "",
+                        footerText: row.footer_text || "",
+                        terms: "On Receipt",
+                        items: [{ description: "Dues", quantity: 1, unitPriceCents: Number(row.amount_cents) }],
+                    });
+                    invoiceId = created.id;
+                    await attachRecurringRunInvoice(row.id, scheduledFor, invoiceId);
+                }
+                const invoice = await getInvoiceById(invoiceId);
+                if (!invoice) throw new Error("GENERATED_INVOICE_MISSING");
+                if (!row.member_email) throw new Error("MISSING_MEMBER_EMAIL");
 
-                const invoice = await getInvoiceById(invoiceResult.id);
-                if (!invoice) throw new Error("Generated invoice could not be loaded.");
-
-                if (row.member_email) {
+                // An earlier request may have sent the email but crashed
+                // before completion. Do not re-send a delivered invoice.
+                if (!invoice.sent_at) {
                     const invoiceUrl = `${baseUrl()}/invoice/${invoice.public_token}`;
                     const overdue = await getMemberOverdueInvoiceSummary(row.member_id, scheduledFor, invoice.id);
                     const trackingToken = await prepareInvoiceEmailTracking(invoice.id);
                     try {
                         await sendInvoiceEmail({
-                        toEmail: row.member_email,
-                        memberName: row.member_name || "Member",
-                        invoiceNumber: invoice.invoice_number,
-                        amountDueCents: Math.max(0, invoice.total_cents - invoice.amount_paid_cents),
-                        dueDate: String(invoice.due_date),
-                        invoiceUrl,
-                        overdue,
-                        emailOpenPixelUrl: `${baseUrl()}/api/invoice-email/open/${trackingToken}`,
-                    });
-                    await confirmInvoiceEmailSent(trackingToken);
+                            toEmail: row.member_email,
+                            memberName: row.member_name || "Member",
+                            invoiceNumber: invoice.invoice_number,
+                            amountDueCents: Math.max(0, invoice.total_cents - invoice.amount_paid_cents),
+                            dueDate: String(invoice.due_date),
+                            invoiceUrl, overdue,
+                            emailOpenPixelUrl: `${baseUrl()}/api/invoice-email/open/${trackingToken}`,
+                        });
+                        await confirmInvoiceEmailSent(trackingToken);
                     } catch (sendError) {
                         await discardUnsentInvoiceTracking(trackingToken);
                         throw sendError;
                     }
                 }
-
                 const nextInvoiceDate = nextOccurrence(row, scheduledFor);
                 await completeRecurringRun({
-                    recurringInvoiceId: row.id,
-                    scheduledFor,
-                    invoiceId: invoice.id,
-                    nextInvoiceDate,
+                    recurringInvoiceId: row.id, scheduledFor, invoiceId, nextInvoiceDate,
                 });
-
-                results.push({ recurringInvoiceId: row.id, scheduledFor, status: "completed", invoiceId: invoice.id });
-                scheduledFor = nextInvoiceDate;
+                results.push({ recurringInvoiceId: row.id, scheduledFor, status: "completed", invoiceId });
             } catch (error) {
                 const message = error instanceof Error ? error.message : "Unknown recurring invoice error.";
                 await failRecurringRun(row.id, scheduledFor, message);
-                results.push({ recurringInvoiceId: row.id, scheduledFor, status: "failed", error: message });
-                break;
+                results.push({ recurringInvoiceId: row.id, scheduledFor, status: "failed", invoiceId: invoiceId ?? undefined, error: message });
             }
         }
     }
-
     return { checked: dueRows.length, results };
 }
