@@ -185,8 +185,8 @@ export default function BalanceSheetPage() {
                         {line("Past Due Payments (included in receivables)",report.pastDueCents,2,false,"Informational breakdown; not added a second time.")}
                         {line("Total Current Invoices & Donations",report.accountsReceivableCents,1,true)}
                     </> : <>
-                        {line("Total Past Due Payments (part of receivables)",report.pastDueCents)}
-                        {line("Total Other Current Invoices & Donations",report.accountsReceivableCents)}
+                        {line("Total Past Due Payments",report.pastDueCents)}
+                        {report.currentReceivablesCents > 0 && line("Invoices Not Yet Due",report.currentReceivablesCents)}
                     </>}
                     {line("Total Invoices and Donations",report.hasVerifiedCashBalance ? report.totalInvoicesDonationsCents : null,1,true)}
                 </tbody></table>
