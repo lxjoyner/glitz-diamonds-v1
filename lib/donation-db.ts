@@ -10,6 +10,11 @@ export type DonationRecord = {
     stripe_payment_intent_id: string | null;
     payment_status: string;
     created_at: string;
+    donation_date: string | null;
+    account_name: string | null;
+    payment_method: string | null;
+    reference_number: string | null;
+    member_id: number | null;
 };
 
 let bootstrapped = false;
@@ -35,6 +40,13 @@ async function ensureDonationsTable() {
     await pool.query("ALTER TABLE donations ADD COLUMN IF NOT EXISTS stripe_payment_intent_id VARCHAR(128) NULL UNIQUE");
     await pool.query("ALTER TABLE donations ADD COLUMN IF NOT EXISTS payment_status VARCHAR(40) NOT NULL DEFAULT 'pending'");
 
+    const [columns] = await pool.query<import("mysql2/promise").RowDataPacket[]>( "SHOW COLUMNS FROM donations" );
+    const names = new Set(columns.map(column => String(column.Field)));
+    if (!names.has("donation_date")) await pool.query("ALTER TABLE donations ADD COLUMN donation_date DATE NULL");
+    if (!names.has("account_name")) await pool.query("ALTER TABLE donations ADD COLUMN account_name VARCHAR(120) NULL");
+    if (!names.has("payment_method")) await pool.query("ALTER TABLE donations ADD COLUMN payment_method VARCHAR(80) NULL");
+    if (!names.has("reference_number")) await pool.query("ALTER TABLE donations ADD COLUMN reference_number VARCHAR(160) NULL");
+    if (!names.has("member_id")) await pool.query("ALTER TABLE donations ADD COLUMN member_id BIGINT NULL");
     bootstrapped = true;
 }
 
@@ -67,7 +79,7 @@ export async function getAllDonations(): Promise<DonationRecord[]> {
     await ensureDonationsTable();
 
     const [rows] = await pool.query(`
-        SELECT id, donor_name, donor_email, message, amount_cents, stripe_session_id, stripe_payment_intent_id, payment_status, created_at
+        SELECT id, donor_name, donor_email, message, amount_cents, stripe_session_id, stripe_payment_intent_id, payment_status, created_at, DATE_FORMAT(donation_date, '%Y-%m-%d') AS donation_date, account_name, payment_method, reference_number, member_id
         FROM donations
         ORDER BY created_at DESC
     `);
