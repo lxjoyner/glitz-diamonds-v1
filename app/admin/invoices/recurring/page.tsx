@@ -33,6 +33,16 @@ export default function RecurringInvoicesPage() {
     const [rows, setRows] = useState<RecurringInvoice[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [scheduler, setScheduler] = useState<{
+        today: string; cronConfigured: boolean; dueCount: number;
+        due: Array<{ id: number; memberName: string | null; hasEmail: boolean; nextInvoiceDate: string }>;
+        history: Array<{ id: number; recurring_invoice_id: number; scheduled_for: string;
+            invoice_id: number | null; status: string; error_message: string | null;
+            attempt_count: number; updated_at: string; member_name: string }>;
+    } | null>(null);
+    const [schedulerBusy, setSchedulerBusy] = useState(false);
+    const [schedulerNotice, setSchedulerNotice] = useState("");
+    const [showScheduler, setShowScheduler] = useState(false);
     const [memberFilter, setMemberFilter] = useState("all");
     const [customerSearch, setCustomerSearch] = useState("");
     const [customerMenuOpen, setCustomerMenuOpen] = useState(false);
@@ -71,6 +81,37 @@ export default function RecurringInvoicesPage() {
         document.addEventListener("mousedown", closeCustomerMenu);
         return () => document.removeEventListener("mousedown", closeCustomerMenu);
     }, []);
+
+    async function loadScheduler() {
+        setSchedulerBusy(true);
+        try {
+            const response = await fetch("/api/admin/recurring-invoices/scheduler", { cache: "no-store" });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || "Unable to load scheduler status.");
+            setScheduler(result);
+        } catch (err) {
+            setSchedulerNotice(err instanceof Error ? err.message : "Unable to load scheduler status.");
+        } finally {
+            setSchedulerBusy(false);
+        }
+    }
+
+    async function runScheduler() {
+        if (!window.confirm("Generate and email all currently due active recurring invoices? These are REAL invoices, not test sends.")) return;
+        setSchedulerBusy(true);
+        setSchedulerNotice("");
+        try {
+            const response = await fetch("/api/admin/recurring-invoices/scheduler", { method: "POST" });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || "Recurring processing failed.");
+            const completed = (result.results || []).filter((row: {status: string}) => row.status === "completed").length;
+            const failed = (result.results || []).filter((row: {status: string}) => row.status === "failed").length;
+            setSchedulerNotice(`Processed ${result.checked} due schedule(s): ${completed} completed, ${failed} failed. Check the run history below.`);
+            await Promise.all([load(), loadScheduler()]);
+        } catch (err) {
+            setSchedulerNotice(err instanceof Error ? err.message : "Unable to run recurring scheduler.");
+        } finally { setSchedulerBusy(false); }
+    }
 
     function toggleSort(key: RecurringSortKey) {
         if (sortKey === key) setSortDirection((current) => current === "asc" ? "desc" : "asc");
@@ -141,6 +182,42 @@ export default function RecurringInvoicesPage() {
                     <h1 className="text-4xl font-bold tracking-tight text-white">Recurring invoices</h1>
                     <Link href="/admin/invoices/recurring/new" className="rounded-full bg-black px-6 py-3.5 font-semibold text-white hover:bg-slate-900">Create a recurring invoice</Link>
                 </header>
+
+                <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div><h2 className="text-lg font-bold">Automatic invoice scheduler</h2>
+                            <p className="text-sm text-slate-600">Due-date invoices are generated and emailed only when the Hostinger hourly cron calls the protected endpoint.</p>
+                        </div>
+                        <button type="button" className="rounded-full border border-blue-700 px-4 py-2 font-semibold text-blue-700"
+                            onClick={() => { if (!showScheduler) loadScheduler(); setShowScheduler(!showScheduler); }}>
+                            {showScheduler ? "Hide scheduler status" : "Scheduler status"}
+                        </button>
+                    </div>
+                    {showScheduler && <div className="mt-4 space-y-4">
+                        <div className="flex flex-wrap gap-3">
+                            <button type="button" onClick={loadScheduler} disabled={schedulerBusy} className="rounded-full border px-4 py-2 disabled:opacity-50">Refresh</button>
+                            <button type="button" onClick={runScheduler} disabled={schedulerBusy} className="rounded-full bg-blue-700 px-5 py-2 font-semibold text-white disabled:opacity-50">
+                                {schedulerBusy ? "Working..." : "Run due invoices now"}
+                            </button>
+                        </div>
+                        {schedulerNotice && <p role="status" className="rounded-lg bg-blue-50 p-3 text-sm text-blue-900">{schedulerNotice}</p>}
+                        {scheduler && <>
+                            <p className="text-sm">Business date: <strong>{scheduler.today}</strong> · Cron secret: <strong>{scheduler.cronConfigured ? "Configured" : "NOT CONFIGURED"}</strong> · Due active schedules: <strong>{scheduler.dueCount}</strong></p>
+                            <p className="text-xs text-slate-500">Configured does not prove Hostinger scheduled the cron job. Verify the external Hostinger cron configuration.</p>
+                            {scheduler.due.some(row => !row.hasEmail) && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Some due members have no email; update their profiles before sending.</p>}
+                            <div className="overflow-x-auto"><table className="w-full min-w-[580px] text-left text-xs">
+                                <thead><tr><th className="p-2">Scheduled for</th><th className="p-2">Member</th><th className="p-2">Result</th><th className="p-2">Invoice</th><th className="p-2">Attempts / Error</th></tr></thead>
+                                <tbody>{scheduler.history.map(h => <tr className="border-t" key={h.id}>
+                                    <td className="p-2">{h.scheduled_for}</td><td className="p-2">{h.member_name}</td>
+                                    <td className="p-2">{h.status}</td>
+                                    <td className="p-2">{h.invoice_id ? <Link className="text-blue-700 hover:underline" href={`/admin/invoices/${h.invoice_id}/preview`}>Invoice #{h.invoice_id}</Link> : "—"}</td>
+                                    <td className="p-2">{h.attempt_count}{h.error_message ? `: ${h.error_message}` : ""}</td>
+                                </tr>)}
+                                {scheduler.history.length === 0 && <tr><td colSpan={5} className="p-3 text-slate-500">No scheduled runs recorded yet.</td></tr>}</tbody>
+                            </table></div>
+                        </>}
+                    </div>}
+                </section>
 
                 <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div ref={customerMenuRef} className="relative mb-8 max-w-sm">

@@ -114,12 +114,17 @@ export async function ensureRecurringInvoiceSchema() {
             invoice_id BIGINT NULL,
             status VARCHAR(20) NOT NULL DEFAULT 'processing',
             error_message TEXT NULL,
+            attempt_count INT NOT NULL DEFAULT 0,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             UNIQUE KEY uq_recurring_run (recurring_invoice_id, scheduled_for),
             INDEX idx_recurring_run_invoice (invoice_id)
         )
     `);
+    const [runColumns] = await pool.query<RowDataPacket[]>(`SHOW COLUMNS FROM recurring_invoice_runs`);
+    if (!runColumns.some(column => String(column.Field) === "attempt_count")) {
+        await pool.query(`ALTER TABLE recurring_invoice_runs ADD COLUMN attempt_count INT NOT NULL DEFAULT 0`);
+    }
 }
 
 export async function listRecurringInvoices(): Promise<RecurringInvoiceRecord[]> {
@@ -264,13 +269,81 @@ export async function listDueRecurringInvoices(todayIso: string): Promise<Recurr
     return rows;
 }
 
-export async function claimRecurringRun(recurringInvoiceId: number, scheduledFor: string) {
+export type RecurringRunClaim = { claimed: true; invoiceId: number | null; attempt: number } | { claimed: false };
+
+export async function claimRecurringRun(recurringInvoiceId: number, scheduledFor: string): Promise<RecurringRunClaim> {
+    await ensureRecurringInvoiceSchema();
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+        const [rows] = await conn.query<RowDataPacket[]>(`
+            SELECT id, status, invoice_id, updated_at, attempt_count
+            FROM recurring_invoice_runs
+            WHERE recurring_invoice_id = ? AND scheduled_for = ?
+            FOR UPDATE
+        `, [recurringInvoiceId, scheduledFor]);
+        const previous = rows[0];
+        if (!previous) {
+            const [created] = await conn.execute<ResultSetHeader>(`
+                INSERT INTO recurring_invoice_runs (recurring_invoice_id, scheduled_for, status, attempt_count)
+                VALUES (?, ?, 'processing', 1)
+            `, [recurringInvoiceId, scheduledFor]);
+            await conn.commit();
+            return { claimed: created.affectedRows === 1, invoiceId: null, attempt: 1 };
+        }
+        const status = String(previous.status);
+        // A process that died without updating the row should not lock
+        // billing forever. Another worker can reclaim after 30 minutes.
+        // MySQL DATETIME values may be parsed in Node's local timezone.
+        const updated = new Date(previous.updated_at).getTime();
+        const stale = Number.isFinite(updated) && updated < Date.now() - 30 * 60 * 1000;
+        if (status === "completed" || (status === "processing" && !stale)) {
+            await conn.commit();
+            return { claimed: false };
+        }
+        await conn.execute(`
+            UPDATE recurring_invoice_runs SET status='processing', error_message=NULL,
+                attempt_count=attempt_count+1, updated_at=NOW()
+            WHERE id = ?
+        `, [previous.id]);
+        await conn.commit();
+        return { claimed: true, invoiceId: previous.invoice_id == null ? null : Number(previous.invoice_id),
+                 attempt: Number(previous.attempt_count) + 1 };
+    } catch (error) {
+        await conn.rollback();
+        // On concurrent first insertion, the losing worker can safely skip.
+        if (error && typeof error === "object" && "code" in error &&
+            (error as { code?: string }).code === "ER_DUP_ENTRY") return { claimed: false };
+        throw error;
+    } finally {
+        conn.release();
+    }
+}
+
+export async function listRecurringRunDiagnostics(limit = 30) {
+    await ensureRecurringInvoiceSchema();
+    const [rows] = await pool.query<RowDataPacket[]>(`
+        SELECT run.id, run.recurring_invoice_id, run.invoice_id,
+            DATE_FORMAT(run.scheduled_for, '%Y-%m-%d') AS scheduled_for,
+            run.status, run.error_message, run.attempt_count,
+            run.updated_at, COALESCE(u.full_name, CONCAT('Member #', r.member_id)) AS member_name
+        FROM recurring_invoice_runs run
+        JOIN recurring_invoices r ON r.id = run.recurring_invoice_id
+        LEFT JOIN users u ON u.id = r.member_id
+        ORDER BY run.updated_at DESC, run.id DESC LIMIT ?
+    `, [Math.min(Math.max(limit, 1), 100)]);
+    return rows;
+}
+
+export async function attachRecurringRunInvoice(recurringInvoiceId: number, scheduledFor: string, invoiceId: number) {
     await ensureRecurringInvoiceSchema();
     const [result] = await pool.execute<ResultSetHeader>(`
-        INSERT IGNORE INTO recurring_invoice_runs (recurring_invoice_id, scheduled_for, status)
-        VALUES (?, ?, 'processing')
-    `, [recurringInvoiceId, scheduledFor]);
-    return result.affectedRows === 1;
+        UPDATE recurring_invoice_runs
+        SET invoice_id = ?, updated_at=NOW()
+        WHERE recurring_invoice_id = ? AND scheduled_for = ?
+          AND status = 'processing' AND invoice_id IS NULL
+    `, [invoiceId, recurringInvoiceId, scheduledFor]);
+    if (result.affectedRows !== 1) throw new Error("RECURRING_INVOICE_ATTACH_FAILED");
 }
 
 export async function completeRecurringRun(params: {
