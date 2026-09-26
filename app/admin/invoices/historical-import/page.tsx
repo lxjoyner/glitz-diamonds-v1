@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { getYolandaInvoicePreset, YOLANDA_SOURCE_COUNT, YOLANDA_SOURCE_TOTAL_CENTS } from "@/lib/historical-invoice-presets/yolanda";
 
 type Member = { id: number; full_name: string; email: string };
 type Row = {
@@ -37,6 +38,7 @@ export default function HistoricalInvoiceImportPage() {
     const [preview, setPreview] = useState<PreviewRow[]>([]);
     const [message, setMessage] = useState("");
     const [busy, setBusy] = useState(false);
+    const [yolandaPresetLoaded, setYolandaPresetLoaded] = useState(false);
 
     useEffect(() => {
         async function load() {
@@ -57,6 +59,15 @@ export default function HistoricalInvoiceImportPage() {
     function updateRow(index: number, field: keyof Row, value: string | boolean) {
         setRows((current) => current.map((row, i) => i === index ? { ...row, [field]: value } : row));
         setPreview([]);
+    }
+
+    function loadYolandaPreset() {
+        const hasData = rows.some((row) => row.oldInvoiceNumber || row.invoiceDate);
+        if (hasData && !window.confirm("Replace the current draft rows with Yolanda's 47 screenshot invoices? Unsaved edits will be lost.")) return;
+        setRows(getYolandaInvoicePreset());
+        setYolandaPresetLoaded(true);
+        setPreview([]);
+        setMessage("Loaded 47 Paid historical invoices totaling $2,225.00. The screenshots do not show due dates, so the invoice dates were used as editable placeholders. Verify the selected member, due dates, special amounts and non-recurring entries before preview and import.");
     }
 
     function addRows(count = 1) {
@@ -91,13 +102,22 @@ export default function HistoricalInvoiceImportPage() {
                 description: recurring ? "Recurring membership invoice" : "Historical membership invoice",
             } satisfies Row;
         });
-        if (parsed.length) setRows(parsed);
+        if (parsed.length) {
+            setRows(parsed);
+            setYolandaPresetLoaded(false);
+        }
         setPreview([]);
     }
 
     async function submit(mode: "preview" | "import") {
         setMessage("");
         if (!memberId) return setMessage("Select a member first.");
+        if (mode === "import" && yolandaPresetLoaded) {
+            if (!selectedMember || !selectedMember.full_name.toLowerCase().includes("yolanda")) {
+                return setMessage("Confirm the correct Yolanda member record before importing. Do not select another member based only on the uploaded filename.");
+            }
+            if (!window.confirm(`Import ${rows.length} paid invoice rows into member ${selectedMember.full_name} (${selectedMember.email})? Please confirm the member, amounts and the assumed due dates are correct. This does not send invoices or create dated payment-ledger entries.`)) return;
+        }
         setBusy(true);
         try {
             const response = await fetch("/api/admin/invoices/historical-import", {
@@ -140,6 +160,7 @@ export default function HistoricalInvoiceImportPage() {
                         <p className="mt-1 text-sm text-white">Import prior invoices while preserving the old invoice number as a reference.</p>
                     </div>
                     <div className="flex flex-wrap gap-3">
+                        <button type="button" onClick={loadYolandaPreset} disabled={busy} className="rounded-full border border-emerald-700 bg-white px-5 py-3 font-semibold text-emerald-800 hover:bg-emerald-50 disabled:opacity-50">Load Yolanda ({YOLANDA_SOURCE_COUNT})</button>
                         <button type="button" onClick={parsePaste} className="rounded-full border border-blue-600 bg-white px-5 py-3 font-semibold text-blue-700 hover:bg-blue-50">Paste rows</button>
                         <button type="button" onClick={() => submit("preview")} disabled={busy} className="rounded-full border border-blue-600 bg-white px-5 py-3 font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50">Preview</button>
                         <button type="button" onClick={() => submit("import")} disabled={busy || preview.length === 0} className="rounded-full bg-black px-6 py-3 font-semibold text-white hover:bg-slate-900 disabled:opacity-50">{busy ? "Working..." : "Import invoices"}</button>
@@ -153,6 +174,11 @@ export default function HistoricalInvoiceImportPage() {
                         {members.map((member) => <option key={member.id} value={member.id}>{member.full_name} — {member.email}</option>)}
                     </select>
                     {selectedMember && <p className="mt-2 text-sm text-slate-500">Importing into member #{selectedMember.id}: {selectedMember.full_name}</p>}
+                    {yolandaPresetLoaded && <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+                        <p className="font-semibold">Yolanda screenshot import loaded: {rows.length} editable rows; source total {(YOLANDA_SOURCE_TOTAL_CENTS / 100).toLocaleString("en-US", { style: "currency", currency: "USD" })} across {YOLANDA_SOURCE_COUNT} source records.</p>
+                        <p className="mt-1">The screenshots identify the customer only as Yolanda; confirm the correct existing member yourself. All 47 rows show Paid with $0.00 remaining. Actual due dates, payment dates and item descriptions were not supplied. Due dates currently match the visible invoice dates as review placeholders; no payment-ledger entries or emails will be created by this import.</p>
+                        <p className="mt-1">Pay particular attention to legacy #27 ($1,000), #77 ($100), and the seven rows without a visible Recurring label.</p>
+                    </div>}}
                 </section>
 
                 <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
