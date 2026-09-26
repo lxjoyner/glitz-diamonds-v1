@@ -11,6 +11,8 @@ export type BalanceSheetReport = {
     accountsReceivableCents: number;
     pastDueCents: number;
     currentReceivablesCents: number;
+    netRecordedCashMovementCents: number;
+    hasVerifiedCashBalance: boolean;
     totalInvoicesDonationsCents: number;
     currentPayablesCents: number;
     outstandingBillsCents: number;
@@ -75,8 +77,8 @@ export async function getInvoicesDonationsBalanceSheet(
 
     // Cash ledger = recorded dated invoice inflows minus dated vendor bill
     // outflows. Historic imported paid values are NOT booked as dated cash.
-    // Without opening account balances this is *net recorded cash movement*
-    // and must never be labeled a verified bank account closing balance.
+    // Without opening account balances this is *net recorded cash movement*,
+    // NOT Cash on Hand. Keep it separately labeled as a disclosed metric.
     const [cashRows] = await pool.query<RowDataPacket[]>(`
         SELECT
             (SELECT COALESCE(SUM(p.amount_cents), 0)
@@ -93,20 +95,26 @@ export async function getInvoicesDonationsBalanceSheet(
     const pastDue = Number(invoiceRows[0]?.overdue_cents || 0);
     const netRecordedCash = Number(cashRows[0]?.net_cash_cents || 0);
     const totalPayables = Number(billRows[0]?.payable_cents || 0);
-    const cash = netRecordedCash;
+    // An opening account balance is unavailable; never display net movement
+    // as a fabricated cash balance. Cash on Hand and any combined grand
+    // total remain unavailable until an actual balance can be reconciled.
+    const cash = 0;
     const outstanding = reportType === "accrual" ? receivables : 0;
     return {
         asOf, reportType,
         cashOnHandCents: cash,
+        netRecordedCashMovementCents: netRecordedCash,
+        hasVerifiedCashBalance: false,
         accountsReceivableCents: outstanding,
         pastDueCents: reportType === "accrual" ? pastDue : 0,
         currentReceivablesCents: reportType === "accrual" ? Math.max(0, receivables - pastDue) : 0,
-        totalInvoicesDonationsCents: cash + outstanding,
+        totalInvoicesDonationsCents: outstanding,
         currentPayablesCents: totalPayables,
         outstandingBillsCents: totalPayables,
         notes: [
-            "Cash on Hand is net recorded cash movement, not a verified bank balance: opening balances, bank reconciliations and historical payments without dates are unavailable.",
+            "Cash on Hand and a combined grand total cannot be verified: opening balances, bank reconciliations, and historical payments without dates are unavailable. Cash is displayed as N/A, not as zero.",
             "Historical imported payments without actual payment dates are applied using their stored balances. Prior-period results are therefore estimates until those dates are reconciled.",
+            "Net recorded cash movement is shown separately and is NOT an account balance. The displayed total includes only verified invoice receivables; no unverified cash is added.",
             "Donations are included only when recorded through existing invoice payments. No separate donations ledger currently exists.",
             ...(reportType === "cash" ? ["Cash Basis hides receivables; outstanding invoices remain available in Accrual."] : []),
         ],
