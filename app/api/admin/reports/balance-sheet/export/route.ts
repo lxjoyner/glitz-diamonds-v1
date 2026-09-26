@@ -7,22 +7,24 @@ const dollars = (cents: number) => new Intl.NumberFormat("en-US", {style:"curren
 const csvQuote = (value: string | number) => `"${String(value).replace(/"/g, '""')}"`;
 
 function makeCsv(report: Awaited<ReturnType<typeof getInvoicesDonationsBalanceSheet>>, view: "summary" | "details") {
+    const number = (cents: number) => (cents / 100).toFixed(2);
     const lines = [
         ["Glitz Of Diamonds - Balance Sheet"],
         [`As of ${report.asOf}`],
         [`Report Type: ${report.reportType === "accrual" ? "Accrual (Paid & Unpaid)" : "Cash Basis (Recorded Payments)"}`],
         [`View: ${view}`],
         [],
-        ["Cash and Bank*", report.hasVerifiedCashBalance ? dollars(report.cashOnHandCents) : "N/A*"],
-        ["To be received", dollars(report.accountsReceivableCents)],
-        ["Total Invoices and Donations", report.hasVerifiedCashBalance ? dollars(report.totalInvoicesDonationsCents) : "N/A*"],
+        ["Label", "Amount USD"],
+        ["Cash and Bank*", report.hasVerifiedCashBalance ? number(report.cashOnHandCents) : "N/A*"],
+        ["To be received", number(report.accountsReceivableCents)],
+        ["Total Invoices and Donations", report.hasVerifiedCashBalance ? number(report.totalInvoicesDonationsCents) : "N/A*"],
         [],
         ["ACCOUNTS", report.asOf],
         ...balanceSheetRows(report, view === "details").map(row => [
-            `${"  ".repeat(row.level)}${row.label}`, row.amount == null ? (row.label.includes("Cash") || row.label === "Total Invoices and Donations" ? "N/A*" : "") : dollars(row.amount),
+            `${"  ".repeat(row.level)}${row.label}`, row.amount == null ? (row.label.includes("Cash") || row.label === "Total Invoices and Donations" ? "N/A*" : "") : number(row.amount),
         ]),
         [],
-        ["Net recorded cash movement (not an account balance)", dollars(report.netRecordedCashMovementCents)],
+        ["Net recorded cash movement (not an account balance)", number(report.netRecordedCashMovementCents)],
         ["Report notes"],
         ...report.notes.map(note => [note]),
     ];
