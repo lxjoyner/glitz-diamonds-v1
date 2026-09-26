@@ -48,7 +48,7 @@ export async function getBalanceSheetOpening() {
     return rows[0] ? { balanceDate: String(rows[0].balanceDate), openingCents: Number(rows[0].openingCents) } : null;
 }
 export async function saveBalanceSheetOpening(balanceDate: string, openingCents: number) {
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(balanceDate) ||
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(balanceDate) ||
         !Number.isFinite(Date.parse(balanceDate + "T00:00:00Z")) ||
         new Date(balanceDate + "T00:00:00Z").toISOString().slice(0,10) !== balanceDate ||
         !Number.isSafeInteger(openingCents) || openingCents < 0) throw new Error("INVALID_OPENING");
