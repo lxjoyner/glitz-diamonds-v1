@@ -350,6 +350,7 @@ export async function listRecurringRunDiagnostics(limit = 30) {
         FROM recurring_invoice_runs run
         JOIN recurring_invoices r ON r.id = run.recurring_invoice_id
         LEFT JOIN users u ON u.id = r.member_id
+        WHERE r.status <> 'ended'
         ORDER BY run.updated_at DESC, run.id DESC LIMIT ?
     `, [Math.min(Math.max(limit, 1), 100)]);
     return rows;
