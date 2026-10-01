@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth";
-import { endRecurringInvoice, getRecurringInvoiceById, updateRecurringInvoice, type RecurringFrequency, type RecurringEndMode } from "@/lib/recurring-invoice-db";
+import { deleteRecurringInvoice, endRecurringInvoice, getRecurringInvoiceById, updateRecurringInvoice, type RecurringFrequency, type RecurringEndMode } from "@/lib/recurring-invoice-db";
 
 function requireInvoiceAdmin(req: NextRequest) {
     const token = req.cookies.get("glitz_token")?.value;
@@ -104,13 +104,19 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
     try {
         requireInvoiceAdmin(req);
         const { id } = await context.params;
+        const mode = req.nextUrl.searchParams.get("mode") || "end";
+        if (mode === "delete") {
+            const deleted = await deleteRecurringInvoice(Number(id));
+            if (!deleted) return NextResponse.json({ success: false, error: "Recurring invoice not found." }, { status: 404 });
+            return NextResponse.json({ success: true, deleted: true });
+        }
         const recurringInvoice = await endRecurringInvoice(Number(id));
         if (!recurringInvoice) return NextResponse.json({ success: false, error: "Recurring invoice not found." }, { status: 404 });
         return NextResponse.json({ success: true, recurringInvoice });
     } catch (error) {
         const authResponse = respondAuthError(error);
         if (authResponse) return authResponse;
-        console.error("Failed to end recurring invoice:", error);
-        return NextResponse.json({ success: false, error: "Failed to end recurring invoice." }, { status: 500 });
+        console.error("Failed to remove recurring invoice:", error);
+        return NextResponse.json({ success: false, error: "Failed to remove recurring invoice." }, { status: 500 });
     }
 }
