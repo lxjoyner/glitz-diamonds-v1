@@ -195,7 +195,7 @@ export default function RecurringInvoicesPage() {
                 <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-5">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div><h2 className="text-lg font-bold">Automatic invoice scheduler</h2>
-                            <p className="text-sm text-slate-600">Due-date invoices are generated and emailed only when the Hostinger hourly cron calls the protected endpoint.</p>
+                            <p className="text-sm text-slate-600">Due-date invoices are generated and emailed only when the Hostinger cron calls the protected endpoint 5 minutes after each hour of the day.</p>
                         </div>
                         <button type="button" className="rounded-full border border-blue-700 px-4 py-2 font-semibold text-blue-700"
                             onClick={() => { if (!showScheduler) loadScheduler(); setShowScheduler(!showScheduler); }}>
