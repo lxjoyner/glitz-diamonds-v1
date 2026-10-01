@@ -253,6 +253,23 @@ export async function endRecurringInvoice(id: number) {
     return getRecurringInvoiceById(id);
 }
 
+export async function deleteRecurringInvoice(id: number) {
+    await ensureRecurringInvoiceSchema();
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+        await connection.query(`DELETE FROM recurring_invoice_runs WHERE recurring_invoice_id = ?`, [id]);
+        const [result] = await connection.execute<ResultSetHeader>(`DELETE FROM recurring_invoices WHERE id = ?`, [id]);
+        await connection.commit();
+        return result.affectedRows === 1;
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
+}
+
 export async function listDueRecurringInvoices(todayIso: string): Promise<RecurringInvoiceRecord[]> {
     await ensureRecurringInvoiceSchema();
     const [rows] = await pool.query<RecurringInvoiceRecord[]>(`

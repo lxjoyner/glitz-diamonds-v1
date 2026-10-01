@@ -167,12 +167,21 @@ export default function RecurringInvoicesPage() {
     const paginated = sorted.slice(pageStart, pageStart + PAGE_SIZE);
 
     async function endRecurring(row: RecurringInvoice) {
-        if (!window.confirm(`End recurring invoices for ${row.member_name || "this member"}?`)) return;
+        if (!window.confirm(`End recurring invoices for ${row.member_name || "this member"}? This keeps the recurring history.`)) return;
         const res = await fetch(`/api/admin/recurring-invoices/${row.id}`, { method: "DELETE" });
         const data = await res.json();
         if (!res.ok) return setError(data?.error || "Failed to end recurring invoice.");
         setOpenMenuId(null);
-        await load();
+        await Promise.all([load(), showScheduler ? loadScheduler() : Promise.resolve()]);
+    }
+
+    async function deleteRecurring(row: RecurringInvoice) {
+        if (!window.confirm(`Permanently delete the recurring invoice for ${row.member_name || "this member"} and its scheduler history? This cannot be undone.`)) return;
+        const res = await fetch(`/api/admin/recurring-invoices/${row.id}?mode=delete`, { method: "DELETE" });
+        const data = await res.json();
+        if (!res.ok) return setError(data?.error || "Failed to delete recurring invoice.");
+        setOpenMenuId(null);
+        await Promise.all([load(), showScheduler ? loadScheduler() : Promise.resolve()]);
     }
 
     return (
@@ -282,7 +291,7 @@ export default function RecurringInvoicesPage() {
                                             <td className="px-3 py-4 text-right">{money(row.amount_cents)}</td>
                                             <td className="relative px-3 py-4 text-right" onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
                                                 <button onClick={() => setOpenMenuId(openMenuId === row.id ? null : row.id)} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-blue-600 text-blue-700 hover:bg-blue-50" aria-label={`Actions for ${row.member_name || "recurring invoice"}`}>⌄</button>
-                                                {openMenuId === row.id && <div className="absolute right-3 z-50 mt-2 w-52 rounded-xl border border-slate-200 bg-white py-2 text-left shadow-xl"><Link href={viewHref} className="block px-4 py-2 hover:bg-slate-50">View</Link><Link href={`/admin/invoices/recurring/${row.id}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit</Link>{row.status !== "ended" && <button onClick={() => endRecurring(row)} className="block w-full px-4 py-2 text-left text-red-700 hover:bg-red-50">End</button>}<Link href="/admin/invoices" className="block px-4 py-2 hover:bg-slate-50">View created invoices</Link><Link href={`/admin/invoices/recurring/${row.id}/duplicate`} className="block px-4 py-2 hover:bg-slate-50">Duplicate</Link></div>}
+                                                {openMenuId === row.id && <div className="absolute right-3 z-50 mt-2 w-52 rounded-xl border border-slate-200 bg-white py-2 text-left shadow-xl"><Link href={viewHref} className="block px-4 py-2 hover:bg-slate-50">View</Link><Link href={`/admin/invoices/recurring/${row.id}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit</Link>{row.status !== "ended" && <button onClick={() => endRecurring(row)} className="block w-full px-4 py-2 text-left text-red-700 hover:bg-red-50">End</button>}<button onClick={() => deleteRecurring(row)} className="block w-full px-4 py-2 text-left text-red-700 hover:bg-red-50">Delete permanently</button><Link href="/admin/invoices" className="block px-4 py-2 hover:bg-slate-50">View created invoices</Link><Link href={`/admin/invoices/recurring/${row.id}/duplicate`} className="block px-4 py-2 hover:bg-slate-50">Duplicate</Link></div>}
                                             </td>
                                         </tr>;
                                     })}</tbody>
