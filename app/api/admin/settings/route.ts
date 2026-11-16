@@ -44,6 +44,7 @@ export async function PATCH(req: NextRequest) {
     const dateFormat = String(body.dateFormat || "").trim();
     const timeFormat = String(body.timeFormat || "").trim();
     const birthdaysOnCalendar = body.birthdaysOnCalendar;
+    const helpEnabled = body.helpEnabled;
     const birthdayExcludedUserIds = body.birthdayExcludedUserIds;
     const passwordExpirationValue = Number(body.passwordExpirationValue);
     const passwordExpirationUnit = String(body.passwordExpirationUnit || "").trim() as PasswordExpirationUnit;
@@ -60,6 +61,10 @@ export async function PATCH(req: NextRequest) {
             { success: false, error: "Birthday calendar settings are invalid." },
             { status: 400 }
         );
+    }
+
+    if (typeof helpEnabled !== "boolean") {
+        return NextResponse.json({ success: false, error: "Help setting must be enabled or disabled." }, { status: 400 });
     }
 
     if (!Number.isInteger(passwordExpirationValue) || passwordExpirationValue < 1 || passwordExpirationValue > 3650) {
@@ -87,6 +92,7 @@ export async function PATCH(req: NextRequest) {
         dateFormat,
         timeFormat,
         birthdaysOnCalendar,
+        helpEnabled,
         birthdayExcludedUserIds: normalizeExcludedUserIds(birthdayExcludedUserIds),
         passwordExpirationValue,
         passwordExpirationUnit,
