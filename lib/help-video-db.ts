@@ -42,7 +42,7 @@ export function videoStorageDirectory(): string {
     }
     const resolved = path.resolve(directory);
     const publicDirectory = path.resolve(process.cwd(), "public");
-    if (resolved === publicDirectory || resolved.startsWith(publicDirectory + path.sep)) {
+    if (resolved.split(path.sep).some((segment) => segment.toLowerCase() === "public_html") || resolved === publicDirectory || resolved.startsWith(publicDirectory + path.sep)) {
         throw new Error("HELP_VIDEO_STORAGE_DIR must not be inside public/.");
     }
     return resolved;
