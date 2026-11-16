@@ -31,6 +31,7 @@ export default function Header() {
     const [vendorsOpen, setVendorsOpen] = useState(false);
     const [loadingAuth, setLoadingAuth] = useState(true);
     const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
+    const [helpEnabled, setHelpEnabled] = useState(false);
     const router = useRouter();
     const pathname = usePathname();
     const displayName = getDisplayName(adminUser);
@@ -47,8 +48,16 @@ export default function Header() {
 
                 if (data?.authenticated) {
                     setAdminUser(data.user);
+                    try {
+                        const helpRes = await fetch("/api/help/status", { cache: "no-store" });
+                        const helpData = await helpRes.json();
+                        setHelpEnabled(helpRes.ok && helpData.helpEnabled === true);
+                    } catch {
+                        setHelpEnabled(false);
+                    }
                 } else {
                     setAdminUser(null);
+                    setHelpEnabled(false);
                 }
             } catch (error) {
                 console.error("Failed to load admin status:", error);
@@ -68,6 +77,7 @@ export default function Header() {
             });
 
             setAdminUser(null);
+            setHelpEnabled(false);
             setOpen(false);
             router.push("/");
             router.refresh();
@@ -136,6 +146,7 @@ export default function Header() {
                     {!loadingAuth && adminUser?.role === "admin" && <Link href="/admin/member-invites" className="nav-link" onClick={() => setOpen(false)}>Member Invites</Link>}
                     {!loadingAuth && adminUser?.role === "admin" && <Link href="/admin/roles-manager" className="nav-link" onClick={() => setOpen(false)}>Roles Manager</Link>}
                     {!loadingAuth && adminUser && <Link href="/admin/messages" className="nav-link" onClick={() => setOpen(false)}>Dashboard</Link>}
+                    {!loadingAuth && adminUser && helpEnabled && <Link href="/help" className="nav-link" onClick={() => setOpen(false)}>Help Center</Link>}
                     {!loadingAuth && adminUser && <Link href="/admin/ideas-activities" className="nav-link" onClick={() => setOpen(false)}>Ideas & Activities</Link>}
                     {!loadingAuth && adminUser && <Link href="/calendar" className="nav-link" onClick={() => setOpen(false)}>Calendar</Link>}
 
