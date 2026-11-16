@@ -197,6 +197,21 @@ export async function markResetEmailSent(adminId: number) {
     await pool.query(`UPDATE admin_security SET last_reset_email_sent_at = NOW(), reset_required = 1 WHERE admin_id = ?`, [adminId]);
 }
 
+// Atomically reserve a resend window so repeated clicks or concurrent requests
+// cannot generate multiple reset-link emails for the same account.
+export async function reserveAdminResetEmailResend(adminId: number, cooldownSeconds = 60): Promise<boolean> {
+    await ensureAdminSecurityRow(adminId);
+    const [result] = await pool.query(
+        `UPDATE admin_security
+         SET last_reset_email_sent_at = NOW()
+         WHERE admin_id = ?
+           AND (last_reset_email_sent_at IS NULL
+                OR last_reset_email_sent_at <= DATE_SUB(NOW(), INTERVAL ? SECOND))`,
+        [adminId, cooldownSeconds]
+    );
+    return (result as { affectedRows: number }).affectedRows === 1;
+}
+
 export async function setAdminTemporaryPassword(adminId: number, passwordHash: string) {
     await ensureAdminSecurityRow(adminId);
     await pool.query(`UPDATE admins SET password_hash = ? WHERE id = ?`, [passwordHash, adminId]);

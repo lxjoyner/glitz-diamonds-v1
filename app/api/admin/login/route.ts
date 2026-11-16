@@ -101,6 +101,7 @@ export async function POST(req: Request) {
                 return NextResponse.json({
                     success: false,
                     error: "Your password has expired. A reset link has been emailed to your admin account.",
+                    resetLinkSent: true,
                 }, { status: 403 });
             }
 

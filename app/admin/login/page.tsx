@@ -35,6 +35,8 @@ export default function AdminLoginPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const [showResetResend, setShowResetResend] = useState(false);
+    const [resendingReset, setResendingReset] = useState(false);
 
     const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -49,6 +51,7 @@ export default function AdminLoginPage() {
     const resetStatusMessages = () => {
         setError("");
         setSuccess("");
+        setShowResetResend(false);
     };
 
     const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -68,6 +71,7 @@ export default function AdminLoginPage() {
             const data = await res.json();
 
             if (!res.ok) {
+                if (data?.resetLinkSent) setShowResetResend(true);
                 throw new Error(data?.error || "Login failed.");
             }
 
@@ -82,6 +86,26 @@ export default function AdminLoginPage() {
             setError(err instanceof Error ? err.message : "Login failed.");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleResendReset = async () => {
+        setResendingReset(true);
+        setError("");
+        setSuccess("");
+        try {
+            const res = await fetch("/api/admin/resend-password-reset", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: loginForm.username, password: loginForm.password }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data?.error || "Unable to resend reset link.");
+            setSuccess(data?.message || "A new reset link has been sent. Check your email.");
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Unable to resend reset link.");
+        } finally {
+            setResendingReset(false);
         }
     };
 
@@ -281,6 +305,19 @@ export default function AdminLoginPage() {
                     <p>Treasurer: view donations.</p>
                 </div>
 
+                {showResetResend && mode === "login" && (
+                    <div className="mt-4 rounded-lg border border-white/20 bg-white/5 p-3 text-sm text-slate-200">
+                        <p>Didn&apos;t receive the reset link? Check your spam or junk folder, or request a fresh link below.</p>
+                        <button
+                            type="button"
+                            onClick={handleResendReset}
+                            disabled={resendingReset || loading}
+                            className="mt-2 font-semibold text-red-300 underline hover:text-red-200 disabled:opacity-60"
+                        >
+                            {resendingReset ? "Sending reset link..." : "Click here to send it again"}
+                        </button>
+                    </div>
+                )}
                 {success && <p className="mt-4 text-sm text-emerald-400">{success}</p>}
                 {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
             </div>
