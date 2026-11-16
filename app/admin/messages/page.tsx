@@ -58,6 +58,7 @@ type DashboardSettings = {
     date_format: string;
     time_format: string;
     birthdays_on_calendar: boolean;
+    help_enabled: boolean;
     birthday_excluded_user_ids: number[];
     password_expiration_value: number;
     password_expiration_unit: PasswordExpirationUnit;
@@ -70,6 +71,7 @@ type RawDashboardSettings = {
     dateFormat?: string;
     timeFormat?: string;
     birthdays_on_calendar?: number | boolean;
+    help_enabled?: number | boolean;
     birthday_excluded_user_ids?: unknown;
     birthdaysOnCalendar?: boolean;
     birthdayExcludedUserIds?: unknown;
@@ -152,6 +154,7 @@ function normalizeSettings(raw?: RawDashboardSettings): DashboardSettings {
         date_format: raw?.date_format || raw?.dateFormat || "MMM d, yyyy",
         time_format: raw?.time_format || raw?.timeFormat || "h:mm a",
         birthdays_on_calendar: Boolean(raw?.birthdays_on_calendar ?? raw?.birthdaysOnCalendar ?? true),
+        help_enabled: Boolean(raw?.help_enabled ?? true),
         birthday_excluded_user_ids: excludedIds,
         password_expiration_value: Number.isInteger(rawExpirationValue) && rawExpirationValue > 0 ? rawExpirationValue : 60,
         password_expiration_unit: expirationUnit,
@@ -221,6 +224,7 @@ export default function AdminMessagesPage() {
             date_format: "MMM d, yyyy",
             time_format: "h:mm a",
             birthdays_on_calendar: true,
+            help_enabled: true,
             birthday_excluded_user_ids: [],
             password_expiration_value: 60,
             password_expiration_unit: "days",
@@ -323,6 +327,7 @@ export default function AdminMessagesPage() {
                 dateFormat: settings.date_format,
                 timeFormat: settings.time_format,
                 birthdaysOnCalendar: settings.birthdays_on_calendar,
+                helpEnabled: settings.help_enabled,
                 birthdayExcludedUserIds: settings.birthday_excluded_user_ids,
                 passwordExpirationValue: settings.password_expiration_value,
                 passwordExpirationUnit: settings.password_expiration_unit,
@@ -543,6 +548,21 @@ export default function AdminMessagesPage() {
                             <select value={settings.time_format} onChange={(event) => setSettings((prev) => ({ ...prev, time_format: event.target.value }))} className="rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm">
                                 {TIME_FORMAT_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
                             </select>
+                        </div>
+
+                        <div className="mt-6 border-t border-white/10 pt-5">
+                            <h3 className="text-xl font-semibold text-[#ffdef7]">Help System</h3>
+                            <p className="mt-1 text-xs text-slate-400">Enable or disable the Help Center for signed-in users. Tutorials will be added in a later phase.</p>
+                            <label className="mt-3 flex items-center gap-3 text-sm">
+                                <span className="font-semibold">Help:</span>
+                                <select aria-label="Help System" value={settings.help_enabled ? "enabled" : "disabled"}
+                                    onChange={(event) => setSettings((previous) => ({ ...previous, help_enabled: event.target.value === "enabled" }))}
+                                    className="rounded-lg border border-white/15 bg-black px-3 py-2">
+                                    <option value="enabled">Enabled</option>
+                                    <option value="disabled">Disabled</option>
+                                </select>
+                            </label>
+                            <p className="mt-2 text-xs text-slate-400">Select Save settings to apply your selection across the application.</p>
                         </div>
 
                         <div className="mt-6 border-t border-white/10 pt-5">
