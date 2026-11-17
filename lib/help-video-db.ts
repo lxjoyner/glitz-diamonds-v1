@@ -1,5 +1,5 @@
 import pool from "@/lib/db";
-import { HELP_TOPICS, visibleHelpTopics } from "@/lib/help-catalog";
+import { validateHelpTopicFromDb, visibleHelpTopicsFromDb } from "@/lib/help-custom-topics-db";
 import { randomUUID } from "node:crypto";
 import { mkdir, open, unlink } from "node:fs/promises";
 import path from "node:path";
@@ -53,8 +53,8 @@ function storageFilePath(filename: string) {
     return path.join(videoStorageDirectory(), filename);
 }
 
-export function validateHelpTopic(topicId: string) {
-    return HELP_TOPICS.some((topic) => topic.id === topicId);
+export async function validateHelpTopic(topicId: string) {
+    return validateHelpTopicFromDb(topicId);
 }
 
 export async function listHelpVideos(): Promise<HelpVideo[]> {
@@ -74,12 +74,12 @@ export async function getHelpVideo(id: number): Promise<HelpVideo | null> {
 }
 
 export async function listVisibleHelpVideos(role: string) {
-    const allowedTopics = new Set(visibleHelpTopics(role).map((topic) => topic.id));
+    const allowedTopics = new Set((await visibleHelpTopicsFromDb(role)).map((topic) => topic.id));
     return (await listHelpVideos()).filter((video) => Boolean(video.is_active) && allowedTopics.has(video.topic_id));
 }
 
 export async function createHelpVideo(input: { topicId: string; title: string; description: string; file: File }) {
-    if (!validateHelpTopic(input.topicId)) throw new Error("Invalid topic");
+    if (!(await validateHelpTopic(input.topicId))) throw new Error("Invalid topic");
     if (!input.title || input.title.length > 180 || input.description.length > 2000) throw new Error("Invalid video title or description");
     if (input.file.size < 12 || input.file.size > MAX_BYTES) throw new Error("MP4 file must be between 12 bytes and 30MB.");
     if (!/\.mp4$/i.test(input.file.name) || !["video/mp4", "application/octet-stream", ""].includes(input.file.type)) {
@@ -112,7 +112,7 @@ export async function createHelpVideo(input: { topicId: string; title: string; d
 }
 
 export async function updateHelpVideo(input: { id: number; topicId: string; title: string; description: string; active: boolean }) {
-    if (!validateHelpTopic(input.topicId) || !input.title || input.title.length > 180 || input.description.length > 2000) {
+    if (!(await validateHelpTopic(input.topicId)) || !input.title || input.title.length > 180 || input.description.length > 2000) {
         throw new Error("Invalid video details.");
     }
     await ensureTable();
