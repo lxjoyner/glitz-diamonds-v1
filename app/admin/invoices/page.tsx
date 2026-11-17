@@ -110,6 +110,7 @@ export default function InvoicesPage() {
     const router = useRouter();
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isAdmin, setIsAdmin] = useState(false);
     const [error, setError] = useState("");
     const [notice, setNotice] = useState("");
     const [sendingId, setSendingId] = useState<number | null>(null);
@@ -157,6 +158,7 @@ export default function InvoicesPage() {
                 const me = await meRes.json();
                 if (!me?.authenticated) return router.push("/admin/login");
                 if (!["admin", "treasurer"].includes(me.user?.role)) throw new Error("Only admins and treasurers can access invoices.");
+                setIsAdmin(me.user?.role === "admin");
                 await loadInvoices();
             } catch (e) {
                 setError(e instanceof Error ? e.message : "Failed to load invoices.");
@@ -440,6 +442,13 @@ export default function InvoicesPage() {
                                                                     >
                                                                         {receiptingId === invoice.id ? "Sending receipt..." : "Send Receipt"}
                                                                     </button>
+                                                                    {isAdmin && Number(invoice.amount_paid_cents) > 0 && (
+                                                                        <Link href={`/admin/invoices/${invoice.id}/reverse-payment`}
+                                                                            className="block px-4 py-2 font-semibold text-amber-800 hover:bg-amber-50"
+                                                                            onClick={() => setOpenActionId(null)}>
+                                                                            Reverse incorrect payment
+                                                                        </Link>
+                                                                    )}
                                                                     {printHref && <Link href={printHref} target="_blank" rel="noreferrer" className="block px-4 py-2 hover:bg-slate-50">Print</Link>}
                                                                     {pdfHref && <a href={pdfHref} download className="block px-4 py-2 hover:bg-slate-50">Export as PDF</a>}
                                                                     {canSend && <button type="button" onClick={() => deleteInvoice(invoice)} disabled={deletingId === invoice.id} className="block w-full px-4 py-2 text-left font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">{deletingId === invoice.id ? "Deleting..." : "Delete"}</button>}
