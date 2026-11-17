@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth";
 import { getAdminSettings } from "@/lib/admin-settings-db";
 import { getHelpVideo, readHelpVideoRange } from "@/lib/help-video-db";
-import { visibleHelpTopics } from "@/lib/help-catalog";
+import { visibleHelpTopicsFromDb } from "@/lib/help-custom-topics-db";
 
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     const token = req.cookies.get("glitz_token")?.value;
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
         const settings = await getAdminSettings();
         if (Number(settings.help_enabled) === 0) return new NextResponse(null, { status: 403 });
         const video = await getHelpVideo(id);
-        if (!video || !video.is_active || !visibleHelpTopics(role).some((topic) => topic.id === video.topic_id)) {
+        if (!video || !video.is_active || !(await visibleHelpTopicsFromDb(role)).some((topic) => topic.id === video.topic_id)) {
             return new NextResponse(null, { status: 404 });
         }
         const size = video.size_bytes;

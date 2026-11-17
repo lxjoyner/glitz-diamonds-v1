@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth";
 import { getAdminSettings } from "@/lib/admin-settings-db";
-import { visibleHelpTopics } from "@/lib/help-catalog";
+import { visibleHelpTopicsFromDb } from "@/lib/help-custom-topics-db";
 import { listVisibleHelpVideos } from "@/lib/help-video-db";
 
 // Do not expose role-restricted catalog entries or disabled Help content.
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
             list.push({ id: video.id, title: video.title, description: video.description, url: "/api/help/videos/" + video.id });
             byTopic.set(video.topic_id, list);
         }
-        const topics = visibleHelpTopics(role).map(({ roles, videoStatus, ...topic }) => ({
+        const topics = (await visibleHelpTopicsFromDb(role)).map(({ roles, videoStatus, ...topic }) => ({
             ...topic,
             videoStatus: byTopic.has(topic.id) ? "available" : videoStatus,
             videos: byTopic.get(topic.id) || [],
