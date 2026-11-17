@@ -1,6 +1,6 @@
 import pool from "@/lib/db";
 import { ensureInvoiceSchema } from "@/lib/invoice-db";
-import type { RowDataPacket, ResultSetHeader } from "mysql2";
+import type { RowDataPacket, ResultSetHeader } from "mysql2/promise";
 
 export type ReversibleInvoicePayment = {
     id: number; amount_cents: number; payment_date: string;
