@@ -445,7 +445,7 @@ export default function InvoicesPage() {
                                                                     {isAdmin && Number(invoice.amount_paid_cents) > 0 && (
                                                                         <Link href={`/admin/invoices/${invoice.id}/reverse-payment`}
                                                                             className="block px-4 py-2 font-semibold text-amber-800 hover:bg-amber-50"
-                                                                            onClick={() => setOpenActionId(null)}>
+                                                                            onClick={(event) => { event.stopPropagation(); setOpenActionId(null); }}>
                                                                             Reverse incorrect payment
                                                                         </Link>
                                                                     )}
