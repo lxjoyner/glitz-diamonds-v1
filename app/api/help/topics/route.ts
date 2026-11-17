@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth";
 import { getAdminSettings } from "@/lib/admin-settings-db";
 import { visibleHelpTopics } from "@/lib/help-catalog";
+import { listVisibleHelpVideos } from "@/lib/help-video-db";
 
 // Do not expose role-restricted catalog entries or disabled Help content.
 // The browser receives only the topics permitted for its signed-in role.
@@ -26,7 +27,18 @@ export async function GET(req: NextRequest) {
                 status: 403, headers: { "Cache-Control": "no-store" },
             });
         }
-        const topics = visibleHelpTopics(role).map(({ roles, ...topic }) => topic);
+        const videos = await listVisibleHelpVideos(role);
+        const byTopic = new Map<string, Array<{ id: number; title: string; description: string; url: string }>>();
+        for (const video of videos) {
+            const list = byTopic.get(video.topic_id) || [];
+            list.push({ id: video.id, title: video.title, description: video.description, url: "/api/help/videos/" + video.id });
+            byTopic.set(video.topic_id, list);
+        }
+        const topics = visibleHelpTopics(role).map(({ roles, videoStatus, ...topic }) => ({
+            ...topic,
+            videoStatus: byTopic.has(topic.id) ? "available" : videoStatus,
+            videos: byTopic.get(topic.id) || [],
+        }));
         return NextResponse.json({ success: true, helpEnabled: true, role, topics }, {
             headers: { "Cache-Control": "no-store" },
         });

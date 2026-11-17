@@ -9,7 +9,8 @@ type Topic = {
     category: string;
     summary: string;
     path: string;
-    videoStatus: "coming_soon";
+    videoStatus: "coming_soon" | "available";
+    videos: Array<{ id: number; title: string; description: string; url: string }>;
 };
 
 type Status = "loading" | "ready" | "disabled" | "unauthorized" | "error";
@@ -63,6 +64,7 @@ export default function HelpCenterPage() {
                         </p>
                     </div>
                     {status === "ready" && <span className="rounded-full border border-white/20 bg-black/40 px-3 py-1 text-sm capitalize">{role} help</span>}
+                    {status === "ready" && role === "admin" && <Link href="/admin/help-videos" className="rounded-lg border border-white/20 px-3 py-2 text-sm font-semibold hover:bg-white/10">Manage Help Videos</Link>}
                 </div>
 
                 {status === "loading" && <p className="mt-7 text-slate-300" role="status">Loading available help topics...</p>}
@@ -99,7 +101,22 @@ export default function HelpCenterPage() {
                                         <p className="text-xs font-semibold uppercase tracking-wide text-red-300">{topic.category}</p>
                                         <h2 className="mt-2 text-lg font-semibold">{topic.title}</h2>
                                         <p className="mt-2 flex-1 text-sm text-slate-300">{topic.summary}</p>
-                                        <p className="mt-4 text-xs text-slate-400">Video tutorial: coming in Phase 3</p>
+                                        {topic.videos?.length ? (
+                                            <div className="mt-4 space-y-3">
+                                                {topic.videos.map((video) => (
+                                                    <div key={video.id} className="rounded-lg border border-white/15 p-3">
+                                                        <p className="text-sm font-semibold">{video.title}</p>
+                                                        {video.description && <p className="mt-1 text-xs text-slate-300">{video.description}</p>}
+                                                        <video controls preload="none" playsInline controlsList="nodownload"
+                                                            className="mt-3 w-full rounded-lg" src={video.url} aria-label={video.title}>
+                                                            Your browser does not support MP4 playback.
+                                                        </video>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="mt-4 text-xs text-slate-400">Video tutorial: not yet available</p>
+                                        )}
                                         <Link href={topic.path} className="mt-3 inline-flex self-start rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">
                                             Open feature
                                         </Link>
