@@ -126,15 +126,15 @@ function AccountTransactionsContent() {
                 </div>
 
                 <section className="mb-8 rounded-2xl bg-slate-200/70 p-5">
-                    <div className="grid gap-4 lg:grid-cols-[1fr_1fr_1fr_auto]">
-                        <label className="grid gap-2">
+                    <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(20rem,1.5fr)_auto]">
+                        <label className="grid min-w-0 gap-2">
                             <span className="font-semibold text-slate-600">Account</span>
-                            <select className="rounded-xl border border-blue-300 bg-white px-4 py-3">
+                            <select className="w-full min-w-0 rounded-xl border border-blue-300 bg-white px-4 py-3">
                                 <option>All Accounts</option>
                             </select>
                         </label>
 
-                        <label className="grid gap-2">
+                        <label className="grid min-w-0 gap-2">
                             <span className="font-semibold text-slate-600">Date Range</span>
                             <select
                                 value={String(new Date(fromDate + "T00:00:00").getFullYear())}
@@ -143,22 +143,22 @@ function AccountTransactionsContent() {
                                     setFromDate(dateOnly(year, 1, 1));
                                     setToDate(year === currentYear ? todayLocal() : dateOnly(year, 12, 31));
                                 }}
-                                className="rounded-xl border border-blue-300 bg-white px-4 py-3"
+                                className="w-full min-w-0 rounded-xl border border-blue-300 bg-white px-4 py-3"
                             >
                                 {[currentYear, currentYear - 1, currentYear - 2, currentYear - 3].map((year) => <option key={year}>{year}</option>)}
                             </select>
                         </label>
 
-                        <div className="grid grid-cols-2 gap-2">
-                            <label className="grid gap-2">
+                        <div className="grid min-w-0 grid-cols-1 gap-3 sm:col-span-2 sm:grid-cols-2 2xl:col-span-1">
+                            <label className="grid min-w-0 gap-2">
                                 <span className="font-semibold text-slate-600">From</span>
-                                <div className="relative">
+                                <div className="relative min-w-0">
                                     <input
                                         ref={fromDateRef}
                                         type="date"
                                         value={fromDate}
                                         onChange={(e) => setFromDate(e.target.value)}
-                                        className="w-full rounded-xl border border-blue-300 bg-white px-3 py-3 pr-14 [&::-webkit-calendar-picker-indicator]:opacity-0"
+                                        className="block w-full min-w-0 rounded-xl border border-blue-300 bg-white px-3 py-3 pr-12 text-sm [&::-webkit-calendar-picker-indicator]:opacity-0"
                                     />
                                     <button
                                         type="button"
@@ -177,15 +177,15 @@ function AccountTransactionsContent() {
                                     </button>
                                 </div>
                             </label>
-                            <label className="grid gap-2">
+                            <label className="grid min-w-0 gap-2">
                                 <span className="font-semibold text-slate-600">To</span>
-                                <div className="relative">
+                                <div className="relative min-w-0">
                                     <input
                                         ref={toDateRef}
                                         type="date"
                                         value={toDate}
                                         onChange={(e) => setToDate(e.target.value)}
-                                        className="w-full rounded-xl border border-blue-300 bg-white px-3 py-3 pr-14 [&::-webkit-calendar-picker-indicator]:opacity-0"
+                                        className="block w-full min-w-0 rounded-xl border border-blue-300 bg-white px-3 py-3 pr-12 text-sm [&::-webkit-calendar-picker-indicator]:opacity-0"
                                     />
                                     <button
                                         type="button"
@@ -206,21 +206,21 @@ function AccountTransactionsContent() {
                             </label>
                         </div>
 
-                        <button type="button" onClick={() => loadReport()} className="self-end rounded-full bg-blue-700 px-6 py-3 font-semibold text-white">Update Report</button>
+                        <button type="button" onClick={() => loadReport()} className="w-full min-w-0 self-end rounded-full bg-blue-700 px-5 py-3 font-semibold text-white sm:col-span-2 2xl:col-span-1 2xl:whitespace-nowrap">Update Report</button>
 
-                        <label className="grid gap-2">
+                        <label className="grid min-w-0 gap-2">
                             <span className="font-semibold text-slate-600">Report Type</span>
-                            <select value={reportType} onChange={(e) => setReportType(e.target.value)} className="rounded-xl border border-blue-300 bg-white px-4 py-3">
+                            <select value={reportType} onChange={(e) => setReportType(e.target.value)} className="w-full min-w-0 rounded-xl border border-blue-300 bg-white px-4 py-3">
                                 <option value="accrual">Accrual (Paid & Unpaid)</option>
                                 <option value="cash">Cash Basis (Paid)</option>
                                 <option value="cash_only">Cash Only</option>
                             </select>
                         </label>
 
-                        <label className="grid gap-2">
+                        <label className="grid min-w-0 gap-2">
                             <span className="font-semibold text-slate-600">Contact</span>
                             <select
-                                className="rounded-xl border border-blue-300 bg-white px-4 py-3"
+                                className="w-full min-w-0 rounded-xl border border-blue-300 bg-white px-4 py-3"
                                 value={memberId}
                                 onChange={(e) => {
                                     const nextMemberId = Number(e.target.value);
