@@ -87,7 +87,10 @@ export default function ReverseInvoicePaymentPage() {
                 {payments.length === 0 && <p className="mt-3 text-slate-600">No individually recorded payments are available to reverse. Historical imported paid amounts cannot be reversed here.</p>}
                 <div className="mt-4 space-y-3">
                     {payments.map((payment) => <label key={payment.id} className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-4">
-                        <input type="radio" name="payment" checked={selectedId === payment.id} onChange={() => setSelectedId(payment.id)} className="mt-1" />
+                        <input type="radio" name="payment" checked={selectedId === payment.id} onChange={() => setSelectedId(payment.id)} className="peer sr-only" />
+                        <span aria-hidden="true" className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-slate-500 bg-white peer-checked:border-blue-700 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-blue-600">
+                            {selectedId === payment.id && <span className="h-2.5 w-2.5 rounded-full bg-blue-700" />}
+                        </span>
                         <span>
                             <strong>{money(payment.amount_cents)}</strong> · {payment.payment_date}
                             <span className="block text-sm text-slate-600">{payment.method} · {payment.account_name}</span>
