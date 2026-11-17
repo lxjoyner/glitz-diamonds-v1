@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
         const topicId = String(form.get("topicId") || "");
         const title = String(form.get("title") || "").trim();
         const description = String(form.get("description") || "").trim();
-        if (!(file instanceof File) || !validateHelpTopic(topicId) || !title || title.length > 180 || description.length > 2000) {
+        if (!(file instanceof File) || !(await validateHelpTopic(topicId)) || !title || title.length > 180 || description.length > 2000) {
             return NextResponse.json({ error: "Valid MP4, Help topic and title are required." }, { status: 400 });
         }
         const id = await createHelpVideo({ topicId, title, description, file });
@@ -54,7 +54,7 @@ export async function PATCH(req: NextRequest) {
     const denied = requireAdmin(req); if (denied) return denied;
     try {
         const body = await req.json();
-        if (!isValidId(body.id) || typeof body.topicId !== "string" || !validateHelpTopic(body.topicId)
+        if (!isValidId(body.id) || typeof body.topicId !== "string" || !(await validateHelpTopic(body.topicId))
             || typeof body.title !== "string" || !body.title.trim() || body.title.length > 180
             || typeof body.description !== "string" || body.description.length > 2000 || typeof body.active !== "boolean") {
             return NextResponse.json({ error: "Invalid video update." }, { status: 400 });
