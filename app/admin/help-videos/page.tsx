@@ -87,6 +87,7 @@ export default function HelpVideoManagerPage() {
         <div className="mx-auto max-w-4xl space-y-7">
             <div>
                 <Link href="/help" className="text-red-300 underline">Back to Help Center</Link>
+                <div className="mt-3"><Link href="/admin/help-topics" className="inline-flex rounded-lg border border-white/25 px-4 py-2 text-sm font-semibold hover:bg-white/10">Add / Manage Help Topics</Link></div>
                 <h1 className="mt-3 text-3xl font-semibold">Help Video Manager</h1>
                 <p className="mt-2 text-sm text-slate-300">Admin-only. Upload Snipping Tool MP4 recordings and assign each video to a Help topic. Visibility follows that topic's role permissions.</p>
             </div>
