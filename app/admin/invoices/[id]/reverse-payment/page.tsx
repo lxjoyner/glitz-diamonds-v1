@@ -68,14 +68,14 @@ export default function ReverseInvoicePaymentPage() {
     return <main className="min-h-screen bg-slate-100 px-4 py-10 text-slate-950">
         <div className="mx-auto max-w-3xl space-y-6">
             <Link href="/admin/invoices" className="font-semibold text-blue-700 underline">Back to Invoices</Link>
-            <header className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h1 className="text-2xl font-bold">Reverse an Incorrect Invoice Payment</h1>
+            <header className="rounded-xl border border-white/20 bg-gradient-to-r from-red-800 via-red-950 to-red-800 p-6 text-white shadow-sm">
+                <h1 className="text-2xl font-bold !text-white">Reverse an Incorrect Invoice Payment</h1>
                 {invoice && <>
-                    <p className="mt-2 text-slate-700">{invoice.invoiceNumber} · {invoice.memberName}</p>
-                    <div className="mt-3 grid gap-2 text-sm sm:grid-cols-3">
-                        <p>Invoice total: <strong>{money(invoice.totalCents)}</strong></p>
-                        <p>Currently paid: <strong>{money(invoice.amountPaidCents)}</strong></p>
-                        <p>Outstanding: <strong>{money(Math.max(0, invoice.totalCents - invoice.amountPaidCents))}</strong></p>
+                    <p className="mt-2 !text-red-100">{invoice.invoiceNumber} · {invoice.memberName}</p>
+                    <div className="mt-3 grid gap-2 text-sm !text-white sm:grid-cols-3">
+                        <p className="!text-white">Invoice total: <strong>{money(invoice.totalCents)}</strong></p>
+                        <p className="!text-white">Currently paid: <strong>{money(invoice.amountPaidCents)}</strong></p>
+                        <p className="!text-white">Outstanding: <strong>{money(Math.max(0, invoice.totalCents - invoice.amountPaidCents))}</strong></p>
                     </div>
                 </>}
             </header>
