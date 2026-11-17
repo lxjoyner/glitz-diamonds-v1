@@ -171,7 +171,7 @@ export default function Header() {
                     {!loadingAuth && (adminUser?.role === "admin" || adminUser?.role === "treasurer") && (
                         <div className="rounded-lg border border-white/10 bg-white/[0.03]">
                             <button type="button" onClick={() => setVendorsOpen((current) => !current)} className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-white hover:bg-white/10 transition" aria-expanded={vendorsOpen} aria-controls="vendors-submenu">
-                                <span>Vendors</span><span className={`text-sm transition-transform ${vendorsOpen ? "rotate-180" : ""}`} aria-hidden="true">⌄</span>
+                                <span>Billing</span><span className={`text-sm transition-transform ${vendorsOpen ? "rotate-180" : ""}`} aria-hidden="true">⌄</span>
                             </button>
                             {vendorsOpen && (
                                 <div id="vendors-submenu" className="flex flex-col gap-1 border-t border-white/10 px-2 py-2">
