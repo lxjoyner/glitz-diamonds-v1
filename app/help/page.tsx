@@ -117,6 +117,22 @@ export default function HelpCenterPage() {
                                         ) : (
                                             <p className="mt-4 text-xs text-slate-400">Video tutorial: not yet available</p>
                                         )}
+                                        {topic.id === "recurring" && (
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                <Link href="/admin/invoices/recurring?tour=recurring-create"
+                                                    className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">
+                                                    Show Me How: Create Recurring Invoice
+                                                </Link>
+                                                <Link href="/admin/invoices/recurring?tour=recurring-manage"
+                                                    className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">
+                                                    Manage Recurring Schedules
+                                                </Link>
+                                                <Link href="/admin/invoices/recurring?tour=recurring-scheduler-overview"
+                                                    className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">
+                                                    Understand Scheduler
+                                                </Link>
+                                            </div>
+                                        )}
                                         {topic.id === "new-invoice" && (
                                             <Link href="/admin/invoices/new?tour=invoice-create-on-page"
                                                 className="mt-3 inline-flex self-start rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">
