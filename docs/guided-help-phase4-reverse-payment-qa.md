@@ -3,7 +3,7 @@
 ## Scope
 - Admin-only tour to explain reversing a recorded invoice payment.
 - Start from Invoice Dashboard **Show Me How > Reverse an Incorrect Invoice Payment**, or the Invoice Help Center.
-- Dashboard tour highlights the first **visible invoice with a paid amount**, its Actions menu, then **Reverse incorrect payment**. The selected invoice may have historical imported paid amounts with **no individually recorded payments**; if so, return and select an invoice with an actual recorded payment.
+- Dashboard tour first highlights the **Paid** tab and waits for the user to click it, then highlights the first **visible invoice with a paid amount**, its Actions menu, then **Reverse incorrect payment**. The selected invoice may have historical imported paid amounts with **no individually recorded payments**; if so, return and select an invoice with an actual recorded payment.
 - Follow across the route to `/admin/invoices/{id}/reverse-payment`.
 - Start an on-page version using **Show Me How** while on that reversal screen.
 - Highlight invoice summary, recorded payments, reason for reversal, accounting warning, and the confirmation control.
@@ -19,7 +19,7 @@
 ## Local QA
 1. `git fetch origin`; `git switch feature/guided-help-reverse-payment-phase4`; `npm run build`; `npm run dev`.
 2. Sign in as Admin with Help enabled. From Invoice Dashboard open **Show Me How > Reverse an Incorrect Invoice Payment**.
-3. Choose **Paid** or **All invoices**, locate an invoice that has an actual individually recorded payment, and confirm the highlighted Actions belongs to the correct invoice. Click Actions, then **Reverse incorrect payment**.
+3. On opening the reversal tour, verify **Paid** (not Unpaid) is highlighted. Click the Paid tab and confirm the tour advances only after that click. For a partially paid invoice, switch to **All invoices** afterward. Confirm the highlighted Actions belongs to the correct invoice, then click Actions > **Reverse incorrect payment**.
 4. Verify the walkthrough resumes on the correct invoice's reversal screen; review summary, recorded payments, reason, warning, and the confirm control.
 5. Use **Back**, **Next**, **Exit**, **Escape**, browser zoom, scrolling, and phone-size viewport. Complete **Finish guide**; verify no accounting records change.
 6. On the reversal screen itself, start **Show Me How > Reverse an Incorrect Invoice Payment**. Confirm the guide works without dashboard navigation.
