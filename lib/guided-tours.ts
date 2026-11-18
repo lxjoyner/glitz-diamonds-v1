@@ -24,42 +24,7 @@ export function stepMatchesPath(path: GuidedTourStep["path"], pathname: string):
     return /^\/admin\/invoices\/\d+\/record-payment$/.test(pathname);
 }
 
-export const GUIDED_TOURS: readonly GuidedTour[] = [
-    {
-        id: "invoice-dashboard-overview",
-        title: "Explore the Invoice Dashboard",
-        path: "/admin/invoices",
-        helpTopicId: "invoices",
-        roles: ["admin", "treasurer"],
-        steps: [
-            {
-                selector: '[data-tour="invoice-status-tabs"]',
-                title: "Find invoices by status",
-                description: "Use Unpaid, Draft, Paid, or All invoices to find the invoice you need.",
-                path: "/admin/invoices",
-            },
-            {
-                selector: '[data-tour="invoice-actions-column"]',
-                title: "Locate invoice actions",
-                description: "Each row has an Actions dropdown. Choose the Record an Invoice Payment guide to learn the full process.",
-                path: "/admin/invoices",
-            },
-        ],
-    },
-    {
-        id: "invoice-create",
-        title: "Create a New Invoice",
-        path: "/admin/invoices",
-        helpTopicId: "new-invoice",
-        roles: ["admin", "treasurer"],
-        steps: [
-            {
-                selector: '[data-tour="invoice-create-link"]',
-                title: "Open the new invoice form",
-                description: "Click Create an invoice to open the real New invoice form. This walkthrough will continue on the next page.",
-                path: "/admin/invoices",
-                advanceOnClick: true,
-            },
+const CREATE_INVOICE_FORM_STEPS: readonly GuidedTourStep[] = [
             {
                 selector: '[data-tour="new-invoice-member"]',
                 title: "Select the member to bill",
@@ -132,7 +97,54 @@ export const GUIDED_TOURS: readonly GuidedTour[] = [
                 description: "Save and continue creates a draft; Approve Draft saves and approves it. Finish this guide before clicking either option. These are real actions that can create an invoice, and the guide never clicks them for you.",
                 path: "/admin/invoices/new",
             },
+];
+
+export const GUIDED_TOURS: readonly GuidedTour[] = [
+    {
+        id: "invoice-dashboard-overview",
+        title: "Explore the Invoice Dashboard",
+        path: "/admin/invoices",
+        helpTopicId: "invoices",
+        roles: ["admin", "treasurer"],
+        steps: [
+            {
+                selector: '[data-tour="invoice-status-tabs"]',
+                title: "Find invoices by status",
+                description: "Use Unpaid, Draft, Paid, or All invoices to find the invoice you need.",
+                path: "/admin/invoices",
+            },
+            {
+                selector: '[data-tour="invoice-actions-column"]',
+                title: "Locate invoice actions",
+                description: "Each row has an Actions dropdown. Choose the Record an Invoice Payment guide to learn the full process.",
+                path: "/admin/invoices",
+            },
         ],
+    },
+    {
+        id: "invoice-create",
+        title: "Create a New Invoice",
+        path: "/admin/invoices",
+        helpTopicId: "new-invoice",
+        roles: ["admin", "treasurer"],
+        steps: [
+            {
+                selector: '[data-tour="invoice-create-link"]',
+                title: "Open the new invoice form",
+                description: "Click Create an invoice to open the real New invoice form. This walkthrough will continue on the next page.",
+                path: "/admin/invoices",
+                advanceOnClick: true,
+            },
+            ...CREATE_INVOICE_FORM_STEPS,
+        ],
+    },
+    {
+        id: "invoice-create-on-page",
+        title: "Create a New Invoice",
+        path: "/admin/invoices/new",
+        helpTopicId: "new-invoice",
+        roles: ["admin", "treasurer"],
+        steps: CREATE_INVOICE_FORM_STEPS,
     },
     {
         id: "invoice-record-payment",
