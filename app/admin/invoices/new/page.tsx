@@ -119,7 +119,7 @@ export default function NewInvoicePage() {
             <div className="mx-auto max-w-[1500px]">
                 <header className="mb-6 flex min-h-[108px] flex-wrap items-center justify-between gap-5 px-4 py-5 sm:px-6 sm:py-6">
                     <h1 className="text-4xl font-bold tracking-tight leading-tight text-white">New invoice</h1>
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div data-tour="new-invoice-save-actions" className="flex flex-wrap items-center gap-3">
                         <button type="button" onClick={() => window.print()} className="rounded-full border border-blue-600 bg-white px-5 py-3 font-semibold text-blue-700">Preview</button>
                         <button type="button" onClick={() => saveInvoice(false)} disabled={saving} className="rounded-full bg-black px-6 py-3 font-semibold text-white hover:bg-slate-900 disabled:opacity-60">{saving ? "Saving..." : "Save and continue"}</button>
                         <button type="button" onClick={() => saveInvoice(true)} disabled={saving} className="rounded-full bg-emerald-700 px-6 py-3 font-semibold text-white hover:bg-emerald-800 disabled:opacity-60">{saving ? "Working..." : "Approve Draft"}</button>
@@ -139,7 +139,7 @@ export default function NewInvoicePage() {
                     <div className="grid gap-8 p-6 md:grid-cols-2 md:p-8">
                         <div>
                             <label className="mb-2 block text-sm font-semibold">Bill to</label>
-                            <select value={memberId} onChange={(e) => setMemberId(e.target.value)} className="w-full rounded-xl border border-slate-300 px-4 py-3">
+                            <select data-tour="new-invoice-member" value={memberId} onChange={(e) => setMemberId(e.target.value)} className="w-full rounded-xl border border-slate-300 px-4 py-3">
                                 <option value="">Select a Women&apos;s Group member</option>
                                 {members.map((member) => <option key={member.id} value={member.id}>{member.full_name} — {member.email}</option>)}
                             </select>
@@ -149,31 +149,31 @@ export default function NewInvoicePage() {
                         </div>
                         <div className="space-y-4">
                             <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">Invoice number</span><input value="Auto-generated" disabled className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-500" /></label>
-                            <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">P.O./Reference</span><input value={referenceNumber} onChange={(e) => setReferenceNumber(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2" /></label>
-                            <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">Invoice date</span><InvoiceDatePicker value={invoiceDate} onChange={setInvoiceDate} ariaLabel="Invoice date" /></label>
-                            <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">Payment due</span><InvoiceDatePicker value={dueDate} onChange={setDueDate} ariaLabel="Payment due date" /></label>
+                            <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">P.O./Reference</span><input data-tour="new-invoice-reference" value={referenceNumber} onChange={(e) => setReferenceNumber(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2" /></label>
+                            <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">Invoice date</span><span data-tour="new-invoice-date" className="min-w-0"><InvoiceDatePicker value={invoiceDate} onChange={setInvoiceDate} ariaLabel="Invoice date" /></span></label>
+                            <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">Payment due</span><span data-tour="new-invoice-due" className="min-w-0"><InvoiceDatePicker value={dueDate} onChange={setDueDate} ariaLabel="Payment due date" /></span></label>
                         </div>
                     </div>
 
                     <div className="border-y border-slate-200 bg-slate-100 px-6 py-3 text-sm font-semibold"><div className="grid grid-cols-[1fr_100px_140px_140px_44px] gap-3"><span>Items</span><span>Quantity</span><span>Price</span><span className="text-right">Amount</span><span /></div></div>
                     <div className="divide-y divide-slate-100">
                         {items.map((item, index) => <div key={index} className="grid grid-cols-[1fr_100px_140px_140px_44px] gap-3 px-6 py-4">
-                            <input value={item.description} onChange={(e) => updateItem(index, "description", e.target.value)} placeholder="Item description" className="rounded-lg border border-slate-300 px-3 py-2" />
-                            <input type="number" min="0.01" step="0.01" value={item.quantity} onChange={(e) => updateItem(index, "quantity", e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2" />
-                            <input type="number" min="0" step="0.01" value={item.unitPrice} onChange={(e) => updateItem(index, "unitPrice", e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2" />
+                            <input data-tour={index === 0 ? "new-invoice-description" : undefined} value={item.description} onChange={(e) => updateItem(index, "description", e.target.value)} placeholder="Item description" className="rounded-lg border border-slate-300 px-3 py-2" />
+                            <input data-tour={index === 0 ? "new-invoice-quantity" : undefined} type="number" min="0.01" step="0.01" value={item.quantity} onChange={(e) => updateItem(index, "quantity", e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2" />
+                            <input data-tour={index === 0 ? "new-invoice-price" : undefined} type="number" min="0" step="0.01" value={item.unitPrice} onChange={(e) => updateItem(index, "unitPrice", e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2" />
                             <div className="py-2 text-right font-semibold">{money(item.quantity * item.unitPrice)}</div>
                             <button type="button" onClick={() => setItems((current) => current.filter((_, i) => i !== index))} disabled={items.length === 1} className="text-xl text-slate-400 disabled:opacity-30">×</button>
                         </div>)}
                     </div>
-                    <button type="button" onClick={() => setItems((current) => [...current, { description: "", quantity: 1, unitPrice: 0 }])} className="mx-6 mb-6 font-semibold text-blue-700">＋ Add an item</button>
+                    <button data-tour="new-invoice-add-item" type="button" onClick={() => setItems((current) => [...current, { description: "", quantity: 1, unitPrice: 0 }])} className="mx-6 mb-6 font-semibold text-blue-700">＋ Add an item</button>
 
                     <div className="grid gap-8 border-t border-slate-200 p-6 md:grid-cols-2">
                         <div>
                             <label className="mb-2 block text-sm font-semibold">Notes / Terms</label>
-                            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} placeholder="Notes visible to the member" className="w-full rounded-xl border border-slate-300 p-3" />
-                            <textarea value={terms} onChange={(e) => setTerms(e.target.value)} rows={3} placeholder="Payment terms" className="mt-3 w-full rounded-xl border border-slate-300 p-3" />
+                            <textarea data-tour="new-invoice-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} placeholder="Notes visible to the member" className="w-full rounded-xl border border-slate-300 p-3" />
+                            <textarea data-tour="new-invoice-terms" value={terms} onChange={(e) => setTerms(e.target.value)} rows={3} placeholder="Payment terms" className="mt-3 w-full rounded-xl border border-slate-300 p-3" />
                         </div>
-                        <div className="space-y-3 text-sm">
+                        <div data-tour="new-invoice-totals" className="space-y-3 text-sm">
                             <div className="flex justify-between"><span>Subtotal</span><strong>{money(subtotal)}</strong></div>
                             <label className="flex items-center justify-between gap-4"><span>Discount</span><input type="number" min="0" step="0.01" value={discount} onChange={(e) => setDiscount(Number(e.target.value))} className="w-32 rounded-lg border border-slate-300 px-3 py-2 text-right" /></label>
                             <label className="flex items-center justify-between gap-4"><span>Tax</span><input type="number" min="0" step="0.01" value={tax} onChange={(e) => setTax(Number(e.target.value))} className="w-32 rounded-lg border border-slate-300 px-3 py-2 text-right" /></label>
