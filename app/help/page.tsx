@@ -123,6 +123,12 @@ export default function HelpCenterPage() {
                                                 Show Me How: Create Invoice
                                             </Link>
                                         )}
+                                        {topic.id === "invoices" && role === "admin" && (
+                                            <Link href="/admin/invoices?tour=invoice-reverse-payment"
+                                                className="mt-3 inline-flex self-start rounded-lg bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600">
+                                                Show Me How: Reverse a Payment
+                                            </Link>
+                                        )}
                                         {topic.id === "invoices" && (
                                             <Link href="/admin/invoices?tour=invoice-record-payment"
                                                 className="mt-3 inline-flex self-start rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600">
