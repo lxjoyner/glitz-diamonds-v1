@@ -15,7 +15,7 @@ function readSavedTour(): ActiveTour | null {
         const parsed: unknown = JSON.parse(raw);
         if (!parsed || typeof parsed !== "object") return null;
         const item = parsed as Record<string, unknown>;
-        if (typeof item.id !== "string" || !Number.isInteger(item.step) || typeof item.step !== "number") return null;
+        if (typeof item.id !== "string" || typeof item.step !== "number" || !Number.isInteger(item.step)) return null;
         return { id: item.id, step: item.step };
     } catch { return null; }
 }
