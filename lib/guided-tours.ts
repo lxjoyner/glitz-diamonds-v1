@@ -195,7 +195,7 @@ export const GUIDED_TOURS: readonly GuidedTour[] = [
                 path: "/admin/invoices",
             },
             {
-                selector: '[data-tour="invoice-reversal-actions"]',
+                selector: '[data-tour~="invoice-reversal-actions"]',
                 title: "Open the invoice Actions menu",
                 description: "Confirm the invoice in the highlighted row and click Actions. This guide never picks a payment for you.",
                 path: "/admin/invoices",
