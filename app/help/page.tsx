@@ -118,6 +118,12 @@ export default function HelpCenterPage() {
                                             <p className="mt-4 text-xs text-slate-400">Video tutorial: not yet available</p>
                                         )}
                                         {topic.id === "invoices" && (
+                                            <Link href="/admin/invoices?tour=invoice-record-payment"
+                                                className="mt-3 inline-flex self-start rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600">
+                                                Show Me How: Record Payment
+                                            </Link>
+                                        )}
+                                        {topic.id === "invoices" && (
                                             <Link href="/admin/invoices?tour=invoice-dashboard-overview"
                                                 className="mt-3 inline-flex self-start rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">
                                                 Start Interactive Guide
