@@ -189,10 +189,11 @@ export const GUIDED_TOURS: readonly GuidedTour[] = [
         roles: ["admin"],
         steps: [
             {
-                selector: '[data-tour="invoice-status-tabs"]',
-                title: "Find an invoice with recorded payments",
-                description: "Select Paid or All invoices to locate the correct invoice. The highlighted Actions menu belongs to the first visible invoice with a paid amount. Check its invoice number before proceeding.",
+                selector: '[data-tour="invoice-reversal-paid-tab"]',
+                title: "Select Paid invoices",
+                description: "Click the highlighted Paid tab to find invoices with recorded payments. For a partially paid invoice, use All invoices afterward. Verify the invoice number before opening Actions.",
                 path: "/admin/invoices",
+                advanceOnClick: true,
             },
             {
                 selector: '[data-tour~="invoice-reversal-actions"]',
