@@ -236,6 +236,34 @@ export const GUIDED_TOURS: readonly GuidedTour[] = [
         steps: RECURRING_CREATE_STEPS,
     },
     {
+        id: "recurring-manage",
+        title: "Manage Existing Recurring Invoices",
+        path: "/admin/invoices/recurring",
+        helpTopicId: "recurring",
+        roles: ["admin", "treasurer"],
+        steps: [
+            {
+                selector: '[data-tour="recurring-filter-tabs"]',
+                title: "Filter recurring schedules",
+                description: "Switch between Active, Draft, and All recurring invoices to locate the schedule you need.",
+                path: "/admin/invoices/recurring",
+            },
+            {
+                selector: '[data-tour="recurring-row-actions"]',
+                title: "Open a schedule's Actions",
+                description: "Check the customer and schedule in the first displayed row before clicking the highlighted Actions menu. Change filters or pages to locate a different schedule.",
+                path: "/admin/invoices/recurring",
+                advanceOnClick: true,
+            },
+            {
+                selector: '[data-tour="recurring-actions-menu"]',
+                title: "Review available actions",
+                description: "You can View, Edit, End, Duplicate, or Delete permanently. Ending preserves history; permanent deletion removes schedule and scheduler history. Do not select a destructive action during this tutorial.",
+                path: "/admin/invoices/recurring",
+            },
+        ],
+    },
+    {
         id: "recurring-scheduler-overview",
         title: "Understand Recurring Invoice Scheduling",
         path: "/admin/invoices/recurring",
