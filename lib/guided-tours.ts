@@ -5,7 +5,7 @@ export type GuidedTourStep = {
     title: string;
     description: string;
     /** Route pattern: dynamic invoice ID is accepted only on the recording page. */
-    path: "/admin/invoices" | "/admin/invoices/new" | "/admin/invoices/[id]/record-payment";
+    path: "/admin/invoices" | "/admin/invoices/new" | "/admin/invoices/[id]/record-payment" | "/admin/invoices/[id]/reverse-payment";
     /** A real click is required to proceed; no financial action is performed by the tour. */
     advanceOnClick?: boolean;
 };
@@ -21,7 +21,8 @@ export type GuidedTour = {
 
 export function stepMatchesPath(path: GuidedTourStep["path"], pathname: string): boolean {
     if (path === "/admin/invoices" || path === "/admin/invoices/new") return pathname === path;
-    return /^\/admin\/invoices\/\d+\/record-payment$/.test(pathname);
+    if (path === "/admin/invoices/[id]/record-payment") return /^\/admin\/invoices\/\d+\/record-payment$/.test(pathname);
+    return /^\/admin\/invoices\/\d+\/reverse-payment$/.test(pathname);
 }
 
 const CREATE_INVOICE_FORM_STEPS: readonly GuidedTourStep[] = [
@@ -99,6 +100,40 @@ const CREATE_INVOICE_FORM_STEPS: readonly GuidedTourStep[] = [
             },
 ];
 
+
+const REVERSE_PAYMENT_FORM_STEPS: readonly GuidedTourStep[] = [
+    {
+        selector: '[data-tour="reverse-invoice-summary"]',
+        title: "Review the invoice and outstanding balance",
+        description: "Confirm the invoice number, member, total, paid amount, and outstanding balance. Reversing a payment changes balances and financial reports.",
+        path: "/admin/invoices/[id]/reverse-payment",
+    },
+    {
+        selector: '[data-tour="reverse-payment-list"]',
+        title: "Identify the incorrect payment",
+        description: "Review payment amounts, dates, methods, and receiving accounts. Only individually recorded payments can be reversed; imported historical paid amounts cannot.",
+        path: "/admin/invoices/[id]/reverse-payment",
+    },
+    {
+        selector: '[data-tour="reverse-payment-reason"]',
+        title: "Provide a reason",
+        description: "Select the incorrect payment and enter a clear reason of at least ten characters. The reason becomes part of the reversal audit history.",
+        path: "/admin/invoices/[id]/reverse-payment",
+    },
+    {
+        selector: '[data-tour="reverse-payment-warning"]',
+        title: "Understand the impact",
+        description: "A reversal updates accounting balances and reports, but does not refund money or retract receipts already sent. Check the receiving account separately.",
+        path: "/admin/invoices/[id]/reverse-payment",
+    },
+    {
+        selector: '[data-tour="reverse-payment-confirm"]',
+        title: "Review before reversing",
+        description: "Finish this walkthrough first. Then, only if you intend to reverse a REAL payment, personally click Confirm payment reversal and review the separate confirmation dialog. The guide never executes a reversal.",
+        path: "/admin/invoices/[id]/reverse-payment",
+    },
+];
+
 export const GUIDED_TOURS: readonly GuidedTour[] = [
     {
         id: "invoice-dashboard-overview",
@@ -145,6 +180,45 @@ export const GUIDED_TOURS: readonly GuidedTour[] = [
         helpTopicId: "new-invoice",
         roles: ["admin", "treasurer"],
         steps: CREATE_INVOICE_FORM_STEPS,
+    },
+    {
+        id: "invoice-reverse-payment",
+        title: "Reverse an Incorrect Invoice Payment",
+        path: "/admin/invoices",
+        helpTopicId: "invoices",
+        roles: ["admin"],
+        steps: [
+            {
+                selector: '[data-tour="invoice-reversal-paid-tab"]',
+                title: "Select Paid invoices",
+                description: "Click the highlighted Paid tab to find invoices with recorded payments. For a partially paid invoice, use All invoices afterward. Verify the invoice number before opening Actions.",
+                path: "/admin/invoices",
+                advanceOnClick: true,
+            },
+            {
+                selector: '[data-tour~="invoice-reversal-actions"]',
+                title: "Open the invoice Actions menu",
+                description: "Confirm the invoice in the highlighted row and click Actions. This guide never picks a payment for you.",
+                path: "/admin/invoices",
+                advanceOnClick: true,
+            },
+            {
+                selector: '[data-tour="invoice-reversal-link"]',
+                title: "Choose Reverse incorrect payment",
+                description: "Click Reverse incorrect payment to open the existing reversal screen. You will still need to select the specific recorded payment before any reversal can occur.",
+                path: "/admin/invoices",
+                advanceOnClick: true,
+            },
+            ...REVERSE_PAYMENT_FORM_STEPS,
+        ],
+    },
+    {
+        id: "invoice-reverse-on-page",
+        title: "Reverse an Incorrect Invoice Payment",
+        path: "/admin/invoices/[id]/reverse-payment",
+        helpTopicId: "invoices",
+        roles: ["admin"],
+        steps: REVERSE_PAYMENT_FORM_STEPS,
     },
     {
         id: "invoice-record-payment",
@@ -214,5 +288,5 @@ export const GUIDED_TOURS: readonly GuidedTour[] = [
 ];
 
 export function permittedTours(role: string, pathname: string): GuidedTour[] {
-    return GUIDED_TOURS.filter((tour) => tour.path === pathname && tour.roles.some((allowed) => allowed === role));
+    return GUIDED_TOURS.filter((tour) => (tour.path === pathname || (tour.path === "/admin/invoices/[id]/reverse-payment" && /^\/admin\/invoices\/\d+\/reverse-payment$/.test(pathname))) && tour.roles.some((allowed) => allowed === role));
 }

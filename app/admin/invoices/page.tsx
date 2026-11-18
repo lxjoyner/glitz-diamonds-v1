@@ -322,6 +322,7 @@ export default function InvoicesPage() {
     useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount]);
     const pageStart = (page - 1) * PAGE_SIZE;
     const paginated = sorted.slice(pageStart, pageStart + PAGE_SIZE);
+    const guidedReversalInvoiceId = paginated.find((invoice) => Number(invoice.amount_paid_cents) > 0)?.id;
     const guidedPaymentInvoiceId = paginated.find((invoice) => invoice.total_cents > invoice.amount_paid_cents && !["draft", "paid", "void"].includes(invoice.display_status))?.id;
 
     return (
@@ -347,7 +348,7 @@ export default function InvoicesPage() {
                     <div className="my-7 flex flex-wrap justify-center gap-1 border-b border-slate-200 pb-5">
                         <button onClick={() => setTab("unpaid")} data-tour="invoice-status-tabs" className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold ${tab === "unpaid" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}><span>Unpaid</span><span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-red-600 px-2 text-sm font-bold leading-none text-white">{counts.unpaid}</span></button>
                         <button onClick={() => setTab("draft")} className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold ${tab === "draft" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}><span>Draft</span><span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-yellow-400 px-2 text-sm font-bold leading-none text-black">{counts.draft}</span></button>
-                        <button onClick={() => setTab("paid")} className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold ${tab === "paid" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}><span>Paid</span><span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-green-600 px-2 text-sm font-bold leading-none text-white">{counts.paid}</span></button>
+                        <button onClick={() => setTab("paid")} data-tour="invoice-reversal-paid-tab" className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold ${tab === "paid" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}><span>Paid</span><span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-green-600 px-2 text-sm font-bold leading-none text-white">{counts.paid}</span></button>
                         <button onClick={() => setTab("all")} className={`rounded-xl px-5 py-2.5 font-semibold ${tab === "all" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}>All invoices</button>
                     </div>
 
@@ -422,7 +423,7 @@ export default function InvoicesPage() {
                                                             </button>
                                                         ) : <span className="text-slate-400">Complete</span>}
                                                         <div ref={openActionId === invoice.id ? actionsMenuRef : null} className="relative inline-block">
-                                                            <button type="button" data-tour={invoice.id === guidedPaymentInvoiceId ? "invoice-payment-actions" : undefined} onClick={() => setOpenActionId(openActionId === invoice.id ? null : invoice.id)} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-blue-600 text-blue-700 hover:bg-blue-50" aria-label={`Actions for invoice ${invoice.invoice_number}`} aria-expanded={openActionId === invoice.id}>⌄</button>
+                                                            <button type="button" data-tour={invoice.id === guidedPaymentInvoiceId && invoice.id === guidedReversalInvoiceId ? "invoice-payment-actions invoice-reversal-actions" : invoice.id === guidedPaymentInvoiceId ? "invoice-payment-actions" : invoice.id === guidedReversalInvoiceId ? "invoice-reversal-actions" : undefined} onClick={() => setOpenActionId(openActionId === invoice.id ? null : invoice.id)} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-blue-600 text-blue-700 hover:bg-blue-50" aria-label={`Actions for invoice ${invoice.invoice_number}`} aria-expanded={openActionId === invoice.id}>⌄</button>
                                                             {openActionId === invoice.id && (
                                                                 <div className="absolute right-0 z-50 mt-2 w-52 rounded-xl border border-slate-200 bg-white py-2 text-left shadow-xl">
                                                                     <Link href={`/admin/invoices/${invoice.id}/preview`} className="block px-4 py-2 hover:bg-slate-50">View</Link>
@@ -444,7 +445,7 @@ export default function InvoicesPage() {
                                                                         {receiptingId === invoice.id ? "Sending receipt..." : "Send Receipt"}
                                                                     </button>
                                                                     {isAdmin && Number(invoice.amount_paid_cents) > 0 && (
-                                                                        <Link href={`/admin/invoices/${invoice.id}/reverse-payment`}
+                                                                        <Link data-tour={invoice.id === guidedReversalInvoiceId ? "invoice-reversal-link" : undefined} href={`/admin/invoices/${invoice.id}/reverse-payment`}
                                                                             className="block px-4 py-2 font-semibold text-amber-800 hover:bg-amber-50"
                                                                             onClick={(event) => { event.stopPropagation(); setOpenActionId(null); }}>
                                                                             Reverse incorrect payment
