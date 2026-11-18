@@ -5,7 +5,7 @@ export type GuidedTourStep = {
     title: string;
     description: string;
     /** Route pattern: dynamic invoice ID is accepted only on the recording page. */
-    path: "/admin/invoices" | "/admin/invoices/[id]/record-payment";
+    path: "/admin/invoices" | "/admin/invoices/new" | "/admin/invoices/[id]/record-payment";
     /** A real click is required to proceed; no financial action is performed by the tour. */
     advanceOnClick?: boolean;
 };
@@ -20,7 +20,7 @@ export type GuidedTour = {
 };
 
 export function stepMatchesPath(path: GuidedTourStep["path"], pathname: string): boolean {
-    if (path === "/admin/invoices") return pathname === path;
+    if (path === "/admin/invoices" || path === "/admin/invoices/new") return pathname === path;
     return /^\/admin\/invoices\/\d+\/record-payment$/.test(pathname);
 }
 
@@ -43,6 +43,94 @@ export const GUIDED_TOURS: readonly GuidedTour[] = [
                 title: "Locate invoice actions",
                 description: "Each row has an Actions dropdown. Choose the Record an Invoice Payment guide to learn the full process.",
                 path: "/admin/invoices",
+            },
+        ],
+    },
+    {
+        id: "invoice-create",
+        title: "Create a New Invoice",
+        path: "/admin/invoices",
+        helpTopicId: "new-invoice",
+        roles: ["admin", "treasurer"],
+        steps: [
+            {
+                selector: '[data-tour="invoice-create-link"]',
+                title: "Open the new invoice form",
+                description: "Click Create an invoice to open the real New invoice form. This walkthrough will continue on the next page.",
+                path: "/admin/invoices",
+                advanceOnClick: true,
+            },
+            {
+                selector: '[data-tour="new-invoice-member"]',
+                title: "Select the member to bill",
+                description: "Choose the member from Bill to. Only members with an email address appear in this list.",
+                path: "/admin/invoices/new",
+            },
+            {
+                selector: '[data-tour="new-invoice-reference"]',
+                title: "Optional P.O. or reference number",
+                description: "Enter a purchase order or reference if needed. The invoice number itself is generated automatically.",
+                path: "/admin/invoices/new",
+            },
+            {
+                selector: '[data-tour="new-invoice-date"]',
+                title: "Check the invoice date",
+                description: "Select the issue date for this invoice.",
+                path: "/admin/invoices/new",
+            },
+            {
+                selector: '[data-tour="new-invoice-due"]',
+                title: "Set the payment due date",
+                description: "Choose the date by which the member should pay.",
+                path: "/admin/invoices/new",
+            },
+            {
+                selector: '[data-tour="new-invoice-description"]',
+                title: "Describe the charge",
+                description: "Enter the first line item description. You can add more items below if necessary.",
+                path: "/admin/invoices/new",
+            },
+            {
+                selector: '[data-tour="new-invoice-quantity"]',
+                title: "Enter quantity",
+                description: "Set the quantity for this line item. It must be greater than zero.",
+                path: "/admin/invoices/new",
+            },
+            {
+                selector: '[data-tour="new-invoice-price"]',
+                title: "Enter unit price",
+                description: "Enter the unit price. The line amount and invoice subtotal are calculated for you.",
+                path: "/admin/invoices/new",
+            },
+            {
+                selector: '[data-tour="new-invoice-add-item"]',
+                title: "Add more line items if needed",
+                description: "Use Add an item for additional charges. Leave this button untouched if one item is sufficient.",
+                path: "/admin/invoices/new",
+            },
+            {
+                selector: '[data-tour="new-invoice-notes"]',
+                title: "Add member-visible notes",
+                description: "Optional notes may explain the charge to the member.",
+                path: "/admin/invoices/new",
+            },
+            {
+                selector: '[data-tour="new-invoice-terms"]',
+                title: "Review payment terms",
+                description: "Review or edit the payment terms before saving.",
+                path: "/admin/invoices/new",
+            },
+            {
+                selector: '[data-tour="new-invoice-totals"]',
+                title: "Review discounts, tax, and total",
+                description: "Verify the calculated subtotal, discount, tax, total, and amount due. Change any inputs as needed.",
+                path: "/admin/invoices/new",
+            },
+            {
+                selector: '[data-tour="new-invoice-save-actions"]',
+                title: "Save draft or approve",
+                description: "Save and continue creates a draft; Approve Draft saves and approves it. Finish this guide before clicking either option. These are real actions that can create an invoice, and the guide never clicks them for you.",
+                path: "/admin/invoices/new",
             },
         ],
     },
