@@ -68,7 +68,7 @@ export default function ReverseInvoicePaymentPage() {
     return <main className="min-h-screen bg-slate-100 px-4 py-10 text-slate-950">
         <div className="mx-auto max-w-3xl space-y-6">
             <Link href="/admin/invoices" className="font-semibold text-blue-700 underline">Back to Invoices</Link>
-            <header className="rounded-xl border border-white/20 bg-gradient-to-r from-red-800 via-red-950 to-red-800 p-6 text-white shadow-sm">
+            <header data-tour="reverse-invoice-summary" className="rounded-xl border border-white/20 bg-gradient-to-r from-red-800 via-red-950 to-red-800 p-6 text-white shadow-sm">
                 <h1 className="text-2xl font-bold !text-white">Reverse an Incorrect Invoice Payment</h1>
                 {invoice && <>
                     <p className="mt-2 !text-red-100">{invoice.invoiceNumber} · {invoice.memberName}</p>
@@ -85,7 +85,7 @@ export default function ReverseInvoicePaymentPage() {
             {!loading && <section className="rounded-xl border border-slate-200 bg-white p-6">
                 <h2 className="text-lg font-semibold">Select the payment recorded in error</h2>
                 {payments.length === 0 && <p className="mt-3 text-slate-600">No individually recorded payments are available to reverse. Historical imported paid amounts cannot be reversed here.</p>}
-                <div className="mt-4 space-y-3">
+                <div data-tour="reverse-payment-list" className="mt-4 space-y-3">
                     {payments.map((payment) => <label key={payment.id} className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-4">
                         <input type="radio" name="payment" checked={selectedId === payment.id} onChange={() => setSelectedId(payment.id)} className="peer sr-only" />
                         <span aria-hidden="true" className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-slate-500 bg-white peer-checked:border-blue-700 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-blue-600">
@@ -100,12 +100,12 @@ export default function ReverseInvoicePaymentPage() {
                 </div>
                 {payments.length > 0 && <div className="mt-5 space-y-3">
                     <label className="block font-medium">Reason for reversal (required)
-                        <textarea rows={3} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)}
+                        <textarea data-tour="reverse-payment-reason" rows={3} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)}
                             placeholder="Example: Payment was accidentally recorded against the wrong invoice."
                             className="mt-2 w-full rounded-lg border border-slate-300 p-3" />
                     </label>
-                    <p className="text-sm text-amber-800">Financial reports and balances will reflect the reversal. Prior customer emails remain sent; this action does not issue a refund. Check the actual payment account separately.</p>
-                    <button type="button" disabled={busy || selectedId === null || reason.trim().length < 10} onClick={() => void reverse()}
+                    <p data-tour="reverse-payment-warning" className="text-sm text-amber-800">Financial reports and balances will reflect the reversal. Prior customer emails remain sent; this action does not issue a refund. Check the actual payment account separately.</p>
+                    <button data-tour="reverse-payment-confirm" type="button" disabled={busy || selectedId === null || reason.trim().length < 10} onClick={() => void reverse()}
                         className="rounded-lg bg-red-700 px-5 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">
                         {busy ? "Reversing..." : "Confirm payment reversal"}
                     </button>
