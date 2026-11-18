@@ -189,23 +189,23 @@ export default function RecurringInvoicesPage() {
             <div className="mx-auto max-w-[1500px]">
                 <header className="mb-7 flex min-h-[108px] flex-wrap items-center justify-between gap-4 px-4 py-6 sm:px-6">
                     <h1 className="text-4xl font-bold tracking-tight text-white">Recurring invoices</h1>
-                    <Link href="/admin/invoices/recurring/new" className="rounded-full bg-black px-6 py-3.5 font-semibold text-white hover:bg-slate-900">Create a recurring invoice</Link>
+                    <Link data-tour="recurring-create-link" href="/admin/invoices/recurring/new" className="rounded-full bg-black px-6 py-3.5 font-semibold text-white hover:bg-slate-900">Create a recurring invoice</Link>
                 </header>
 
                 <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-5">
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div><h2 className="text-lg font-bold">Automatic invoice scheduler</h2>
+                        <div data-tour="recurring-scheduler-summary"><h2 className="text-lg font-bold">Automatic invoice scheduler</h2>
                             <p className="text-sm text-slate-600">Due-date invoices are generated and emailed only when the Hostinger cron calls the protected endpoint 5 minutes after each hour of the day.</p>
                         </div>
-                        <button type="button" className="rounded-full border border-blue-700 px-4 py-2 font-semibold text-blue-700"
+                        <button data-tour="recurring-scheduler-toggle" type="button" className="rounded-full border border-blue-700 px-4 py-2 font-semibold text-blue-700"
                             onClick={() => { if (!showScheduler) loadScheduler(); setShowScheduler(!showScheduler); }}>
                             {showScheduler ? "Hide scheduler status" : "Scheduler status"}
                         </button>
                     </div>
-                    {showScheduler && <div className="mt-4 space-y-4">
+                    {showScheduler && <div data-tour="recurring-scheduler-history" className="mt-4 space-y-4">
                         <div className="flex flex-wrap gap-3">
                             <button type="button" onClick={loadScheduler} disabled={schedulerBusy} className="rounded-full border px-4 py-2 disabled:opacity-50">Refresh</button>
-                            <button type="button" onClick={runScheduler} disabled={schedulerBusy} className="rounded-full bg-blue-700 px-5 py-2 font-semibold text-white disabled:opacity-50">
+                            <button data-tour="recurring-scheduler-run" type="button" onClick={runScheduler} disabled={schedulerBusy} className="rounded-full bg-blue-700 px-5 py-2 font-semibold text-white disabled:opacity-50">
                                 {schedulerBusy ? "Working..." : "Run due invoices now"}
                             </button>
                         </div>
