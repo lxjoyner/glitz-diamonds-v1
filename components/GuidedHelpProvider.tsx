@@ -249,7 +249,7 @@ export default function GuidedHelpProvider() {
                                 </button>
                             )}
                         </div>
-                        {step === visibleTour.steps.length - 1 && <p className="mt-2 text-xs font-semibold text-amber-800">Finishing does not record a payment. Submit separately when you are ready.</p>}
+                        {step === visibleTour.steps.length - 1 && <p className="mt-2 text-xs font-semibold text-amber-800">{visibleTour.id.startsWith("invoice-create") ? "Finishing does not create or approve an invoice. Save or approve it separately only when you are ready." : "Finishing does not record a payment. Submit separately when you are ready."}</p>}
                     </section>
                 </div>
             )}
