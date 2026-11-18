@@ -151,7 +151,7 @@ export default function RecordPaymentPage() {
                 <form onSubmit={submit} className="space-y-6 p-6 sm:p-8">
                     <label className="grid gap-2 sm:grid-cols-[150px_1fr] sm:items-center">
                         <span className="font-semibold text-slate-600 sm:text-right">Date</span>
-                        <input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} className="rounded-xl border border-blue-200 px-4 py-3" />
+                        <input data-tour="payment-date" type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} className="rounded-xl border border-blue-200 px-4 py-3" />
                     </label>
 
                     <div className="grid gap-2 sm:grid-cols-[150px_1fr] sm:items-start">
@@ -159,7 +159,7 @@ export default function RecordPaymentPage() {
                         <div>
                             <div className="flex items-center rounded-xl border border-emerald-600 px-4 py-3">
                                 <span className="mr-2 text-slate-500">$</span>
-                                <input type="number" min="0.01" step="0.01" max={(remainingCents / 100).toFixed(2)} value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full outline-none" />
+                                <input data-tour="payment-amount" type="number" min="0.01" step="0.01" max={(remainingCents / 100).toFixed(2)} value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full outline-none" />
                             </div>
                             {fullyPaid && <p className="mt-1 text-sm font-medium text-emerald-700">Invoice will be fully paid</p>}
                             {!fullyPaid && paymentCents > 0 && <p className="mt-1 text-sm text-slate-500">Remaining after payment: {((remainingCents - paymentCents) / 100).toLocaleString("en-US", { style: "currency", currency: "USD" })}</p>}
@@ -168,7 +168,7 @@ export default function RecordPaymentPage() {
 
                     <label className="grid gap-2 sm:grid-cols-[150px_1fr] sm:items-center">
                         <span className="font-semibold text-slate-600 sm:text-right">Method</span>
-                        <select value={method} onChange={(e) => setMethod(e.target.value)} className="rounded-xl border border-blue-200 px-4 py-3 italic text-slate-700">
+                        <select data-tour="payment-method" value={method} onChange={(e) => setMethod(e.target.value)} className="rounded-xl border border-blue-200 px-4 py-3 italic text-slate-700">
                             <option value="">Select a payment method...</option>
                             {methods.map((item) => <option key={item.id} value={item.name}>{item.name}</option>)}
                         </select>
@@ -181,7 +181,7 @@ export default function RecordPaymentPage() {
                     <div className="grid gap-2 sm:grid-cols-[150px_1fr] sm:items-start">
                         <span className="pt-3 font-semibold text-slate-600 sm:text-right">Account</span>
                         <div>
-                            <select value={accountName} onChange={(e) => setAccountName(e.target.value)} className="w-full rounded-xl border border-blue-200 px-4 py-3 italic text-slate-700">
+                            <select data-tour="payment-account" value={accountName} onChange={(e) => setAccountName(e.target.value)} className="w-full rounded-xl border border-blue-200 px-4 py-3 italic text-slate-700">
                                 <option value="">Select a payment account...</option>
                                 {accounts.map((item) => <option key={item.id} value={item.name}>{item.name}</option>)}
                             </select>
@@ -195,7 +195,7 @@ export default function RecordPaymentPage() {
 
                     <label className="grid gap-2 sm:grid-cols-[150px_1fr] sm:items-start">
                         <span className="pt-3 font-semibold text-slate-600 sm:text-right">Memo (on receipt)</span>
-                        <textarea value={memo} onChange={(e) => setMemo(e.target.value)} rows={4} className="rounded-xl border border-blue-200 p-3" />
+                        <textarea data-tour="payment-memo" value={memo} onChange={(e) => setMemo(e.target.value)} rows={4} className="rounded-xl border border-blue-200 p-3" />
                     </label>
 
                     {message && <p className={`rounded-lg p-3 text-sm ${paymentRecorded ? "bg-amber-50 text-amber-800" : "bg-red-50 text-red-700"}`}>{message}</p>}
@@ -205,7 +205,7 @@ export default function RecordPaymentPage() {
                         {paymentRecorded ? (
                             <Link href="/admin/invoices" className="rounded-full bg-blue-600 px-7 py-3 font-semibold text-white">Return to invoices</Link>
                         ) : (
-                            <button type="submit" disabled={saving || !invoice || remainingCents <= 0} className="rounded-full bg-blue-600 px-7 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:bg-blue-200">{saving ? "Submitting..." : "Submit"}</button>
+                            <button data-tour="payment-submit" type="submit" disabled={saving || !invoice || remainingCents <= 0} className="rounded-full bg-blue-600 px-7 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:bg-blue-200">{saving ? "Submitting..." : "Submit"}</button>
                         )}
                     </div>
                 </form>
