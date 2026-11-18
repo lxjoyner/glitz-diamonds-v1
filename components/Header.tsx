@@ -145,7 +145,7 @@ export default function Header() {
                     {!loadingAuth && adminUser?.role === "admin" && <Link href="/admin/membership" className="nav-link" onClick={() => setOpen(false)}>Registered Users Details</Link>}
                     {!loadingAuth && adminUser?.role === "admin" && <Link href="/admin/member-invites" className="nav-link" onClick={() => setOpen(false)}>Member Invites</Link>}
                     {!loadingAuth && adminUser?.role === "admin" && <Link href="/admin/roles-manager" className="nav-link" onClick={() => setOpen(false)}>Roles Manager</Link>}
-                    {!loadingAuth && adminUser && <Link href="/admin/messages" className="nav-link" onClick={() => setOpen(false)}>Dashboard</Link>}
+                    {!loadingAuth && adminUser && <a href="/admin/messages" className="nav-link" onClick={() => setOpen(false)}>Dashboard</a>}
                     {!loadingAuth && adminUser && helpEnabled && <Link href="/help" className="nav-link" onClick={() => setOpen(false)}>Help Center</Link>}
                     {!loadingAuth && adminUser && <Link href="/admin/ideas-activities" className="nav-link" onClick={() => setOpen(false)}>Ideas & Activities</Link>}
                     {!loadingAuth && adminUser && <Link href="/calendar" className="nav-link" onClick={() => setOpen(false)}>Calendar</Link>}
