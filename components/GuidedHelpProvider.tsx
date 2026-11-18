@@ -149,6 +149,7 @@ export default function GuidedHelpProvider() {
     useEffect(() => {
         if (!visibleTour || !current) return;
         let resizeObserver: ResizeObserver | null = null;
+        let mutationObserver: MutationObserver | null = null;
         let frame = 0;
         const position = () => {
             const anchor = document.querySelector(current.selector);
@@ -171,6 +172,9 @@ export default function GuidedHelpProvider() {
             resizeObserver = new ResizeObserver(schedule);
             resizeObserver.observe(element);
         }
+        // Invoice rows and the Actions menu can appear after an asynchronous fetch.
+        mutationObserver = new MutationObserver(schedule);
+        mutationObserver.observe(document.body, { childList: true, subtree: true });
         window.addEventListener("resize", schedule);
         window.addEventListener("scroll", schedule, true);
         const esc = (event: KeyboardEvent) => { if (event.key === "Escape") closeTour(); };
@@ -179,6 +183,7 @@ export default function GuidedHelpProvider() {
             window.clearTimeout(timer);
             cancelAnimationFrame(frame);
             resizeObserver?.disconnect();
+            mutationObserver?.disconnect();
             window.removeEventListener("resize", schedule);
             window.removeEventListener("scroll", schedule, true);
             window.removeEventListener("keydown", esc);
