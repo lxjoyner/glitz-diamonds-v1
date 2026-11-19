@@ -104,6 +104,7 @@ export default function BillsPage() {
     const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     const pageStart = (page - 1) * PAGE_SIZE;
     const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+    const guidedPaymentBillId = paginated.find((bill) => bill.total_cents > bill.amount_paid_cents)?.id;
 
     useEffect(() => { setPage(1); }, [vendorFilter, fromDate, toDate]);
     useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount]);
@@ -161,7 +162,7 @@ export default function BillsPage() {
                     <div className="flex flex-wrap gap-3"><Link href="/admin/vendors/bills/historical-import" className="rounded-full border border-blue-600 bg-white px-6 py-3 font-semibold text-blue-700 hover:bg-blue-50">Historical Bills Import</Link><Link href="/admin/vendors" className="rounded-full bg-blue-700 px-6 py-3 font-semibold text-white hover:bg-blue-800">Create a bill</Link></div>
                 </div>
 
-                <section className="mb-6 grid gap-4 rounded-2xl bg-white p-5 shadow-sm lg:grid-cols-[1fr_1fr]">
+                <section data-tour="vendor-bill-filter" className="mb-6 grid gap-4 rounded-2xl bg-white p-5 shadow-sm lg:grid-cols-[1fr_1fr]">
                     <label className="grid gap-2">
                         <span className="font-semibold text-slate-600">Vendor</span>
                         <select value={vendorFilter} onChange={(e) => setVendorFilter(e.target.value)} className="rounded-xl border border-blue-300 bg-white px-4 py-3">
@@ -212,7 +213,7 @@ export default function BillsPage() {
                                             <td className="px-5 py-4 text-right"><div>{money(dueCents)}</div><div className="text-sm text-slate-500">Total {money(bill.total_cents)}</div></td>
                                             <td className="px-5 py-4 text-right">
                                                 <div className="inline-flex items-center gap-3">
-                                                    <button type="button" onClick={() => openPayment(bill)} className="font-semibold text-blue-700 hover:underline">Record a payment</button>
+                                                    <button data-tour={bill.id === guidedPaymentBillId ? "vendor-bill-record-button" : undefined} type="button" onClick={() => openPayment(bill)} className="font-semibold text-blue-700 hover:underline">Record a payment</button>
                                                     <button type="button" className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-blue-600 text-blue-700 hover:bg-blue-50" aria-label={`Actions for bill ${bill.id}`}>⌄</button>
                                                 </div>
                                             </td>
@@ -247,7 +248,7 @@ export default function BillsPage() {
                         <div className="space-y-6 px-6 py-5 sm:px-8">
                             <label className="grid gap-2 sm:grid-cols-[190px_1fr] sm:items-center">
                                 <span className="font-semibold text-slate-600 sm:text-right">Payment method</span>
-                                <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="rounded-xl border border-blue-300 bg-white px-4 py-3 italic text-slate-600">
+                                <select data-tour="vendor-bill-payment-method" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="rounded-xl border border-blue-300 bg-white px-4 py-3 italic text-slate-600">
                                     <option value="">Select a payment method...</option>
                                     {paymentMethods.map((item) => <option key={item.id} value={item.name}>{item.name}</option>)}
                                 </select>
@@ -258,7 +259,7 @@ export default function BillsPage() {
                                 <div>
                                     <div className="flex items-center rounded-xl border border-blue-300 bg-white px-4 py-3">
                                         <span className="mr-3 text-slate-500">$</span>
-                                        <input type="number" min="0.01" step="0.01" max={((paymentBill.total_cents - paymentBill.amount_paid_cents) / 100).toFixed(2)} value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} className="w-full outline-none" />
+                                        <input data-tour="vendor-bill-payment-amount" type="number" min="0.01" step="0.01" max={((paymentBill.total_cents - paymentBill.amount_paid_cents) / 100).toFixed(2)} value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} className="w-full outline-none" />
                                     </div>
                                     <p className="mt-1 text-sm text-slate-600">USD - United States dollar</p>
                                 </div>
@@ -267,7 +268,7 @@ export default function BillsPage() {
                             <label className="grid gap-2 sm:grid-cols-[190px_1fr] sm:items-center">
                                 <span className="font-semibold text-slate-600 sm:text-right">Payment date</span>
                                 <div className="relative">
-                                    <input ref={paymentDateRef} type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} className="w-full rounded-xl border border-blue-300 bg-white px-4 py-3 pr-14 [&::-webkit-calendar-picker-indicator]:opacity-0" />
+                                    <input data-tour="vendor-bill-payment-date" ref={paymentDateRef} type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} className="w-full rounded-xl border border-blue-300 bg-white px-4 py-3 pr-14 [&::-webkit-calendar-picker-indicator]:opacity-0" />
                                     <button type="button" onClick={() => paymentDateRef.current?.showPicker()} className="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg bg-slate-200 text-slate-600 hover:bg-slate-300" aria-label="Open payment date picker">
                                         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 2v3M17 2v3M3.5 9h17M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" /></svg>
                                     </button>
@@ -277,7 +278,7 @@ export default function BillsPage() {
                             <div className="grid gap-2 sm:grid-cols-[190px_1fr] sm:items-start">
                                 <span className="pt-3 font-semibold text-slate-600 sm:text-right">Payment account</span>
                                 <div>
-                                    <select value={paymentAccount} onChange={(e) => setPaymentAccount(e.target.value)} className="w-full rounded-xl border border-blue-300 bg-white px-4 py-3 italic text-slate-600">
+                                    <select data-tour="vendor-bill-payment-account" value={paymentAccount} onChange={(e) => setPaymentAccount(e.target.value)} className="w-full rounded-xl border border-blue-300 bg-white px-4 py-3 italic text-slate-600">
                                         <option value="">Select a payment account...</option>
                                         {paymentAccounts.map((item) => <option key={item.id} value={item.name}>{item.name}</option>)}
                                     </select>
@@ -287,13 +288,13 @@ export default function BillsPage() {
 
                             <label className="grid gap-2 sm:grid-cols-[190px_1fr] sm:items-start">
                                 <span className="pt-3 font-semibold text-slate-600 sm:text-right">Memo / notes (optional)</span>
-                                <textarea value={paymentMemo} onChange={(e) => setPaymentMemo(e.target.value)} rows={4} className="rounded-xl border border-blue-300 bg-white px-4 py-3" />
+                                <textarea data-tour="vendor-bill-payment-memo" value={paymentMemo} onChange={(e) => setPaymentMemo(e.target.value)} rows={4} className="rounded-xl border border-blue-300 bg-white px-4 py-3" />
                             </label>
                         </div>
 
                         <div className="flex justify-end gap-3 border-t border-slate-200 px-6 py-4">
                             <button type="button" onClick={() => setPaymentBill(null)} className="rounded-full border border-blue-600 bg-white px-6 py-3 font-semibold text-blue-700 hover:bg-blue-50">Cancel</button>
-                            <button type="button" onClick={recordPayment} disabled={savingPayment || !paymentMethod || !paymentAccount || !paymentDate || Number(paymentAmount) <= 0} className="rounded-full bg-blue-700 px-7 py-3 font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-blue-200">{savingPayment ? "Saving..." : "Save"}</button>
+                            <button data-tour="vendor-bill-payment-save" type="button" onClick={recordPayment} disabled={savingPayment || !paymentMethod || !paymentAccount || !paymentDate || Number(paymentAmount) <= 0} className="rounded-full bg-blue-700 px-7 py-3 font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-blue-200">{savingPayment ? "Saving..." : "Save"}</button>
                         </div>
                     </div>
                 </div>
