@@ -117,6 +117,22 @@ export default function HelpCenterPage() {
                                         ) : (
                                             <p className="mt-4 text-xs text-slate-400">Video tutorial: not yet available</p>
                                         )}
+                                        {topic.id === "reports" && (
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                <Link href="/admin/reports/income-by-customer?tour=report-income-overview"
+                                                    className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">
+                                                    Show Me How: Income by Customer
+                                                </Link>
+                                                <Link href="/admin/reports/account-transactions?tour=report-transactions-overview"
+                                                    className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">
+                                                    Show Me How: Account Transactions
+                                                </Link>
+                                                <Link href="/admin/reports/balance-sheet?tour=report-balance-overview"
+                                                    className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">
+                                                    Show Me How: Balance Sheet
+                                                </Link>
+                                            </div>
+                                        )}
                                         {topic.id === "vendor-bills" && (
                                             <Link href="/admin/vendors/bills?tour=vendor-bill-record-payment"
                                                 className="mt-3 inline-flex self-start rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">

@@ -247,7 +247,7 @@ export default function IncomeByCustomerPage() {
                         <h1 className="text-4xl font-bold tracking-tight">Income by Customer</h1>
                         <p className="mt-1 text-sm text-slate-500">Report income totals and paid income by member.</p>
                     </div>
-                    <div ref={exportMenuRef} className="relative">
+                    <div data-tour="income-export" ref={exportMenuRef} className="relative">
                         <button
                             type="button"
                             onClick={() => setExportOpen((current) => !current)}
@@ -272,7 +272,7 @@ export default function IncomeByCustomerPage() {
                     <div className="grid gap-3 lg:grid-cols-[280px_1fr_1fr_auto] lg:items-end">
                         <label className="grid gap-2">
                             <span className="font-semibold">Date Range</span>
-                            <select value={rangeValue} onChange={(e) => applyPreset(e.target.value)} className="rounded-xl border border-blue-300 bg-white px-4 py-3">
+                            <select data-tour="income-date-range" value={rangeValue} onChange={(e) => applyPreset(e.target.value)} className="rounded-xl border border-blue-300 bg-white px-4 py-3">
                                 <option value="custom">Custom</option>
                                 <optgroup label="Calendar Year">
                                     {calendarYears.map((item) => <option key={item.label} value={item.label}>{item.label}</option>)}
@@ -290,6 +290,7 @@ export default function IncomeByCustomerPage() {
                             <span className="font-semibold">From</span>
                             <div className="relative">
                                 <input
+                                    data-tour="income-from-date"
                                     ref={fromDateRef}
                                     type="date"
                                     value={fromDate}
@@ -318,6 +319,7 @@ export default function IncomeByCustomerPage() {
                             <span className="font-semibold">To</span>
                             <div className="relative">
                                 <input
+                                    data-tour="income-to-date"
                                     ref={toDateRef}
                                     type="date"
                                     value={toDate}
@@ -342,13 +344,13 @@ export default function IncomeByCustomerPage() {
                             </div>
                         </label>
 
-                        <button type="button" onClick={() => loadReport()} className="rounded-full bg-blue-700 px-6 py-3 font-semibold text-white hover:bg-blue-800">Update Report</button>
+                        <button data-tour="income-update" type="button" onClick={() => loadReport()} className="rounded-full bg-blue-700 px-6 py-3 font-semibold text-white hover:bg-blue-800">Update Report</button>
                     </div>
                 </section>
 
                 {message && <p className="mb-4 rounded-lg bg-red-50 p-3 text-red-700">{message}</p>}
 
-                <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <section data-tour="income-table" className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse">
                             <thead>
