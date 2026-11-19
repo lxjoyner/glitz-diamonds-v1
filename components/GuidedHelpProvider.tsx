@@ -249,7 +249,7 @@ export default function GuidedHelpProvider() {
                                 </button>
                             )}
                         </div>
-                        {step === visibleTour.steps.length - 1 && <p className="mt-2 text-xs font-semibold text-amber-800">{visibleTour.id.startsWith("recurring-") ? "Finishing does not create, modify, delete, or generate recurring invoices. Any live action must be performed separately." : visibleTour.id.startsWith("invoice-reverse") ? "Finishing does not reverse a payment. Only an administrator can reverse a payment using the separate confirmation." : visibleTour.id.startsWith("invoice-create") ? "Finishing does not create or approve an invoice. Save or approve it separately only when you are ready." : "Finishing does not record a payment. Submit separately when you are ready."}</p>}
+                        {step === visibleTour.steps.length - 1 && <p className="mt-2 text-xs font-semibold text-amber-800">{visibleTour.id.startsWith("vendor-bill-") ? "Finishing does not record or transfer funds. Save only when you intend to record a real vendor payment." : visibleTour.id.startsWith("recurring-") ? "Finishing does not create, modify, delete, or generate recurring invoices. Any live action must be performed separately." : visibleTour.id.startsWith("invoice-reverse") ? "Finishing does not reverse a payment. Only an administrator can reverse a payment using the separate confirmation." : visibleTour.id.startsWith("invoice-create") ? "Finishing does not create or approve an invoice. Save or approve it separately only when you are ready." : "Finishing does not record a payment. Submit separately when you are ready."}</p>}
                     </section>
                 </div>
             )}
