@@ -181,7 +181,7 @@ export default function BillsPage() {
 
                 {message && <p className="mb-4 rounded-lg bg-red-50 p-3 text-red-700">{message}</p>}
 
-                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <section data-tour="vendor-bills-table" className="rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <div className="overflow-x-auto pb-32">
                         <table className="w-full min-w-[1100px] border-collapse">
                             <thead>
@@ -227,7 +227,7 @@ export default function BillsPage() {
                     {filtered.length > 0 && (
                         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-5 py-4">
                             <p className="text-sm text-slate-500">Showing {pageStart + 1}-{Math.min(pageStart + PAGE_SIZE, filtered.length)} of {filtered.length}</p>
-                            <div className="flex items-center gap-2">
+                            <div data-tour="vendor-bills-pages" className="flex items-center gap-2">
                                 <button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1} className="rounded-lg border border-blue-300 px-3 py-2 disabled:opacity-40">◀</button>
                                 <span className="text-sm font-semibold">{page} / {pageCount}</span>
                                 <button type="button" onClick={() => setPage((current) => Math.min(pageCount, current + 1))} disabled={page === pageCount} className="rounded-lg border border-blue-300 px-3 py-2 disabled:opacity-40">▶</button>
