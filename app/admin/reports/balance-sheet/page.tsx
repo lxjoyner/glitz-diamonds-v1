@@ -93,7 +93,7 @@ export default function BalanceSheetPage() {
         <div className="mx-auto max-w-6xl">
             <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
                 <h1 className="text-4xl font-bold">Balance Sheet</h1>
-                <div className="relative">
+                <div data-tour="balance-export" className="relative">
                     <button type="button" onClick={() => setExportOpen(!exportOpen)}
                         disabled={!report || loading}
                         className="rounded-full border border-blue-600 bg-white px-6 py-2.5 font-semibold text-blue-700 disabled:opacity-40"
@@ -106,37 +106,37 @@ export default function BalanceSheetPage() {
             </div>
             <div className="mb-9 flex flex-wrap items-end gap-5 rounded-xl bg-slate-100 px-5 py-6">
                 <label className="grid gap-2 font-medium">As of year
-                    <select value={year} onChange={event => {
+                    <select data-tour="balance-asof-year" value={year} onChange={event => {
                         const y = event.target.value; setYear(y); setAsOf(`${y}${asOf.slice(4)}`);
                     }} className="min-w-40 rounded-xl border border-blue-200 bg-white px-4 py-3">
                         {Array.from({length: 8}, (_, i) => String(now.getFullYear()-i)).map(y=><option key={y}>{y}</option>)}
                     </select>
                 </label>
                 <label className="grid gap-2 font-medium">As of date
-                    <input type="date" value={asOf} onChange={e => {
+                    <input data-tour="balance-asof-date" type="date" value={asOf} onChange={e => {
                         setAsOf(e.target.value);
                         if (e.target.value) setYear(e.target.value.slice(0,4));
                     }} className="rounded-xl border border-blue-200 bg-white px-4 py-3" />
                 </label>
                 <label className="grid gap-2 font-medium">Report Type
-                    <select value={reportType} onChange={e=>setReportType(e.target.value as "accrual"|"cash")} className="rounded-xl border border-blue-200 bg-white px-4 py-3">
+                    <select data-tour="balance-type" value={reportType} onChange={e=>setReportType(e.target.value as "accrual"|"cash")} className="rounded-xl border border-blue-200 bg-white px-4 py-3">
                         <option value="accrual">Accrual (Paid &amp; Unpaid)</option>
                         <option value="cash">Cash Basis (Recorded Payments)</option>
                     </select>
                 </label>
-                <button type="button" onClick={() => load()} disabled={loading || !asOf}
+                <button data-tour="balance-update" type="button" onClick={() => load()} disabled={loading || !asOf}
                     className="rounded-full bg-blue-700 px-6 py-3 font-semibold text-white disabled:opacity-50">{loading?"Loading...":"Update Report"}</button>
             </div>
             {error && <div role="alert" className="mb-5 rounded-lg bg-red-50 p-4 text-red-700">{error}</div>}
             {report && <>
-                <div className="mb-8 flex flex-wrap items-center justify-center gap-4 text-center">
+                <div data-tour="balance-summary" className="mb-8 flex flex-wrap items-center justify-center gap-4 text-center">
                     <div><p className="text-sm font-semibold text-slate-600">Cash and Bank</p><p className="mt-2 text-3xl">{currency(report.cashOnHandCents)}</p></div>
                     <span className="text-3xl text-slate-300">+</span>
                     <div><p className="text-sm font-semibold text-slate-600">To be received</p><p className="mt-2 text-3xl">{currency(report.accountsReceivableCents)}</p></div>
                     <span className="text-3xl text-slate-300">=</span>
                     <div><p className="text-sm font-semibold text-slate-600">Total Invoices and Donations</p><p className="mt-2 text-3xl font-bold text-green-700">{currency(report.totalInvoicesDonationsCents)}</p></div>
                 </div>
-                <div className="mb-7 flex justify-center border-b border-slate-200 pb-3">
+                <div data-tour="balance-views" className="mb-7 flex justify-center border-b border-slate-200 pb-3">
                     <div className="inline-flex rounded-2xl bg-blue-50 p-1">
                         <button type="button" onClick={() => setView("summary")} className={`rounded-xl px-6 py-2 ${view === "summary"?"bg-white font-bold shadow":"font-medium"}`}>Summary</button>
                         <button type="button" onClick={() => setView("details")} className={`rounded-xl px-6 py-2 ${view === "details"?"bg-white font-bold shadow":"font-medium"}`}>Details</button>
@@ -160,7 +160,7 @@ export default function BalanceSheetPage() {
                     {line("Total Invoices and Donations",report.totalInvoicesDonationsCents,1,true)}
                 </tbody></table>
                 <p className="mt-5 text-sm text-slate-700">Calculated Cash and Bank (not a reconciled bank balance): <strong>{currency(report.netRecordedCashMovementCents)}</strong></p>
-                <aside className="mt-7 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-slate-700">
+                <aside data-tour="balance-notes" className="mt-7 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-slate-700">
                     <p className="mb-2 font-bold">Report data notes</p>
                     {report.notes.map(note=><p className="mb-1" key={note}>{note}</p>)}
                 </aside>
