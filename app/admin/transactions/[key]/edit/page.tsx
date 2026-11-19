@@ -134,19 +134,19 @@ export default function EditTransactionPage() {
                         <label className="grid gap-2">
                             <span className="font-semibold text-slate-600">Date</span>
                             <div className="relative">
-                                <input ref={dateRef} type="date" value={date} onChange={(e) => setDate(e.target.value)} disabled={readOnly} className="w-full rounded-xl border border-blue-300 px-4 py-3 pr-14 disabled:bg-slate-100 [&::-webkit-calendar-picker-indicator]:opacity-0" />
+                                <input data-tour="transaction-edit-date" ref={dateRef} type="date" value={date} onChange={(e) => setDate(e.target.value)} disabled={readOnly} className="w-full rounded-xl border border-blue-300 px-4 py-3 pr-14 disabled:bg-slate-100 [&::-webkit-calendar-picker-indicator]:opacity-0" />
                                 <button type="button" disabled={readOnly} onClick={() => dateRef.current?.showPicker()} className="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg bg-slate-200 hover:bg-slate-300 disabled:opacity-40">📅</button>
                             </div>
                         </label>
 
                         <label className="grid gap-2">
                             <span className="font-semibold text-slate-600">Description</span>
-                            <input value={description} onChange={(e) => setDescription(e.target.value)} disabled={readOnly} className="rounded-xl border border-blue-300 bg-white px-4 py-3 disabled:bg-slate-100" />
+                            <input data-tour="transaction-edit-description" value={description} onChange={(e) => setDescription(e.target.value)} disabled={readOnly} className="rounded-xl border border-blue-300 bg-white px-4 py-3 disabled:bg-slate-100" />
                         </label>
 
                         <label className="grid gap-2">
                             <span className="font-semibold text-slate-600">Account</span>
-                            <select value={account} onChange={(e) => setAccount(e.target.value)} disabled={readOnly} className="rounded-xl border border-blue-300 bg-white px-4 py-3 disabled:bg-slate-100">
+                            <select data-tour="transaction-edit-account" value={account} onChange={(e) => setAccount(e.target.value)} disabled={readOnly} className="rounded-xl border border-blue-300 bg-white px-4 py-3 disabled:bg-slate-100">
                                 <option value="">Select payment account...</option>
                                 {account && !accounts.includes(account) && <option value={account} disabled>{account} (select a valid account)</option>}
                                 {accounts.map((name) => <option key={name} value={name}>{name === "Cash on Hand (USD)" ? "Cash on Hand (USD)" : name}</option>)}
@@ -155,7 +155,7 @@ export default function EditTransactionPage() {
 
                         <label className="grid gap-2">
                             <span className="font-semibold text-slate-600">Type</span>
-                            <select value={transactionType} onChange={(e) => setTransactionType(e.target.value as "Deposit" | "Withdrawal")} disabled={readOnly} className="rounded-xl border border-blue-300 bg-white px-4 py-3 disabled:bg-slate-100">
+                            <select data-tour="transaction-edit-type" value={transactionType} onChange={(e) => setTransactionType(e.target.value as "Deposit" | "Withdrawal")} disabled={readOnly} className="rounded-xl border border-blue-300 bg-white px-4 py-3 disabled:bg-slate-100">
                                 <option value="Deposit">Deposit</option><option value="Withdrawal">Withdrawal</option>
                             </select>
                             <span className="text-xs text-slate-500">Changing the direction of a linked invoice or bill requires a separate reversal.</span>
@@ -165,18 +165,18 @@ export default function EditTransactionPage() {
                             <span className="font-semibold text-slate-600">Amount</span>
                             <div className="flex rounded-xl border border-blue-300">
                                 <span className="px-3 py-3 text-slate-500">USD</span>
-                                <input type="number" min="0.01" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} disabled={readOnly} className="w-full rounded-r-xl px-3 py-3 text-right outline-none disabled:bg-slate-100" />
+                                <input data-tour="transaction-edit-amount" type="number" min="0.01" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} disabled={readOnly} className="w-full rounded-r-xl px-3 py-3 text-right outline-none disabled:bg-slate-100" />
                             </div>
                         </label>
 
                         <label className="grid gap-2">
                             <span className="font-semibold text-slate-600">Category</span>
-                            <input value={category} onChange={(e) => setCategory(e.target.value)} disabled={readOnly} className="rounded-xl border border-blue-300 bg-white px-4 py-3 disabled:bg-slate-100" />
+                            <input data-tour="transaction-edit-category" value={category} onChange={(e) => setCategory(e.target.value)} disabled={readOnly} className="rounded-xl border border-blue-300 bg-white px-4 py-3 disabled:bg-slate-100" />
                         </label>
 
                         <label className="grid gap-2 md:col-span-1">
                             <span className="font-semibold text-slate-600">{transaction.direction === "income" ? "Customer" : "Vendor"}</span>
-                            <input value={transaction.contact_name || ""} disabled className="rounded-xl border border-blue-300 bg-slate-100 px-4 py-3" />
+                            <input data-tour="transaction-edit-contact" value={transaction.contact_name || ""} disabled className="rounded-xl border border-blue-300 bg-slate-100 px-4 py-3" />
                         </label>
 
                         <div className="md:col-span-2">
@@ -185,7 +185,7 @@ export default function EditTransactionPage() {
 
                         <label className="grid gap-2 md:col-span-2">
                             <span className="text-lg font-semibold">Notes</span>
-                            <textarea value={memo} onChange={(e) => setMemo(e.target.value)} disabled={readOnly} rows={4} placeholder="Write a note here..." className="rounded-xl border border-blue-300 px-4 py-3 disabled:bg-slate-100" />
+                            <textarea data-tour="transaction-edit-memo" value={memo} onChange={(e) => setMemo(e.target.value)} disabled={readOnly} rows={4} placeholder="Write a note here..." className="rounded-xl border border-blue-300 px-4 py-3 disabled:bg-slate-100" />
                         </label>
 
                         <div className="md:col-span-2">
@@ -197,7 +197,7 @@ export default function EditTransactionPage() {
                                     const file = e.dataTransfer.files?.[0];
                                     if (file) upload(file);
                                 }}
-                                className="rounded-xl border-2 border-dashed border-blue-500 p-6 text-center"
+                                data-tour="transaction-edit-receipt" className="rounded-xl border-2 border-dashed border-blue-500 p-6 text-center"
                             >
                                 <p className="font-medium">Drag your file here or</p>
                                 <button type="button" onClick={() => fileRef.current?.click()} className="font-semibold text-blue-700 hover:underline">select a file to upload</button>
@@ -216,7 +216,7 @@ export default function EditTransactionPage() {
                         <button type="button" className="rounded-full border border-blue-600 px-5 py-2.5 font-semibold text-blue-700">✓ Mark as reviewed</button>
                         <div className="flex gap-3">
                             <button type="button" onClick={() => router.push("/admin/transactions")} className="rounded-full border border-blue-600 px-6 py-2.5 font-semibold text-blue-700">Cancel</button>
-                            <button disabled={saving || readOnly || (needsVerification && !dateVerified) || !accounts.includes(account)} className="rounded-full bg-blue-700 px-7 py-2.5 font-semibold text-white disabled:bg-blue-200">{saving ? "Saving..." : "Save"}</button>
+                            <button data-tour="transaction-edit-save" disabled={saving || readOnly || (needsVerification && !dateVerified) || !accounts.includes(account)} className="rounded-full bg-blue-700 px-7 py-2.5 font-semibold text-white disabled:bg-blue-200">{saving ? "Saving..." : "Save"}</button>
                         </div>
                     </div>
                 </form>
