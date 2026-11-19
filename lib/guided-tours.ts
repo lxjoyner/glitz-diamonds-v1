@@ -5,7 +5,7 @@ export type GuidedTourStep = {
     title: string;
     description: string;
     /** Route pattern: dynamic invoice ID is accepted only on the recording page. */
-    path: "/admin/invoices" | "/admin/invoices/new" | "/admin/invoices/recurring" | "/admin/invoices/recurring/new" | "/admin/invoices/[id]/record-payment" | "/admin/invoices/[id]/reverse-payment" | "/admin/vendors/bills";
+    path: "/admin/invoices" | "/admin/invoices/new" | "/admin/invoices/recurring" | "/admin/invoices/recurring/new" | "/admin/invoices/[id]/record-payment" | "/admin/invoices/[id]/reverse-payment" | "/admin/vendors/bills" | "/admin/reports/income-by-customer" | "/admin/reports/account-transactions" | "/admin/reports/balance-sheet";
     /** A real click is required to proceed; no financial action is performed by the tour. */
     advanceOnClick?: boolean;
 };
@@ -20,7 +20,7 @@ export type GuidedTour = {
 };
 
 export function stepMatchesPath(path: GuidedTourStep["path"], pathname: string): boolean {
-    if (path === "/admin/vendors/bills") return pathname === path;
+    if (path === "/admin/vendors/bills" || path === "/admin/reports/income-by-customer" || path === "/admin/reports/account-transactions" || path === "/admin/reports/balance-sheet") return pathname === path;
     if (path === "/admin/invoices" || path === "/admin/invoices/new" || path === "/admin/invoices/recurring" || path === "/admin/invoices/recurring/new") return pathname === path;
     if (path === "/admin/invoices/[id]/record-payment") return /^\/admin\/invoices\/\d+\/record-payment$/.test(pathname);
     return /^\/admin\/invoices\/\d+\/reverse-payment$/.test(pathname);
@@ -211,6 +211,153 @@ const RECURRING_CREATE_STEPS: readonly GuidedTourStep[] = [
 ];
 
 export const GUIDED_TOURS: readonly GuidedTour[] = [
+    {
+        id: "report-income-overview",
+        title: "Explore Income by Customer",
+        path: "/admin/reports/income-by-customer",
+        helpTopicId: "reports",
+        roles: ["admin", "treasurer"],
+        steps: [
+            {
+                selector: '[data-tour="income-date-range"]',
+                title: "Choose a reporting period",
+                description: "Select a calendar year, quarter, month, or Custom date range.",
+                path: "/admin/reports/income-by-customer",
+            },
+            {
+                selector: '[data-tour="income-from-date"]',
+                title: "Review the start date",
+                description: "Check the start date. Editing dates changes the selection, not the loaded report until you select Update Report.",
+                path: "/admin/reports/income-by-customer",
+            },
+            {
+                selector: '[data-tour="income-to-date"]',
+                title: "Review the end date",
+                description: "Check the end date for the reporting period.",
+                path: "/admin/reports/income-by-customer",
+            },
+            {
+                selector: '[data-tour="income-update"]',
+                title: "Refresh the report",
+                description: "Click Update Report separately when ready to load income for the selected dates. The guide does not load or modify data.",
+                path: "/admin/reports/income-by-customer",
+            },
+            {
+                selector: '[data-tour="income-table"]',
+                title: "Understand income columns",
+                description: "All Income shows overall invoiced income; Paid Income shows income recorded as paid. Click an amount outside this guide to drill down to Account Transactions.",
+                path: "/admin/reports/income-by-customer",
+            },
+            {
+                selector: '[data-tour="income-export"]',
+                title: "Export a report",
+                description: "Export becomes available when the report has rows. CSV downloads the table; PDF uses your browser's print dialog. The guide does not export data.",
+                path: "/admin/reports/income-by-customer",
+            },
+        ],
+    },
+    {
+        id: "report-transactions-overview",
+        title: "Explore Account Transactions",
+        path: "/admin/reports/account-transactions",
+        helpTopicId: "reports",
+        roles: ["admin", "treasurer"],
+        steps: [
+            {
+                selector: '[data-tour="transactions-date-range"]',
+                title: "Choose the date range",
+                description: "Select the calendar year or a custom From/To range for transaction reporting.",
+                path: "/admin/reports/account-transactions",
+            },
+            {
+                selector: '[data-tour="transactions-type"]',
+                title: "Choose a report basis",
+                description: "Accrual includes paid and unpaid invoice activity; Cash Basis shows paid activity; Cash Only is another available cash view.",
+                path: "/admin/reports/account-transactions",
+            },
+            {
+                selector: '[data-tour="transactions-contact"]',
+                title: "Select a contact",
+                description: "Choose All Contacts or one customer to limit the report.",
+                path: "/admin/reports/account-transactions",
+            },
+            {
+                selector: '[data-tour="transactions-update"]',
+                title: "Update the results",
+                description: "Click Update Report separately to reload transactions for the selected period and report basis.",
+                path: "/admin/reports/account-transactions",
+            },
+            {
+                selector: '[data-tour="transactions-table"]',
+                title: "Read debits, credits and balance",
+                description: "Review the dated entries and the running balance. Cash and accrual modes interpret debits and credits differently; historical undated imports may be excluded in cash views.",
+                path: "/admin/reports/account-transactions",
+            },
+            {
+                selector: '[data-tour="transactions-export"]',
+                title: "Print or export",
+                description: "The Export control opens the browser print dialog. The walkthrough does not print or export anything.",
+                path: "/admin/reports/account-transactions",
+            },
+        ],
+    },
+    {
+        id: "report-balance-overview",
+        title: "Explore the Balance Sheet",
+        path: "/admin/reports/balance-sheet",
+        helpTopicId: "reports",
+        roles: ["admin", "treasurer"],
+        steps: [
+            {
+                selector: '[data-tour="balance-asof-year"]',
+                title: "Choose an as-of year",
+                description: "Choose the reporting year to set the balance sheet period.",
+                path: "/admin/reports/balance-sheet",
+            },
+            {
+                selector: '[data-tour="balance-asof-date"]',
+                title: "Check the as-of date",
+                description: "Balance Sheet reports represent amounts as of a specific date, rather than a From/To period.",
+                path: "/admin/reports/balance-sheet",
+            },
+            {
+                selector: '[data-tour="balance-type"]',
+                title: "Choose accrual or cash",
+                description: "Compare Accrual (Paid & Unpaid) and Cash Basis (Recorded Payments) for the chosen date.",
+                path: "/admin/reports/balance-sheet",
+            },
+            {
+                selector: '[data-tour="balance-update"]',
+                title: "Update the balance sheet",
+                description: "Click Update Report separately to reload the results; the guide does not trigger data changes.",
+                path: "/admin/reports/balance-sheet",
+            },
+            {
+                selector: '[data-tour="balance-summary"]',
+                title: "Review high-level totals",
+                description: "Review Cash and Bank, amounts To be received, and Total Invoices and Donations. These figures are based on recorded application data.",
+                path: "/admin/reports/balance-sheet",
+            },
+            {
+                selector: '[data-tour="balance-views"]',
+                title: "Switch Summary and Details",
+                description: "Summary is condensed. Details shows additional lines and links to Account Transactions. The guide does not switch tabs automatically.",
+                path: "/admin/reports/balance-sheet",
+            },
+            {
+                selector: '[data-tour="balance-notes"]',
+                title: "Read the data caveats",
+                description: "Calculated Cash and Bank is not a reconciled bank balance. Review Report data notes before using these amounts for decisions.",
+                path: "/admin/reports/balance-sheet",
+            },
+            {
+                selector: '[data-tour="balance-export"]',
+                title: "Export the report",
+                description: "When a report is available, Export offers CSV and PDF. The guide never downloads or prints financial data.",
+                path: "/admin/reports/balance-sheet",
+            },
+        ],
+    },
     {
         id: "vendor-bill-record-payment",
         title: "Record a Vendor Bill Payment",
