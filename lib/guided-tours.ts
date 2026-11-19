@@ -214,6 +214,19 @@ const RECURRING_CREATE_STEPS: readonly GuidedTourStep[] = [
 ];
 
 export const GUIDED_TOURS: readonly GuidedTour[] = [
+    {
+        id: "vendor-bills-review",
+        title: "Review Vendor Bills and Payment Status",
+        path: "/admin/vendors/bills",
+        helpTopicId: "vendor-bills",
+        roles: ["admin", "treasurer"],
+        steps: [
+            { selector: '[data-tour="vendor-bill-filter"]', title: "Filter vendor bills", description: "Choose a vendor or bill-date range to focus on relevant vendor bills. This filters the list, not accounting data.", path: "/admin/vendors/bills" },
+            { selector: '[data-tour="vendor-bills-table"]', title: "Review bill status and balances", description: "The list shows Paid, Partially Paid, and Unpaid statuses, the amount due, and each bill's total. This is a bill summary, not an itemized payment-history ledger.", path: "/admin/vendors/bills" },
+            { selector: '[data-tour="vendor-bills-pages"]', title: "Review more bills", description: "Use the pagination buttons if there are more than 25 matching bills. The guide never records any payment.", path: "/admin/vendors/bills" },
+        ],
+    },
+
     { id: "vendor-directory", title: "Explore Vendor Management", path: "/admin/vendors", helpTopicId: "vendors", roles: ["admin", "treasurer"], steps: [
             { selector: '[data-tour="vendor-directory-table"]', title: "Review the vendor directory", description: "The directory shows vendor names, email addresses, and available actions. Direct deposit is currently marked Not available.", path: "/admin/vendors" },
             { selector: '[data-tour="vendor-directory-add"]', title: "Add a vendor", description: "Choose Add a vendor to open the vendor form. This guide only explains where to start; it does not create a record.", path: "/admin/vendors" },
