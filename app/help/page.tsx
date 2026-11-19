@@ -133,6 +133,12 @@ export default function HelpCenterPage() {
                                                 </Link>
                                             </div>
                                         )}
+                                        {topic.id === "transactions" && (
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                <Link href="/admin/transactions?tour=transactions-overview" className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">Explore Transactions</Link>
+                                                <Link href="/admin/transactions?tour=transactions-edit" className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">Show Me How: Edit Transaction</Link>
+                                            </div>
+                                        )}
                                         {topic.id === "vendors" && (
                                             <div className="mt-3 flex flex-wrap gap-2">
                                                 <Link href="/admin/vendors?tour=vendor-directory" className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">Explore Vendor Directory</Link>
