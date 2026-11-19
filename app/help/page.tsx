@@ -133,6 +133,20 @@ export default function HelpCenterPage() {
                                                 </Link>
                                             </div>
                                         )}
+                                        {topic.id === "vendors" && (
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                <Link href="/admin/vendors?tour=vendor-directory" className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">Explore Vendor Directory</Link>
+                                                <Link href="/admin/vendors?tour=vendor-create" className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">Show Me How: Add Vendor</Link>
+                                                <Link href="/admin/vendors?tour=vendor-edit" className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">Show Me How: Edit Vendor</Link>
+                                                <Link href="/admin/vendors?tour=vendor-create-bill" className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">Show Me How: Create Vendor Bill</Link>
+                                            </div>
+                                        )}
+                                        {topic.id === "vendor-bills" && (
+                                            <Link href="/admin/vendors/bills?tour=vendor-bills-review"
+                                                className="mt-3 inline-flex self-start rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">
+                                                Show Me How: Review Vendor Bill Status
+                                            </Link>
+                                        )}
                                         {topic.id === "vendor-bills" && (
                                             <Link href="/admin/vendors/bills?tour=vendor-bill-record-payment"
                                                 className="mt-3 inline-flex self-start rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">
