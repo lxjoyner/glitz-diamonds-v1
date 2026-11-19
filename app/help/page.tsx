@@ -117,6 +117,12 @@ export default function HelpCenterPage() {
                                         ) : (
                                             <p className="mt-4 text-xs text-slate-400">Video tutorial: not yet available</p>
                                         )}
+                                        {topic.id === "vendor-bills" && (
+                                            <Link href="/admin/vendors/bills?tour=vendor-bill-record-payment"
+                                                className="mt-3 inline-flex self-start rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">
+                                                Show Me How: Record Vendor Bill Payment
+                                            </Link>
+                                        )}
                                         {topic.id === "recurring" && (
                                             <div className="mt-3 flex flex-wrap gap-2">
                                                 <Link href="/admin/invoices/recurring?tour=recurring-create"
