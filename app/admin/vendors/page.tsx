@@ -76,13 +76,13 @@ export default function VendorsPage() {
                     <h1 className="text-4xl font-bold tracking-tight">Vendors</h1>
                     <div className="flex gap-3">
                         <button type="button" className="rounded-full border border-blue-600 bg-white px-6 py-3 font-semibold text-blue-700 hover:bg-blue-50">Import from... <span aria-hidden="true">⌄</span></button>
-                        <Link href="/admin/vendors/new" className="rounded-full bg-blue-700 px-6 py-3 font-semibold text-white hover:bg-blue-800">Add a vendor</Link>
+                        <Link data-tour="vendor-directory-add" href="/admin/vendors/new" className="rounded-full bg-blue-700 px-6 py-3 font-semibold text-white hover:bg-blue-800">Add a vendor</Link>
                     </div>
                 </div>
 
                 {message && <p className="mb-4 rounded-lg bg-red-50 p-3 text-red-700">{message}</p>}
 
-                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <section data-tour="vendor-directory-table" className="rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <div className="overflow-x-auto overflow-y-visible pb-40">
                         <table className="w-full border-collapse">
                             <thead>
@@ -107,12 +107,12 @@ export default function VendorsPage() {
                                         <td className="px-5 py-5 text-slate-600">Not available</td>
                                         <td className="px-5 py-5">
                                             <div className="flex items-center justify-end gap-3">
-                                                <Link href={`/admin/vendors/${vendor.id}/create-bill`} className="font-semibold text-blue-700 hover:underline">Create bill</Link>
+                                                <Link data-tour={vendor.id === vendors[0]?.id ? "vendor-directory-bill" : undefined} href={`/admin/vendors/${vendor.id}/create-bill`} className="font-semibold text-blue-700 hover:underline">Create bill</Link>
                                                 <div className="relative" ref={openMenuId === vendor.id ? menuRef : null}>
-                                                    <button type="button" aria-label={`Vendor actions for ${vendor.vendor_name}`} onClick={() => setOpenMenuId((current) => current === vendor.id ? null : vendor.id)} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-blue-600 text-blue-700 hover:bg-blue-50">⌄</button>
+                                                    <button data-tour={vendor.id === vendors[0]?.id ? "vendor-directory-actions" : undefined} type="button" aria-label={`Vendor actions for ${vendor.vendor_name}`} onClick={() => setOpenMenuId((current) => current === vendor.id ? null : vendor.id)} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-blue-600 text-blue-700 hover:bg-blue-50">⌄</button>
                                                     {openMenuId === vendor.id && (
                                                         <div className="absolute right-0 z-50 mt-2 w-40 rounded-xl border border-slate-200 bg-white py-2 shadow-xl">
-                                                            <Link href={`/admin/vendors/${vendor.id}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit</Link>
+                                                            <Link data-tour={vendor.id === vendors[0]?.id ? "vendor-directory-edit" : undefined} href={`/admin/vendors/${vendor.id}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit</Link>
                                                             <Link href={`/admin/vendors/${vendor.id}/create-bill`} className="block px-4 py-2 hover:bg-slate-50">Create bill</Link>
                                                             <button type="button" onClick={() => removeVendor(vendor)} className="block w-full px-4 py-2 text-left hover:bg-slate-50">Delete</button>
                                                         </div>
