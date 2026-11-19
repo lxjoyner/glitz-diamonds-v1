@@ -29,7 +29,7 @@ const money = (value: number) => new Intl.NumberFormat("en-US", { style: "curren
 function DateField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
     const ref = useRef<HTMLInputElement | null>(null);
     return (
-        <label className="grid gap-2">
+        <label data-tour={label === "Bill Date" ? "bill-date" : label === "Due Date" ? "bill-due" : undefined} className="grid gap-2">
             <span className="font-semibold text-slate-600">{label}</span>
             <div className="relative">
                 <input ref={ref} type="date" value={value} onChange={(e) => onChange(e.target.value)} className="w-full rounded-xl border border-blue-300 bg-white px-4 py-3 pr-14 [&::-webkit-calendar-picker-indicator]:opacity-0" />
@@ -148,7 +148,7 @@ export default function VendorCreateBillPage() {
                         <div className="space-y-5">
                             <label className="grid gap-2">
                                 <span className="font-semibold text-slate-600">Vendor <span className="text-red-600">*</span></span>
-                                <select value={selectedVendorId} onChange={(e) => {
+                                <select data-tour="bill-vendor" value={selectedVendorId} onChange={(e) => {
                                     const nextId = Number(e.target.value);
                                     setSelectedVendorId(nextId);
                                     const selected = vendors.find((vendor) => vendor.id === nextId);
@@ -170,7 +170,7 @@ export default function VendorCreateBillPage() {
                             <DateField label="Due Date" value={dueDate} onChange={setDueDate} />
                             <label className="grid gap-2">
                                 <span className="font-semibold text-slate-600">P.O./S.O.</span>
-                                <input value={purchaseOrder} onChange={(e) => setPurchaseOrder(e.target.value)} className="rounded-xl border border-slate-300 bg-white px-4 py-3" />
+                                <input data-tour="bill-reference" value={purchaseOrder} onChange={(e) => setPurchaseOrder(e.target.value)} className="rounded-xl border border-slate-300 bg-white px-4 py-3" />
                             </label>
                         </div>
 
@@ -181,12 +181,12 @@ export default function VendorCreateBillPage() {
                             </label>
                             <label className="grid gap-2">
                                 <span className="font-semibold text-slate-600">Notes</span>
-                                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={5} className="rounded-xl border border-slate-300 bg-white px-4 py-3" />
+                                <textarea data-tour="bill-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={5} className="rounded-xl border border-slate-300 bg-white px-4 py-3" />
                             </label>
                         </div>
                     </section>
 
-                    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <section data-tour="bill-items" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[1180px] border-collapse">
                                 <thead>
@@ -223,7 +223,7 @@ export default function VendorCreateBillPage() {
 
                         <div className="flex flex-wrap items-start justify-between gap-6 border-t border-slate-200 px-3 py-4">
                             <button type="button" onClick={addLine} className="font-semibold text-blue-700 hover:underline">⊕ Add a line</button>
-                            <div className="min-w-[280px] space-y-2 text-sm">
+                            <div data-tour="bill-totals" className="min-w-[280px] space-y-2 text-sm">
                                 <div className="flex justify-between gap-8"><span>Subtotal:</span><span>{money(totals.subtotal)}</span></div>
                                 <div className="flex justify-between gap-8"><span>Total tax (USD):</span><span>{money(totals.totalTax)}</span></div>
                                 <div className="flex justify-between gap-8"><span>Total Paid (USD):</span><span>{money(0)}</span></div>
@@ -234,7 +234,7 @@ export default function VendorCreateBillPage() {
 
                     <div className="mt-5 flex justify-end gap-3">
                         <button type="button" onClick={() => router.push("/admin/vendors")} className="rounded-full border border-blue-600 bg-white px-6 py-3 font-semibold text-blue-700 hover:bg-blue-50">Cancel</button>
-                        <button disabled={saving} className="rounded-full bg-blue-700 px-8 py-3 font-semibold text-white hover:bg-blue-800 disabled:opacity-50">{saving ? "Saving..." : "Save"}</button>
+                        <button data-tour="bill-save" disabled={saving} className="rounded-full bg-blue-700 px-8 py-3 font-semibold text-white hover:bg-blue-800 disabled:opacity-50">{saving ? "Saving..." : "Save"}</button>
                     </div>
                 </form>
             </div>

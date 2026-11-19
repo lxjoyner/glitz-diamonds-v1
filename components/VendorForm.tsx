@@ -120,12 +120,12 @@ export default function VendorForm({ vendorId }: { vendorId?: number }) {
                 <form onSubmit={submit} className="space-y-6 rounded-2xl bg-white p-6 shadow-sm">
                     <label className="grid gap-2 md:grid-cols-[180px_1fr] md:items-center">
                         <span className="font-semibold text-slate-700">Vendor Name<span className="text-red-600">*</span></span>
-                        <input value={value.vendorName} onChange={(e) => update("vendorName", e.target.value)} required className="rounded-xl border border-blue-300 px-4 py-3" />
+                        <input data-tour="vendor-name" value={value.vendorName} onChange={(e) => update("vendorName", e.target.value)} required className="rounded-xl border border-blue-300 px-4 py-3" />
                     </label>
 
                     <div className="grid gap-3 md:grid-cols-[180px_1fr]">
                         <span className="font-semibold text-slate-700">Type</span>
-                        <div className="space-y-4">
+                        <div data-tour="vendor-type" className="space-y-4">
                             <label className="flex items-start gap-3">
                                 <input type="radio" name="vendorType" checked={value.vendorType === "regular"} onChange={() => update("vendorType", "regular")} className="mt-1 h-5 w-5" />
                                 <span><span className="font-medium">Regular</span><span className="block text-sm text-slate-600">Companies that provide goods and services to your business (e.g. Internet and utility providers).</span></span>
@@ -139,7 +139,7 @@ export default function VendorForm({ vendorId }: { vendorId?: number }) {
 
                     {editing && <hr className="border-slate-200" />}
 
-                    <div className="grid gap-5">
+                    <div data-tour="vendor-contact" className="grid gap-5">
                         {[
                             ["firstName", "First name"],
                             ["lastName", "Last name"],
@@ -159,19 +159,19 @@ export default function VendorForm({ vendorId }: { vendorId?: number }) {
 
                         <label className="grid gap-2 md:grid-cols-[180px_1fr] md:items-center">
                             <span className="font-semibold text-slate-700">Currency</span>
-                            <select value={value.currency} onChange={(e) => update("currency", e.target.value)} className="rounded-xl border border-blue-300 px-4 py-3">
+                            <select data-tour="vendor-currency" value={value.currency} onChange={(e) => update("currency", e.target.value)} className="rounded-xl border border-blue-300 px-4 py-3">
                                 <option value="USD">USD - U.S. dollar</option>
                             </select>
                         </label>
 
                         <label className="grid gap-2 md:grid-cols-[180px_1fr] md:items-start">
                             <span className="font-semibold text-slate-700">Additional information</span>
-                            <textarea value={value.additionalInfo} onChange={(e) => update("additionalInfo", e.target.value)} rows={4} placeholder="(Optional)" className="rounded-xl border border-blue-300 px-4 py-3" />
+                            <textarea data-tour="vendor-notes" value={value.additionalInfo} onChange={(e) => update("additionalInfo", e.target.value)} rows={4} placeholder="(Optional)" className="rounded-xl border border-blue-300 px-4 py-3" />
                         </label>
                     </div>
 
                     <div className="pl-0 md:pl-[180px]">
-                        <button disabled={saving} className="rounded-full bg-blue-700 px-8 py-3 font-semibold text-white hover:bg-blue-800 disabled:opacity-50">{saving ? "Saving..." : "Save"}</button>
+                        <button data-tour="vendor-save" disabled={saving} className="rounded-full bg-blue-700 px-8 py-3 font-semibold text-white hover:bg-blue-800 disabled:opacity-50">{saving ? "Saving..." : "Save"}</button>
                     </div>
                 </form>
             </div>
