@@ -122,10 +122,10 @@ function AccountTransactionsContent() {
                         <h1 className="text-4xl font-bold tracking-tight">Account Transactions</h1>
                         <p className="mt-1 text-sm text-slate-500">{customerName}</p>
                     </div>
-                    <button type="button" onClick={() => window.print()} className="rounded-full border border-blue-600 bg-white px-6 py-3 font-semibold text-blue-700">Export</button>
+                    <button data-tour="transactions-export" type="button" onClick={() => window.print()} className="rounded-full border border-blue-600 bg-white px-6 py-3 font-semibold text-blue-700">Export</button>
                 </div>
 
-                <section className="mb-8 rounded-2xl bg-slate-200/70 p-5">
+                <section data-tour="transactions-date-range" className="mb-8 rounded-2xl bg-slate-200/70 p-5">
                     <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(20rem,1.5fr)_auto]">
                         <label className="grid min-w-0 gap-2">
                             <span className="font-semibold text-slate-600">Account</span>
@@ -206,11 +206,11 @@ function AccountTransactionsContent() {
                             </label>
                         </div>
 
-                        <button type="button" onClick={() => loadReport()} className="w-full min-w-0 self-end rounded-full bg-blue-700 px-5 py-3 font-semibold text-white sm:col-span-2 2xl:col-span-1 2xl:whitespace-nowrap">Update Report</button>
+                        <button data-tour="transactions-update" type="button" onClick={() => loadReport()} className="w-full min-w-0 self-end rounded-full bg-blue-700 px-5 py-3 font-semibold text-white sm:col-span-2 2xl:col-span-1 2xl:whitespace-nowrap">Update Report</button>
 
                         <label className="grid min-w-0 gap-2">
                             <span className="font-semibold text-slate-600">Report Type</span>
-                            <select value={reportType} onChange={(e) => setReportType(e.target.value)} className="w-full min-w-0 rounded-xl border border-blue-300 bg-white px-4 py-3">
+                            <select data-tour="transactions-type" value={reportType} onChange={(e) => setReportType(e.target.value)} className="w-full min-w-0 rounded-xl border border-blue-300 bg-white px-4 py-3">
                                 <option value="accrual">Accrual (Paid & Unpaid)</option>
                                 <option value="cash">Cash Basis (Paid)</option>
                                 <option value="cash_only">Cash Only</option>
@@ -221,6 +221,7 @@ function AccountTransactionsContent() {
                             <span className="font-semibold text-slate-600">Contact</span>
                             <select
                                 className="w-full min-w-0 rounded-xl border border-blue-300 bg-white px-4 py-3"
+                                data-tour="transactions-contact"
                                 value={memberId}
                                 onChange={(e) => {
                                     const nextMemberId = Number(e.target.value);
@@ -244,7 +245,7 @@ function AccountTransactionsContent() {
 
                 {message && <p className="mb-4 rounded-lg bg-red-50 p-3 text-red-700">{message}</p>}
 
-                <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <section data-tour="transactions-table" className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <table className="w-full border-collapse">
                         <thead>
                             <tr className="border-b border-slate-200 text-left">
