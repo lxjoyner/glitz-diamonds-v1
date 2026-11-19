@@ -189,23 +189,23 @@ export default function RecurringInvoicesPage() {
             <div className="mx-auto max-w-[1500px]">
                 <header className="mb-7 flex min-h-[108px] flex-wrap items-center justify-between gap-4 px-4 py-6 sm:px-6">
                     <h1 className="text-4xl font-bold tracking-tight text-white">Recurring invoices</h1>
-                    <Link href="/admin/invoices/recurring/new" className="rounded-full bg-black px-6 py-3.5 font-semibold text-white hover:bg-slate-900">Create a recurring invoice</Link>
+                    <Link data-tour="recurring-create-link" href="/admin/invoices/recurring/new" className="rounded-full bg-black px-6 py-3.5 font-semibold text-white hover:bg-slate-900">Create a recurring invoice</Link>
                 </header>
 
                 <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-5">
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div><h2 className="text-lg font-bold">Automatic invoice scheduler</h2>
+                        <div data-tour="recurring-scheduler-summary"><h2 className="text-lg font-bold">Automatic invoice scheduler</h2>
                             <p className="text-sm text-slate-600">Due-date invoices are generated and emailed only when the Hostinger cron calls the protected endpoint 5 minutes after each hour of the day.</p>
                         </div>
-                        <button type="button" className="rounded-full border border-blue-700 px-4 py-2 font-semibold text-blue-700"
+                        <button data-tour="recurring-scheduler-toggle" type="button" className="rounded-full border border-blue-700 px-4 py-2 font-semibold text-blue-700"
                             onClick={() => { if (!showScheduler) loadScheduler(); setShowScheduler(!showScheduler); }}>
                             {showScheduler ? "Hide scheduler status" : "Scheduler status"}
                         </button>
                     </div>
-                    {showScheduler && <div className="mt-4 space-y-4">
+                    {showScheduler && <div data-tour="recurring-scheduler-history" className="mt-4 space-y-4">
                         <div className="flex flex-wrap gap-3">
                             <button type="button" onClick={loadScheduler} disabled={schedulerBusy} className="rounded-full border px-4 py-2 disabled:opacity-50">Refresh</button>
-                            <button type="button" onClick={runScheduler} disabled={schedulerBusy} className="rounded-full bg-blue-700 px-5 py-2 font-semibold text-white disabled:opacity-50">
+                            <button data-tour="recurring-scheduler-run" type="button" onClick={runScheduler} disabled={schedulerBusy} className="rounded-full bg-blue-700 px-5 py-2 font-semibold text-white disabled:opacity-50">
                                 {schedulerBusy ? "Working..." : "Run due invoices now"}
                             </button>
                         </div>
@@ -250,7 +250,7 @@ export default function RecurringInvoicesPage() {
                         )}
                     </div>
 
-                    <div className="mb-8 flex flex-wrap justify-center gap-1 border-b border-slate-200 pb-5">
+                    <div data-tour="recurring-filter-tabs" className="mb-8 flex flex-wrap justify-center gap-1 border-b border-slate-200 pb-5">
                         <button onClick={() => setTab("active")} className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold ${tab === "active" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}><span>Active</span><span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-green-600 px-2 text-sm font-bold leading-none text-white">{activeCount}</span></button>
                         <button onClick={() => setTab("draft")} className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold ${tab === "draft" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}><span>Draft</span><span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-yellow-300 px-2 text-sm font-bold leading-none text-black">{draftCount}</span></button>
                         <button onClick={() => setTab("all")} className={`rounded-xl px-5 py-2.5 font-semibold ${tab === "all" ? "bg-blue-100 text-blue-900 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}>All recurring invoices</button>
@@ -290,8 +290,8 @@ export default function RecurringInvoicesPage() {
                                             <td className="px-3 py-4">{displayDate(row.next_invoice_date)}</td>
                                             <td className="px-3 py-4 text-right">{money(row.amount_cents)}</td>
                                             <td className="relative px-3 py-4 text-right" onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
-                                                <button onClick={() => setOpenMenuId(openMenuId === row.id ? null : row.id)} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-blue-600 text-blue-700 hover:bg-blue-50" aria-label={`Actions for ${row.member_name || "recurring invoice"}`}>⌄</button>
-                                                {openMenuId === row.id && <div className="absolute right-3 z-50 mt-2 w-52 rounded-xl border border-slate-200 bg-white py-2 text-left shadow-xl"><Link href={viewHref} className="block px-4 py-2 hover:bg-slate-50">View</Link><Link href={`/admin/invoices/recurring/${row.id}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit</Link>{row.status !== "ended" && <button onClick={() => endRecurring(row)} className="block w-full px-4 py-2 text-left text-red-700 hover:bg-red-50">End</button>}<button onClick={() => deleteRecurring(row)} className="block w-full px-4 py-2 text-left text-red-700 hover:bg-red-50">Delete permanently</button><Link href="/admin/invoices" className="block px-4 py-2 hover:bg-slate-50">View created invoices</Link><Link href={`/admin/invoices/recurring/${row.id}/duplicate`} className="block px-4 py-2 hover:bg-slate-50">Duplicate</Link></div>}
+                                                <button data-tour={row.id === paginated[0]?.id ? "recurring-row-actions" : undefined} onClick={() => setOpenMenuId(openMenuId === row.id ? null : row.id)} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-blue-600 text-blue-700 hover:bg-blue-50" aria-label={`Actions for ${row.member_name || "recurring invoice"}`}>⌄</button>
+                                                {openMenuId === row.id && <div data-tour={row.id === paginated[0]?.id ? "recurring-actions-menu" : undefined} className="absolute right-3 z-50 mt-2 w-52 rounded-xl border border-slate-200 bg-white py-2 text-left shadow-xl"><Link href={viewHref} className="block px-4 py-2 hover:bg-slate-50">View</Link><Link href={`/admin/invoices/recurring/${row.id}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit</Link>{row.status !== "ended" && <button onClick={() => endRecurring(row)} className="block w-full px-4 py-2 text-left text-red-700 hover:bg-red-50">End</button>}<button onClick={() => deleteRecurring(row)} className="block w-full px-4 py-2 text-left text-red-700 hover:bg-red-50">Delete permanently</button><Link href="/admin/invoices" className="block px-4 py-2 hover:bg-slate-50">View created invoices</Link><Link href={`/admin/invoices/recurring/${row.id}/duplicate`} className="block px-4 py-2 hover:bg-slate-50">Duplicate</Link></div>}
                                             </td>
                                         </tr>;
                                     })}</tbody>

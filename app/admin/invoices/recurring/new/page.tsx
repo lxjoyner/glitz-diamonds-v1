@@ -115,7 +115,7 @@ export default function NewRecurringInvoicePage() {
             <div className="mx-auto max-w-[1500px]">
                 <header className="mb-6 flex min-h-[108px] flex-wrap items-center justify-between gap-5 px-4 py-5 sm:px-6 sm:py-6">
                     <h1 className="text-4xl font-bold tracking-tight leading-tight text-white">New recurring invoice</h1>
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div data-tour="recurring-save" className="flex flex-wrap items-center gap-3">
                         <button type="button" onClick={() => window.print()} className="rounded-full border border-blue-600 bg-white px-5 py-3 font-semibold text-blue-700">Preview</button>
                         <button type="button" onClick={save} disabled={saving} className="rounded-full bg-black px-6 py-3 font-semibold text-white hover:bg-slate-900 disabled:opacity-60">{saving ? "Saving..." : "Save and continue"}</button>
                     </div>
@@ -150,7 +150,7 @@ export default function NewRecurringInvoicePage() {
                     <div className="grid gap-8 p-6 md:grid-cols-2 md:p-8">
                         <div>
                             {!selectedMember ? (
-                                <div className="max-w-sm">
+                                <div data-tour="recurring-customer" className="max-w-sm">
                                     <button type="button" onClick={() => setShowCustomerPicker((current) => !current)} className="flex min-h-32 w-full items-center justify-center gap-3 rounded-xl border border-slate-300 bg-white font-semibold text-blue-700 hover:bg-blue-50">
                                         <span className="text-2xl" aria-hidden="true">♙</span>
                                         <span>＋ Add a customer</span>
@@ -171,7 +171,7 @@ export default function NewRecurringInvoicePage() {
                                     ) : null}
                                 </div>
                             ) : (
-                                <div>
+                                <div data-tour="recurring-customer">
                                     <p className="text-xs font-semibold">Bill to</p>
                                     <p className="mt-1 font-semibold">{selectedMember.full_name}</p>
                                     {selectedMember.address ? <p className="mt-1 whitespace-pre-line text-sm">{selectedMember.address}</p> : null}
@@ -196,21 +196,21 @@ export default function NewRecurringInvoicePage() {
 
                         <div className="space-y-4">
                             <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">Invoice number</span><input value="Auto-generated" disabled className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-500" /></label>
-                            <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">P.O./S.O. number</span><input value={referenceNumber} onChange={(e) => setReferenceNumber(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2" /></label>
+                            <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">P.O./S.O. number</span><input data-tour="recurring-reference" value={referenceNumber} onChange={(e) => setReferenceNumber(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2" /></label>
                             <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">Invoice date</span><input value="Auto-generated" disabled className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-500" /></label>
-                            <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">Payment due</span><select value={paymentDue} onChange={(e) => setPaymentDue(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2"><option value="on_receipt">On Receipt</option><option value="7">Within 7 days</option><option value="15">Within 15 days</option><option value="30">Within 30 days</option></select></label>
-                            <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">Status</span><select value={status} onChange={(e) => setStatus(e.target.value as "active" | "draft")} className="rounded-lg border border-slate-300 px-3 py-2"><option value="active">Active</option><option value="draft">Draft</option></select></label>
-                            <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">Repeat monthly on</span><input type="number" min="1" max="28" value={repeatDay} onChange={(e) => setRepeatDay(Number(e.target.value))} className="rounded-lg border border-slate-300 px-3 py-2" /></label>
-                            <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">First invoice</span><InvoiceDatePicker value={firstInvoiceDate} onChange={(value) => { setFirstInvoiceDate(value); setNextInvoiceDate(value); }} ariaLabel="First invoice date" /></label>
+                            <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">Payment due</span><select data-tour="recurring-payment-due" value={paymentDue} onChange={(e) => setPaymentDue(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2"><option value="on_receipt">On Receipt</option><option value="7">Within 7 days</option><option value="15">Within 15 days</option><option value="30">Within 30 days</option></select></label>
+                            <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">Status</span><select data-tour="recurring-status" value={status} onChange={(e) => setStatus(e.target.value as "active" | "draft")} className="rounded-lg border border-slate-300 px-3 py-2"><option value="active">Active</option><option value="draft">Draft</option></select></label>
+                            <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">Repeat monthly on</span><input data-tour="recurring-repeat-day" type="number" min="1" max="28" value={repeatDay} onChange={(e) => setRepeatDay(Number(e.target.value))} className="rounded-lg border border-slate-300 px-3 py-2" /></label>
+                            <label className="grid grid-cols-[140px_1fr] items-center gap-3 text-sm"><span className="font-semibold">First invoice</span><span data-tour="recurring-first-date" className="min-w-0"><InvoiceDatePicker value={firstInvoiceDate} onChange={(value) => { setFirstInvoiceDate(value); setNextInvoiceDate(value); }} ariaLabel="First invoice date" /></span></label>
                         </div>
                     </div>
 
                     <div className="border-y border-slate-200 bg-slate-100 px-6 py-3 text-sm font-semibold"><div className="grid grid-cols-[1fr_100px_140px_140px_44px] gap-3"><span>Items</span><span>Quantity</span><span>Price</span><span className="text-right">Amount</span><span /></div></div>
                     <div className="divide-y divide-slate-100">
                         {items.map((item, index) => <div key={index} className="grid grid-cols-[1fr_100px_140px_140px_44px] gap-3 px-6 py-4">
-                            <input value={item.description} onChange={(e) => updateItem(index, "description", e.target.value)} placeholder="Item description" className="rounded-lg border border-slate-300 px-3 py-2" />
-                            <input type="number" min="0.01" step="0.01" value={item.quantity} onChange={(e) => updateItem(index, "quantity", e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2" />
-                            <input type="number" min="0" step="0.01" value={item.unitPrice} onChange={(e) => updateItem(index, "unitPrice", e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2" />
+                            <input data-tour={index === 0 ? "recurring-line-description" : undefined} value={item.description} onChange={(e) => updateItem(index, "description", e.target.value)} placeholder="Item description" className="rounded-lg border border-slate-300 px-3 py-2" />
+                            <input data-tour={index === 0 ? "recurring-line-quantity" : undefined} type="number" min="0.01" step="0.01" value={item.quantity} onChange={(e) => updateItem(index, "quantity", e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2" />
+                            <input data-tour={index === 0 ? "recurring-line-price" : undefined} type="number" min="0" step="0.01" value={item.unitPrice} onChange={(e) => updateItem(index, "unitPrice", e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2" />
                             <div className="py-2 text-right font-semibold">{money(item.quantity * item.unitPrice)}</div>
                             <button type="button" onClick={() => setItems((current) => current.filter((_, i) => i !== index))} disabled={items.length === 1} className="text-xl text-slate-400 disabled:opacity-30">×</button>
                         </div>)}
@@ -220,9 +220,9 @@ export default function NewRecurringInvoicePage() {
                     <div className="grid gap-8 border-t border-slate-200 p-6 md:grid-cols-2">
                         <div>
                             <label className="mb-2 block text-sm font-semibold">Notes / Terms</label>
-                            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} placeholder="Enter notes or terms of service that are visible to your customer" className="w-full rounded-xl border border-slate-300 p-3" />
+                            <textarea data-tour="recurring-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} placeholder="Enter notes or terms of service that are visible to your customer" className="w-full rounded-xl border border-slate-300 p-3" />
                         </div>
-                        <div className="space-y-3 text-sm">
+                        <div data-tour="recurring-total" className="space-y-3 text-sm">
                             <div className="flex justify-between"><span>Subtotal</span><strong>{money(subtotal)}</strong></div>
                             <div className="flex justify-between border-t border-slate-200 pt-4 text-xl"><strong>Total</strong><strong>{money(total)}</strong></div>
                         </div>
