@@ -5,7 +5,7 @@ export type GuidedTourStep = {
     title: string;
     description: string;
     /** Route pattern: dynamic invoice ID is accepted only on the recording page. */
-    path: "/admin/invoices" | "/admin/invoices/new" | "/admin/invoices/recurring" | "/admin/invoices/recurring/new" | "/admin/invoices/[id]/record-payment" | "/admin/invoices/[id]/reverse-payment" | "/admin/vendors/bills" | "/admin/reports/income-by-customer" | "/admin/reports/account-transactions" | "/admin/reports/balance-sheet";
+    path: "/admin/invoices" | "/admin/invoices/new" | "/admin/invoices/recurring" | "/admin/invoices/recurring/new" | "/admin/invoices/[id]/record-payment" | "/admin/invoices/[id]/reverse-payment" | "/admin/vendors/bills" | "/admin/reports/income-by-customer" | "/admin/reports/account-transactions" | "/admin/reports/balance-sheet" | "/admin/vendors" | "/admin/vendors/new" | "/admin/vendors/[id]/edit" | "/admin/vendors/[id]/create-bill";
     /** A real click is required to proceed; no financial action is performed by the tour. */
     advanceOnClick?: boolean;
 };
@@ -20,6 +20,9 @@ export type GuidedTour = {
 };
 
 export function stepMatchesPath(path: GuidedTourStep["path"], pathname: string): boolean {
+    if (path === "/admin/vendors/[id]/edit") return /^\/admin\/vendors\/\d+\/edit$/.test(pathname);
+    if (path === "/admin/vendors/[id]/create-bill") return /^\/admin\/vendors\/\d+\/create-bill$/.test(pathname);
+    if (path === "/admin/vendors" || path === "/admin/vendors/new") return pathname === path;
     if (path === "/admin/vendors/bills" || path === "/admin/reports/income-by-customer" || path === "/admin/reports/account-transactions" || path === "/admin/reports/balance-sheet") return pathname === path;
     if (path === "/admin/invoices" || path === "/admin/invoices/new" || path === "/admin/invoices/recurring" || path === "/admin/invoices/recurring/new") return pathname === path;
     if (path === "/admin/invoices/[id]/record-payment") return /^\/admin\/invoices\/\d+\/record-payment$/.test(pathname);
@@ -211,6 +214,68 @@ const RECURRING_CREATE_STEPS: readonly GuidedTourStep[] = [
 ];
 
 export const GUIDED_TOURS: readonly GuidedTour[] = [
+    { id: "vendor-directory", title: "Explore Vendor Management", path: "/admin/vendors", helpTopicId: "vendors", roles: ["admin", "treasurer"], steps: [
+            { selector: '[data-tour="vendor-directory-table"]', title: "Review the vendor directory", description: "The directory shows vendor names, email addresses, and available actions. Direct deposit is currently marked Not available.", path: "/admin/vendors" },
+            { selector: '[data-tour="vendor-directory-add"]', title: "Add a vendor", description: "Choose Add a vendor to open the vendor form. This guide only explains where to start; it does not create a record.", path: "/admin/vendors" },
+            { selector: '[data-tour="vendor-directory-actions"]', title: "Review vendor actions", description: "On a vendor row, use the Actions menu to Edit, Create bill, or Delete. Delete can permanently remove a vendor; the guide will not click it.", path: "/admin/vendors" },
+            { selector: '[data-tour="vendor-directory-bill"]', title: "Create a bill for a vendor", description: "The Create bill link opens a form for the selected vendor. Bill creation is a separate financial action.", path: "/admin/vendors" },
+    ] },
+    { id: "vendor-create", title: "Add a Vendor", path: "/admin/vendors", helpTopicId: "vendors", roles: ["admin", "treasurer"], steps: [
+            { selector: '[data-tour="vendor-directory-add"]', title: "Open the vendor form", description: "Click Add a vendor to open the form. The guide will continue on the next page.", path: "/admin/vendors", advanceOnClick: true },
+            { selector: '[data-tour="vendor-name"]', title: "Enter vendor name", description: "Enter the legal or recognizable vendor name. This is required.", path: "/admin/vendors/new" },
+            { selector: '[data-tour="vendor-type"]', title: "Select vendor type", description: "Choose Regular or 1099-NEC contractor as appropriate for your records. This does not create tax forms.", path: "/admin/vendors/new" },
+            { selector: '[data-tour="vendor-contact"]', title: "Review contact details", description: "Provide optional contact name, email, address and location details used in your vendor directory.", path: "/admin/vendors/new" },
+            { selector: '[data-tour="vendor-currency"]', title: "Review currency", description: "Currency currently offers USD.", path: "/admin/vendors/new" },
+            { selector: '[data-tour="vendor-notes"]', title: "Optional additional information", description: "Add notes useful for managing this vendor.", path: "/admin/vendors/new" },
+            { selector: '[data-tour="vendor-save"]', title: "Review before saving", description: "Finish the guide first. Saving separately creates or updates a REAL vendor record; the guide never submits the form.", path: "/admin/vendors/new" },
+    ] },
+    { id: "vendor-create-on-page", title: "Add a Vendor", path: "/admin/vendors/new", helpTopicId: "vendors", roles: ["admin", "treasurer"], steps: [
+            { selector: '[data-tour="vendor-name"]', title: "Enter vendor name", description: "Enter the legal or recognizable vendor name. This is required.", path: "/admin/vendors/new" },
+            { selector: '[data-tour="vendor-type"]', title: "Select vendor type", description: "Choose Regular or 1099-NEC contractor as appropriate for your records. This does not create tax forms.", path: "/admin/vendors/new" },
+            { selector: '[data-tour="vendor-contact"]', title: "Review contact details", description: "Provide optional contact name, email, address and location details used in your vendor directory.", path: "/admin/vendors/new" },
+            { selector: '[data-tour="vendor-currency"]', title: "Review currency", description: "Currency currently offers USD.", path: "/admin/vendors/new" },
+            { selector: '[data-tour="vendor-notes"]', title: "Optional additional information", description: "Add notes useful for managing this vendor.", path: "/admin/vendors/new" },
+            { selector: '[data-tour="vendor-save"]', title: "Review before saving", description: "Finish the guide first. Saving separately creates or updates a REAL vendor record; the guide never submits the form.", path: "/admin/vendors/new" },
+    ] },
+    { id: "vendor-edit", title: "Edit an Existing Vendor", path: "/admin/vendors", helpTopicId: "vendors", roles: ["admin", "treasurer"], steps: [
+            { selector: '[data-tour="vendor-directory-actions"]', title: "Open vendor actions", description: "Check the highlighted vendor row, then click its Actions dropdown. This step does not edit or delete the vendor.", path: "/admin/vendors", advanceOnClick: true },
+            { selector: '[data-tour="vendor-directory-edit"]', title: "Open Edit", description: "Click Edit to open the selected vendor record and continue the guide.", path: "/admin/vendors", advanceOnClick: true },
+            { selector: '[data-tour="vendor-name"]', title: "Enter vendor name", description: "Enter the legal or recognizable vendor name. This is required.", path: "/admin/vendors/[id]/edit" },
+            { selector: '[data-tour="vendor-type"]', title: "Select vendor type", description: "Choose Regular or 1099-NEC contractor as appropriate for your records. This does not create tax forms.", path: "/admin/vendors/[id]/edit" },
+            { selector: '[data-tour="vendor-contact"]', title: "Review contact details", description: "Provide optional contact name, email, address and location details used in your vendor directory.", path: "/admin/vendors/[id]/edit" },
+            { selector: '[data-tour="vendor-currency"]', title: "Review currency", description: "Currency currently offers USD.", path: "/admin/vendors/[id]/edit" },
+            { selector: '[data-tour="vendor-notes"]', title: "Optional additional information", description: "Add notes useful for managing this vendor.", path: "/admin/vendors/[id]/edit" },
+            { selector: '[data-tour="vendor-save"]', title: "Review before saving", description: "Finish the guide first. Saving separately creates or updates a REAL vendor record; the guide never submits the form.", path: "/admin/vendors/[id]/edit" },
+    ] },
+    { id: "vendor-edit-on-page", title: "Edit an Existing Vendor", path: "/admin/vendors/[id]/edit", helpTopicId: "vendors", roles: ["admin", "treasurer"], steps: [
+            { selector: '[data-tour="vendor-name"]', title: "Enter vendor name", description: "Enter the legal or recognizable vendor name. This is required.", path: "/admin/vendors/[id]/edit" },
+            { selector: '[data-tour="vendor-type"]', title: "Select vendor type", description: "Choose Regular or 1099-NEC contractor as appropriate for your records. This does not create tax forms.", path: "/admin/vendors/[id]/edit" },
+            { selector: '[data-tour="vendor-contact"]', title: "Review contact details", description: "Provide optional contact name, email, address and location details used in your vendor directory.", path: "/admin/vendors/[id]/edit" },
+            { selector: '[data-tour="vendor-currency"]', title: "Review currency", description: "Currency currently offers USD.", path: "/admin/vendors/[id]/edit" },
+            { selector: '[data-tour="vendor-notes"]', title: "Optional additional information", description: "Add notes useful for managing this vendor.", path: "/admin/vendors/[id]/edit" },
+            { selector: '[data-tour="vendor-save"]', title: "Review before saving", description: "Finish the guide first. Saving separately creates or updates a REAL vendor record; the guide never submits the form.", path: "/admin/vendors/[id]/edit" },
+    ] },
+    { id: "vendor-create-bill", title: "Create a Vendor Bill", path: "/admin/vendors", helpTopicId: "vendors", roles: ["admin", "treasurer"], steps: [
+            { selector: '[data-tour="vendor-directory-bill"]', title: "Open Create bill", description: "Click Create bill on the appropriate vendor row to open the bill form. The guide follows you to that vendor's bill form.", path: "/admin/vendors", advanceOnClick: true },
+            { selector: '[data-tour="bill-vendor"]', title: "Confirm the vendor", description: "Check that the bill is assigned to the intended vendor.", path: "/admin/vendors/[id]/create-bill" },
+            { selector: '[data-tour="bill-date"]', title: "Set bill date", description: "Enter the date shown on the vendor bill.", path: "/admin/vendors/[id]/create-bill" },
+            { selector: '[data-tour="bill-due"]', title: "Set due date", description: "Enter when the bill must be paid.", path: "/admin/vendors/[id]/create-bill" },
+            { selector: '[data-tour="bill-reference"]', title: "Enter reference information", description: "Add a P.O./S.O. number and bill number when provided by the vendor.", path: "/admin/vendors/[id]/create-bill" },
+            { selector: '[data-tour="bill-notes"]', title: "Optional notes", description: "Use Notes to capture additional context before saving.", path: "/admin/vendors/[id]/create-bill" },
+            { selector: '[data-tour="bill-items"]', title: "Complete bill line items", description: "Enter item, expense category, description, quantity, price and tax. Review all rows; more can be added.", path: "/admin/vendors/[id]/create-bill" },
+            { selector: '[data-tour="bill-totals"]', title: "Review amount due", description: "Confirm subtotal, taxes and Amount Due. New bills show Total Paid as zero.", path: "/admin/vendors/[id]/create-bill" },
+            { selector: '[data-tour="bill-save"]', title: "Review before saving", description: "Finish the guide before taking action. Save creates a real vendor bill; the walkthrough never submits it.", path: "/admin/vendors/[id]/create-bill" },
+    ] },
+    { id: "vendor-create-bill-on-page", title: "Create a Vendor Bill", path: "/admin/vendors/[id]/create-bill", helpTopicId: "vendors", roles: ["admin", "treasurer"], steps: [
+            { selector: '[data-tour="bill-vendor"]', title: "Confirm the vendor", description: "Check that the bill is assigned to the intended vendor.", path: "/admin/vendors/[id]/create-bill" },
+            { selector: '[data-tour="bill-date"]', title: "Set bill date", description: "Enter the date shown on the vendor bill.", path: "/admin/vendors/[id]/create-bill" },
+            { selector: '[data-tour="bill-due"]', title: "Set due date", description: "Enter when the bill must be paid.", path: "/admin/vendors/[id]/create-bill" },
+            { selector: '[data-tour="bill-reference"]', title: "Enter reference information", description: "Add a P.O./S.O. number and bill number when provided by the vendor.", path: "/admin/vendors/[id]/create-bill" },
+            { selector: '[data-tour="bill-notes"]', title: "Optional notes", description: "Use Notes to capture additional context before saving.", path: "/admin/vendors/[id]/create-bill" },
+            { selector: '[data-tour="bill-items"]', title: "Complete bill line items", description: "Enter item, expense category, description, quantity, price and tax. Review all rows; more can be added.", path: "/admin/vendors/[id]/create-bill" },
+            { selector: '[data-tour="bill-totals"]', title: "Review amount due", description: "Confirm subtotal, taxes and Amount Due. New bills show Total Paid as zero.", path: "/admin/vendors/[id]/create-bill" },
+            { selector: '[data-tour="bill-save"]', title: "Review before saving", description: "Finish the guide before taking action. Save creates a real vendor bill; the walkthrough never submits it.", path: "/admin/vendors/[id]/create-bill" },
+    ] },
     {
         id: "report-income-overview",
         title: "Explore Income by Customer",
@@ -658,5 +723,5 @@ export const GUIDED_TOURS: readonly GuidedTour[] = [
 ];
 
 export function permittedTours(role: string, pathname: string): GuidedTour[] {
-    return GUIDED_TOURS.filter((tour) => (tour.path === pathname || (tour.path === "/admin/invoices/[id]/reverse-payment" && /^\/admin\/invoices\/\d+\/reverse-payment$/.test(pathname))) && tour.roles.some((allowed) => allowed === role));
+    return GUIDED_TOURS.filter((tour) => (tour.path === pathname || (tour.path === "/admin/invoices/[id]/reverse-payment" && stepMatchesPath("/admin/invoices/[id]/reverse-payment", pathname)) || (tour.path === "/admin/vendors/[id]/edit" && stepMatchesPath("/admin/vendors/[id]/edit", pathname)) || (tour.path === "/admin/vendors/[id]/create-bill" && stepMatchesPath("/admin/vendors/[id]/create-bill", pathname))) && tour.roles.some((allowed) => allowed === role));
 }
