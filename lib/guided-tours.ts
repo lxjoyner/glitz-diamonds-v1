@@ -5,7 +5,7 @@ export type GuidedTourStep = {
     title: string;
     description: string;
     /** Route pattern: dynamic invoice ID is accepted only on the recording page. */
-    path: "/admin/invoices" | "/admin/invoices/new" | "/admin/invoices/recurring" | "/admin/invoices/recurring/new" | "/admin/invoices/[id]/record-payment" | "/admin/invoices/[id]/reverse-payment";
+    path: "/admin/invoices" | "/admin/invoices/new" | "/admin/invoices/recurring" | "/admin/invoices/recurring/new" | "/admin/invoices/[id]/record-payment" | "/admin/invoices/[id]/reverse-payment" | "/admin/vendors/bills";
     /** A real click is required to proceed; no financial action is performed by the tour. */
     advanceOnClick?: boolean;
 };
@@ -20,6 +20,7 @@ export type GuidedTour = {
 };
 
 export function stepMatchesPath(path: GuidedTourStep["path"], pathname: string): boolean {
+    if (path === "/admin/vendors/bills") return pathname === path;
     if (path === "/admin/invoices" || path === "/admin/invoices/new" || path === "/admin/invoices/recurring" || path === "/admin/invoices/recurring/new") return pathname === path;
     if (path === "/admin/invoices/[id]/record-payment") return /^\/admin\/invoices\/\d+\/record-payment$/.test(pathname);
     return /^\/admin\/invoices\/\d+\/reverse-payment$/.test(pathname);
@@ -210,6 +211,65 @@ const RECURRING_CREATE_STEPS: readonly GuidedTourStep[] = [
 ];
 
 export const GUIDED_TOURS: readonly GuidedTour[] = [
+    {
+        id: "vendor-bill-record-payment",
+        title: "Record a Vendor Bill Payment",
+        path: "/admin/vendors/bills",
+        helpTopicId: "vendor-bills",
+        roles: ["admin", "treasurer"],
+        steps: [
+            {
+                selector: '[data-tour="vendor-bill-filter"]',
+                title: "Locate the vendor bill",
+                description: "Filter by vendor and bill dates if needed. Find the correct bill with an unpaid balance before recording a payment.",
+                path: "/admin/vendors/bills",
+            },
+            {
+                selector: '[data-tour="vendor-bill-record-button"]',
+                title: "Open the payment form",
+                description: "Check the vendor and remaining amount on the highlighted row. Click Record a payment to open the form. The guide will not record a payment.",
+                path: "/admin/vendors/bills",
+                advanceOnClick: true,
+            },
+            {
+                selector: '[data-tour="vendor-bill-payment-method"]',
+                title: "Choose the payment method",
+                description: "Choose how you paid the vendor. This form records an existing payment; it does not transfer money.",
+                path: "/admin/vendors/bills",
+            },
+            {
+                selector: '[data-tour="vendor-bill-payment-amount"]',
+                title: "Verify the amount",
+                description: "The amount starts at the remaining bill balance. Enter the actual amount paid and review the balance carefully, especially for partial payments.",
+                path: "/admin/vendors/bills",
+            },
+            {
+                selector: '[data-tour="vendor-bill-payment-date"]',
+                title: "Verify payment date",
+                description: "Select the date on which the vendor was paid.",
+                path: "/admin/vendors/bills",
+            },
+            {
+                selector: '[data-tour="vendor-bill-payment-account"]',
+                title: "Choose the payment account",
+                description: "Select the account from which the vendor payment was made.",
+                path: "/admin/vendors/bills",
+            },
+            {
+                selector: '[data-tour="vendor-bill-payment-memo"]',
+                title: "Add an optional memo",
+                description: "Enter a payment reference, check number, or other useful notes if available.",
+                path: "/admin/vendors/bills",
+            },
+            {
+                selector: '[data-tour="vendor-bill-payment-save"]',
+                title: "Review before saving",
+                description: "Finish this walkthrough first. Then verify the vendor, bill, amount, date, method, and account. Click Save separately only if you intend to record a REAL payment. The guide never saves payments.",
+                path: "/admin/vendors/bills",
+            },
+        ],
+    },
+
     {
         id: "recurring-create",
         title: "Create a Recurring Invoice",
