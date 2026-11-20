@@ -140,7 +140,10 @@ export default function HelpCenterPage() {
                                             <Link href="/profile?tour=member-profile-guide" className="mt-3 inline-flex self-start rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">Show Me How: Update My Profile</Link>
                                         )}
                                         {role === "member" && topic.id === "ideas" && (
-                                            <Link href="/admin/ideas-activities?tour=member-ideas-overview" className="mt-3 inline-flex self-start rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">Show Me How: Ideas & Activities</Link>
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                <Link href="/admin/ideas-activities?tour=member-suggestion-step-by-step" className="inline-flex self-start rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">Show Me How: Submit an Activity Suggestion</Link>
+                                                <Link href="/admin/ideas-activities?tour=member-ideas-overview" className="inline-flex self-start rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">Show Me How: Ideas & Activities Overview</Link>
+                                            </div>
                                         )}
                                         {role === "member" && topic.id === "calendar" && (
                                             <Link href="/calendar?tour=member-calendar-overview" className="mt-3 inline-flex self-start rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">Show Me How: Calendar</Link>

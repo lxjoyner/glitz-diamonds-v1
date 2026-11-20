@@ -219,6 +219,31 @@ const RECURRING_CREATE_STEPS: readonly GuidedTourStep[] = [
 ];
 
 export const GUIDED_TOURS: readonly GuidedTour[] = [
+    {
+        id: "member-suggestion-step-by-step",
+        title: "Submit an Activity Suggestion — Step by Step",
+        path: "/admin/ideas-activities",
+        helpTopicId: "ideas",
+        roles: ["member"],
+        steps: [
+            { selector: '[data-tour="member-suggestion-title"]', title: "Step 1: Name your activity", description: "Enter a short, clear activity title, such as Donation Drive or Women Group Trip. A title is required.", path: "/admin/ideas-activities" },
+            { selector: '[data-tour="member-suggestion-details"]', title: "Step 2: Describe your idea", description: "Explain what members would do and why the activity would be enjoyable or useful. Description/Details is required.", path: "/admin/ideas-activities" },
+            { selector: '[data-tour="member-suggestion-category"]', title: "Step 3: Choose the category", description: "Choose a meaningful category, such as Volunteer/Outreach, Wellness, Trip, Dining Out, Celebration, or Other.", path: "/admin/ideas-activities" },
+            { selector: '[data-tour="member-suggestion-purpose"]', title: "Step 4: Choose the purpose", description: "Select why you are suggesting the activity: Give Back, Build Connections, Relax and Recharge, Improve Health, or Personal Growth.", path: "/admin/ideas-activities" },
+            { selector: '[data-tour="member-suggestion-location-type"]', title: "Step 5: Choose the location type", description: "Specify whether the activity is Indoor, Outdoor, Virtual, or Hybrid.", path: "/admin/ideas-activities" },
+            { selector: '[data-tour="member-suggestion-location"]', title: "Step 6: Describe the location", description: "Enter a suggested venue, city, or virtual location. The location field is required.", path: "/admin/ideas-activities" },
+            { selector: '[data-tour="member-suggestion-budget"]', title: "Step 7: Estimate the cost", description: "Select the expected cost range from the available choices. This helps members judge the budget before supporting an idea.", path: "/admin/ideas-activities" },
+            { selector: '[data-tour="member-suggestion-time"]', title: "Step 8: Estimate time commitment", description: "Choose an expected duration or frequency, such as 4–8 hours, Half Day, Full Day, Weekend, or a recurring interval.", path: "/admin/ideas-activities" },
+            { selector: '[data-tour="member-suggestion-group"]', title: "Step 9: Estimate participants", description: "Enter how many people might participate, from 1 through 500. This field is required.", path: "/admin/ideas-activities" },
+            { selector: '[data-tour="member-suggestion-date-from"]', title: "Step 10: Choose the earliest preferred date", description: "Select Preferred Date From to indicate when the activity could begin. Both preferred dates are required by the existing form.", path: "/admin/ideas-activities" },
+            { selector: '[data-tour="member-suggestion-date-to"]', title: "Step 11: Choose the latest preferred date", description: "Select Preferred Date To to indicate the desired end of the scheduling window. Check both dates before sending.", path: "/admin/ideas-activities" },
+            { selector: '[data-tour="member-suggestion-file"]', title: "Step 12: Add a file if useful", description: "Optionally attach an image or PDF that helps explain the suggestion. This guide does not upload any file.", path: "/admin/ideas-activities" },
+            { selector: '[data-tour="member-suggestion-preview"]', title: "Step 13: Review the live preview", description: "As you type, the Live Preview Card summarizes your title, details, category, purpose, and location type. Confirm your wording.", path: "/admin/ideas-activities" },
+            { selector: '[data-tour="member-suggestion-submit"]', title: "Step 14: Submit the suggestion when ready", description: "Finish the guide first. Only click Submit yourself if you want to create a real submitted idea for community voting. The guide never submits.", path: "/admin/ideas-activities" },
+            { selector: '[data-tour="member-suggestion-draft"]', title: "Step 15: Save as a draft instead", description: "Save As Draft creates a real draft record, rather than submitting for voting. Finish the guide before saving; the guide never creates drafts.", path: "/admin/ideas-activities" },
+        ],
+    },
+
     { id: "member-dashboard-overview", title: "Explore Your Member Dashboard", path: "/admin/messages", helpTopicId: "dashboard", roles: ["member"], steps: [
         { selector: '[data-tour="member-dashboard-heading"]', title: "Your signed-in dashboard", description: "Confirm the signed-in username and member role. Members do not have the administrative settings, financial reports, or user-management panels shown to authorized staff.", path: "/admin/messages" },
         { selector: '[data-tour="member-dashboard-user"]', title: "Your account menu", description: "Use the user menu to see your signed-in account and log out. My Profile is also available from the top navigation.", path: "/admin/messages" },
