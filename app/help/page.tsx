@@ -133,6 +133,18 @@ export default function HelpCenterPage() {
                                                 </Link>
                                             </div>
                                         )}
+                                        {role === "member" && topic.id === "dashboard" && (
+                                            <Link href="/admin/messages?tour=member-dashboard-overview" className="mt-3 inline-flex self-start rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">Show Me How: My Dashboard</Link>
+                                        )}
+                                        {role === "member" && topic.id === "profile" && (
+                                            <Link href="/profile?tour=member-profile-guide" className="mt-3 inline-flex self-start rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">Show Me How: Update My Profile</Link>
+                                        )}
+                                        {role === "member" && topic.id === "ideas" && (
+                                            <Link href="/admin/ideas-activities?tour=member-ideas-overview" className="mt-3 inline-flex self-start rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">Show Me How: Ideas & Activities</Link>
+                                        )}
+                                        {role === "member" && topic.id === "calendar" && (
+                                            <Link href="/calendar?tour=member-calendar-overview" className="mt-3 inline-flex self-start rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">Show Me How: Calendar</Link>
+                                        )}
                                         {topic.id === "users" && role === "admin" && (
                                             <div className="mt-3 flex flex-wrap gap-2">
                                                 <Link href="/admin/membership?tour=members-directory" className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">Explore Member Directory</Link>
