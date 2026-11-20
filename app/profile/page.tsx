@@ -108,19 +108,19 @@ export default function ProfilePage() {
                             <h1 className="text-3xl font-semibold">My Profile</h1>
                             <p className="mt-2 text-sm text-slate-300">Review and update your member information.</p>
                         </div>
-                        <div className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-slate-300">
+                        <div data-tour="member-profile-summary" className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-slate-300">
                             <div><span className="font-semibold text-white">Username:</span> {form.username}</div>
                             <div><span className="font-semibold text-white">Status:</span> {form.isActive ? "Active" : "Inactive"}</div>
                         </div>
                     </div>
 
                     <div className="mt-8 grid gap-5 md:grid-cols-2">
-                        <label className="space-y-1"><span className="text-sm text-slate-300">Full Name</span><input value={form.fullName} onChange={(e) => updateField("fullName", e.target.value)} className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2" /></label>
+                        <label className="space-y-1"><span className="text-sm text-slate-300">Full Name</span><input data-tour="member-profile-contact" value={form.fullName} onChange={(e) => updateField("fullName", e.target.value)} className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2" /></label>
                         <label className="space-y-1"><span className="text-sm text-slate-300">Email</span><input type="email" value={form.email} onChange={(e) => updateField("email", e.target.value)} className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2" /></label>
                         <label className="space-y-1 md:col-span-2"><span className="text-sm text-slate-300">Address</span><input value={form.address} onChange={(e) => updateField("address", e.target.value)} className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2" /></label>
-                        <label className="space-y-1"><span className="text-sm text-slate-300">T-Shirt Size</span><select value={form.tshirtSize} onChange={(e) => updateField("tshirtSize", e.target.value)} className="w-full rounded-lg border border-white/15 bg-black px-3 py-2">{T_SHIRT_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</select></label>
+                        <label className="space-y-1"><span className="text-sm text-slate-300">T-Shirt Size</span><select data-tour="member-profile-sizes" value={form.tshirtSize} onChange={(e) => updateField("tshirtSize", e.target.value)} className="w-full rounded-lg border border-white/15 bg-black px-3 py-2">{T_SHIRT_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</select></label>
                         <label className="space-y-1"><span className="text-sm text-slate-300">Jacket Size</span><select value={form.jacketSize} onChange={(e) => updateField("jacketSize", e.target.value)} className="w-full rounded-lg border border-white/15 bg-black px-3 py-2"><option value="">Select size</option>{JACKET_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</select></label>
-                        <label className="space-y-1"><span className="text-sm text-slate-300">Favorite Color</span><input value={form.favoriteColor} onChange={(e) => updateField("favoriteColor", e.target.value)} className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2" /></label>
+                        <label className="space-y-1"><span className="text-sm text-slate-300">Favorite Color</span><input data-tour="member-profile-preferences" value={form.favoriteColor} onChange={(e) => updateField("favoriteColor", e.target.value)} className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2" /></label>
                         <label className="space-y-1"><span className="text-sm text-slate-300">Gender</span><select value={form.gender} onChange={(e) => updateField("gender", e.target.value)} className="w-full rounded-lg border border-white/15 bg-black px-3 py-2"><option value="">Select gender</option>{GENDERS.map((gender) => <option key={gender} value={gender}>{gender}</option>)}</select></label>
                         <label className="space-y-1"><span className="text-sm text-slate-300">Birthday (MM/DD)</span><input inputMode="numeric" value={form.birthday} onChange={(e) => updateField("birthday", e.target.value)} placeholder="MM/DD" maxLength={5} className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2" /></label>
                         <label className="space-y-1"><span className="text-sm text-slate-300">Role</span><input value={form.role || "member"} disabled className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-slate-400" /></label>
@@ -131,7 +131,7 @@ export default function ProfilePage() {
 
                     <div className="mt-6 flex flex-wrap justify-end gap-3">
                         <button type="button" onClick={() => { setForm(profile); setMessage(""); setError(""); }} className="rounded-full border border-white/20 px-5 py-2.5 font-semibold hover:bg-white/10">Cancel changes</button>
-                        <button type="button" onClick={save} disabled={saving} className="rounded-full bg-fuchsia-700 px-6 py-2.5 font-semibold hover:bg-fuchsia-600 disabled:opacity-60">{saving ? "Saving..." : "Save profile"}</button>
+                        <button data-tour="member-profile-save" type="button" onClick={save} disabled={saving} className="rounded-full bg-fuchsia-700 px-6 py-2.5 font-semibold hover:bg-fuchsia-600 disabled:opacity-60">{saving ? "Saving..." : "Save profile"}</button>
                     </div>
                 </section>
             </div>
