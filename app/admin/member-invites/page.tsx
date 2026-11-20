@@ -183,20 +183,20 @@ export default function MemberInvitesPage() {
                     <p className="mt-2 text-sm text-slate-300">Create a private registration link for a potential member. Sent invites are tracked below.</p>
                     <form onSubmit={onSubmit} className="mt-6 space-y-4">
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                            <input name="firstName" value={form.firstName} onChange={onChange} placeholder="First name" className="rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm" required />
+                            <input data-tour="invites-name" name="firstName" value={form.firstName} onChange={onChange} placeholder="First name" className="rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm" required />
                             <input name="lastName" value={form.lastName} onChange={onChange} placeholder="Last name" className="rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm" required />
-                            <input name="phoneNumber" value={form.phoneNumber} onChange={onChange} inputMode="numeric" pattern="\d{10}" placeholder="10 digit phone" className="rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm" required />
+                            <input data-tour="invites-contact" name="phoneNumber" value={form.phoneNumber} onChange={onChange} inputMode="numeric" pattern="\d{10}" placeholder="10 digit phone" className="rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm" required />
                             <input type="email" name="email" value={form.email} onChange={onChange} placeholder="Email address" className="rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-sm" required />
                         </div>
                         {error && <p className="text-sm text-red-400">{error}</p>}
-                        <button type="submit" disabled={submitting} className="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-semibold hover:bg-emerald-700 disabled:opacity-60">{submitting ? "Creating link..." : "Create Invite Link"}</button>
+                        <button data-tour="invites-create" type="submit" disabled={submitting} className="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-semibold hover:bg-emerald-700 disabled:opacity-60">{submitting ? "Creating link..." : "Create Invite Link"}</button>
                     </form>
 
                     {inviteLink && <div className="mt-6 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4 space-y-3"><p className="text-sm text-emerald-100">Send this private link to the potential member:</p><a href={inviteLink} className="block break-all text-sm underline text-emerald-200" target="_blank" rel="noreferrer">{inviteLink}</a><button type="button" className="rounded-md border border-white/25 px-3 py-1.5 text-xs hover:bg-white/10" onClick={copyInviteLink}>Copy link</button>{copyMessage && <p className="text-xs text-slate-200">{copyMessage}</p>}{emailStatusMessage && <p className="text-xs text-emerald-200">{emailStatusMessage}</p>}{emailLink && <a href={emailLink} className="block text-sm underline text-emerald-200">Compose email</a>}{smsLink && <a href={smsLink} className="block text-sm underline text-emerald-200">Compose text message</a>}</div>}
                 </section>
 
-                <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
-                    <div className="flex items-center justify-between gap-4"><div><h2 className="text-2xl font-semibold">Sent Invite History</h2><p className="mt-1 text-sm text-slate-300">See who was invited, whether the email was opened, and whether registration was completed.</p></div><button type="button" onClick={loadInviteHistory} className="rounded-lg border border-white/20 px-3 py-2 text-sm hover:bg-white/10">Refresh</button></div>
+                <section data-tour="invites-history" className="rounded-2xl border border-white/10 bg-white/5 p-6">
+                    <div className="flex items-center justify-between gap-4"><div><h2 className="text-2xl font-semibold">Sent Invite History</h2><p className="mt-1 text-sm text-slate-300">See who was invited, whether the email was opened, and whether registration was completed.</p></div><button data-tour="invites-refresh" type="button" onClick={loadInviteHistory} className="rounded-lg border border-white/20 px-3 py-2 text-sm hover:bg-white/10">Refresh</button></div>
                     <div className="mt-5">
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[1050px] text-sm">
