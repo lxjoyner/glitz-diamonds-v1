@@ -520,12 +520,12 @@ export default function AdminMessagesPage() {
     return (
         <main className="min-h-screen bg-black text-white px-6 py-10">
             <div className="mx-auto max-w-6xl space-y-8">
-                <div className="mb-6 flex items-center justify-between">
+                <div data-tour="member-dashboard-heading" className="mb-6 flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-semibold">Role Dashboard</h1>
                         <p className="text-sm text-slate-300">Signed in as {user?.username || "..."} ({user?.role || "..."})</p>
                     </div>
-                    <div className="relative group">
+                    <div data-tour="member-dashboard-user" className="relative group">
                         <button type="button" className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/40 text-base transition hover:bg-white/10" aria-label="User menu">👤</button>
                         <div className="pointer-events-none absolute right-0 top-12 w-56 rounded-lg border border-white/15 bg-black/90 p-3 opacity-0 shadow-lg transition duration-150 group-hover:pointer-events-auto group-hover:opacity-100">
                             <p className="text-sm font-medium text-white">{userDisplayName}</p>
