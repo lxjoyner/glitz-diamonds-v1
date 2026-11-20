@@ -133,6 +133,18 @@ export default function HelpCenterPage() {
                                                 </Link>
                                             </div>
                                         )}
+                                        {topic.id === "users" && role === "admin" && (
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                <Link href="/admin/membership?tour=members-directory" className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">Explore Member Directory</Link>
+                                                <Link href="/admin/membership?tour=members-edit" className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">Show Me How: Edit Member Profile</Link>
+                                            </div>
+                                        )}
+                                        {topic.id === "invites" && role === "admin" && (
+                                            <Link href="/admin/member-invites?tour=member-invitations" className="mt-3 inline-flex self-start rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">Show Me How: Member Invitations</Link>
+                                        )}
+                                        {topic.id === "roles" && role === "admin" && (
+                                            <Link href="/admin/roles-manager?tour=member-roles-overview" className="mt-3 inline-flex self-start rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">Show Me How: Roles Manager</Link>
+                                        )}
                                         {topic.id === "transactions" && (
                                             <div className="mt-3 flex flex-wrap gap-2">
                                                 <Link href="/admin/transactions?tour=transactions-overview" className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">Explore Transactions</Link>
