@@ -299,7 +299,7 @@ export default function IdeasActivitiesPage() {
             </section>
 
             <section className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-                <form className="rounded-2xl border border-[#D4AF37]/30 bg-[#3A234E]/80 p-5" onSubmit={(e) => e.preventDefault()}>
+                <form data-tour="member-idea-form" className="rounded-2xl border border-[#D4AF37]/30 bg-[#3A234E]/80 p-5" onSubmit={(e) => e.preventDefault()}>
                     <h2 className="text-xl font-semibold text-[#ffebf8]">Suggest an Activity</h2>
                     <div className="mt-4 grid gap-3">
                         <input className="rounded-lg bg-white/10 px-3 py-2" placeholder="Donation Drive, Women Group Trip" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
@@ -321,7 +321,7 @@ export default function IdeasActivitiesPage() {
                             <input className="mt-1 block w-full rounded-lg bg-white/10 px-3 py-2" type="file" accept="image/*,application/pdf" onChange={(e) => setDraftFile(e.target.files?.[0] || null)} />
                         </label>
                     </div>
-                    <div className="mt-4 flex gap-3">
+                    <div data-tour="member-idea-submit" className="mt-4 flex gap-3">
                         <button className="rounded-lg bg-[#D4AF37] px-4 py-2 font-semibold text-black" onClick={() => submitIdea("submitted")}>Submit</button>
                         <button className="rounded-lg border border-white/30 px-4 py-2" onClick={() => submitIdea("draft")}>Save As Draft</button>
                     </div>
@@ -363,7 +363,7 @@ export default function IdeasActivitiesPage() {
                 </aside>
             </section>
 
-            <section className="mt-8">
+            <section data-tour="member-ideas-list" className="mt-8">
                 <h2 className="mb-3 text-2xl font-semibold text-[#F8E1FF]">Community Ideas & Voting</h2>
                 <div className="grid gap-4">
                     {ideas.map((idea) => (
@@ -429,7 +429,7 @@ export default function IdeasActivitiesPage() {
                 </div>
             </section>
 
-            <section className="mt-10 rounded-2xl border border-[#D4AF37]/40 bg-[#261632] p-5">
+            <section data-tour="member-ideas-calendar" className="mt-10 rounded-2xl border border-[#D4AF37]/40 bg-[#261632] p-5">
                 <h2 className="text-2xl font-semibold text-[#ffdef7]">📅 Calendar Scheduler</h2>
                 <p className="mt-1 text-sm text-slate-200">{monthLabel}</p>
                 <div className="mt-4 grid gap-3">
