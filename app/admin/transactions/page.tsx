@@ -143,7 +143,7 @@ export default function TransactionsPage() {
                     ✧ Import transactions securely to automate your bookkeeping and reports.
                 </div>
 
-                <div className="mb-2 grid gap-3 md:grid-cols-2">
+                <div data-tour="transactions-summary" className="mb-2 grid gap-3 md:grid-cols-2">
                     <div className="flex items-center justify-between rounded-xl border border-slate-300 bg-white px-4 py-3">
                         <span className="font-medium">▦ &nbsp; All accounts</span>
                         <span className="font-semibold">{money(visible.reduce((sum, row) => sum + (row.direction === "income" ? row.amount_cents : -row.amount_cents), 0))}⌄</span>
@@ -164,7 +164,7 @@ export default function TransactionsPage() {
                 <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-100 px-4 py-3">
                         <div className="flex items-center gap-3">
-                            <label className="flex items-center gap-2">
+                            <label data-tour="transactions-select" className="flex items-center gap-2">
                                 <input type="checkbox" checked={allSelected} onChange={toggleAll} className="h-4 w-4 appearance-none rounded border border-slate-400 bg-white checked:border-blue-600 checked:bg-blue-600 checked:after:block checked:after:text-center checked:after:text-xs checked:after:leading-[14px] checked:after:text-white checked:after:content-['✓']" />
                                 <span>Select all</span>
                             </label>
@@ -175,18 +175,18 @@ export default function TransactionsPage() {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
-                            <button type="button" onClick={() => setFilter((current) => current === "all" ? "income" : current === "income" ? "expense" : "all")} className="rounded-full border border-blue-600 bg-white px-4 py-2 font-semibold text-blue-700">
+                            <button data-tour="transactions-filter" type="button" onClick={() => setFilter((current) => current === "all" ? "income" : current === "income" ? "expense" : "all")} className="rounded-full border border-blue-600 bg-white px-4 py-2 font-semibold text-blue-700">
                                 ⏷ Filter{filter !== "all" ? ` (${filter})` : ""}
                             </button>
-                            <button type="button" onClick={() => setSortDesc((current) => !current)} className="rounded-full border border-blue-600 bg-white px-4 py-2 font-semibold text-blue-700">↕ Sort</button>
+                            <button data-tour="transactions-sort" type="button" onClick={() => setSortDesc((current) => !current)} className="rounded-full border border-blue-600 bg-white px-4 py-2 font-semibold text-blue-700">↕ Sort</button>
                             <div className="flex items-center rounded-lg border border-slate-300 bg-white">
-                                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search transactions" className="w-56 bg-transparent px-3 py-2 italic outline-none" />
+                                <input data-tour="transactions-search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search transactions" className="w-56 bg-transparent px-3 py-2 italic outline-none" />
                                 <span className="border-l border-slate-200 px-3 py-2">⌕</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="overflow-x-auto">
+                    <div data-tour="transactions-table" className="overflow-x-auto">
                         <table className="w-full min-w-[1000px] border-collapse">
                             <thead>
                                 <tr className="border-b border-slate-200 text-left text-sm text-slate-600">
@@ -217,11 +217,11 @@ export default function TransactionsPage() {
                                             <td className="px-4 py-4">
                                                 <div className="flex justify-end gap-2">
                                                     <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-800">✓</button>
-                                                    <div className="relative" ref={openActionKey === row.transaction_key ? menuRef : null}>
-                                                        <button type="button" onClick={() => setOpenActionKey((current) => current === row.transaction_key ? null : row.transaction_key)} className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-800">⌄</button>
+                                                    <div data-tour={row.source_type !== "donation" && row.transaction_key === visible.find((item) => item.source_type !== "donation")?.transaction_key ? "transactions-edit-actions" : undefined} className="relative" ref={openActionKey === row.transaction_key ? menuRef : null}>
+                                                        <button data-tour={row.transaction_key === visible[0]?.transaction_key ? "transactions-actions" : (row.source_type !== "donation" && row.transaction_key === visible.find((item) => item.source_type !== "donation")?.transaction_key ? "transactions-edit-actions" : undefined)} type="button" onClick={() => setOpenActionKey((current) => current === row.transaction_key ? null : row.transaction_key)} className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-800">⌄</button>
                                                         {openActionKey === row.transaction_key && (
                                                             <div className="absolute right-0 z-50 mt-2 w-48 rounded-xl border border-slate-200 bg-white py-2 text-left shadow-xl">
-                                                                {row.source_type === "donation" ? <Link href="/admin/donations" className="block px-4 py-2 hover:bg-slate-50">View donation record</Link> : <Link href={`/admin/transactions/${encodeURIComponent(row.transaction_key)}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit more details</Link>}
+                                                                {row.source_type === "donation" ? <Link href="/admin/donations" className="block px-4 py-2 hover:bg-slate-50">View donation record</Link> : <Link data-tour={row.transaction_key === visible.find((item) => item.source_type !== "donation")?.transaction_key ? "transactions-edit-link" : undefined} href={`/admin/transactions/${encodeURIComponent(row.transaction_key)}/edit`} className="block px-4 py-2 hover:bg-slate-50">Edit more details</Link>}
                                                                 {row.source_type !== "donation" && <button type="button" onClick={() => { setUploadKey(row.transaction_key); fileInputRef.current?.click(); setOpenActionKey(null); }} className="block w-full px-4 py-2 text-left hover:bg-slate-50">Upload receipt</button>}
                                                                 {row.source_type !== "donation" && !row.transaction_key.startsWith("invoice-history-") && !row.transaction_key.startsWith("bill-history-") && <button type="button" onClick={() => deleteTransaction(row)} className="block w-full px-4 py-2 text-left text-red-700 hover:bg-red-50">Delete</button>}
                                                             </div>

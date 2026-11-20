@@ -5,7 +5,7 @@ export type GuidedTourStep = {
     title: string;
     description: string;
     /** Route pattern: dynamic invoice ID is accepted only on the recording page. */
-    path: "/admin/invoices" | "/admin/invoices/new" | "/admin/invoices/recurring" | "/admin/invoices/recurring/new" | "/admin/invoices/[id]/record-payment" | "/admin/invoices/[id]/reverse-payment" | "/admin/vendors/bills" | "/admin/reports/income-by-customer" | "/admin/reports/account-transactions" | "/admin/reports/balance-sheet" | "/admin/vendors" | "/admin/vendors/new" | "/admin/vendors/[id]/edit" | "/admin/vendors/[id]/create-bill";
+    path: "/admin/invoices" | "/admin/invoices/new" | "/admin/invoices/recurring" | "/admin/invoices/recurring/new" | "/admin/invoices/[id]/record-payment" | "/admin/invoices/[id]/reverse-payment" | "/admin/vendors/bills" | "/admin/reports/income-by-customer" | "/admin/reports/account-transactions" | "/admin/reports/balance-sheet" | "/admin/vendors" | "/admin/vendors/new" | "/admin/vendors/[id]/edit" | "/admin/vendors/[id]/create-bill" | "/admin/transactions" | "/admin/transactions/[key]/edit";
     /** A real click is required to proceed; no financial action is performed by the tour. */
     advanceOnClick?: boolean;
 };
@@ -20,6 +20,8 @@ export type GuidedTour = {
 };
 
 export function stepMatchesPath(path: GuidedTourStep["path"], pathname: string): boolean {
+    if (path === "/admin/transactions/[key]/edit") return /^\/admin\/transactions\/[^/]+\/edit$/.test(pathname);
+    if (path === "/admin/transactions") return pathname === path;
     if (path === "/admin/vendors/[id]/edit") return /^\/admin\/vendors\/\d+\/edit$/.test(pathname);
     if (path === "/admin/vendors/[id]/create-bill") return /^\/admin\/vendors\/\d+\/create-bill$/.test(pathname);
     if (path === "/admin/vendors" || path === "/admin/vendors/new") return pathname === path;
@@ -214,6 +216,63 @@ const RECURRING_CREATE_STEPS: readonly GuidedTourStep[] = [
 ];
 
 export const GUIDED_TOURS: readonly GuidedTour[] = [
+    {
+        id: "transactions-overview",
+        title: "Explore Transactions",
+        path: "/admin/transactions",
+        helpTopicId: "transactions",
+        roles: ["admin", "treasurer"],
+        steps: [
+            { selector: '[data-tour="transactions-summary"]', title: "Review the displayed net total", description: "All accounts is a calculated sum of currently filtered transactions (income minus expenses), not a reconciled bank balance. Reconciliation is not enabled here.", path: "/admin/transactions" },
+            { selector: '[data-tour="transactions-filter"]', title: "Filter transaction type", description: "Click Filter to cycle between All, income and expense. This changes the displayed list only.", path: "/admin/transactions" },
+            { selector: '[data-tour="transactions-sort"]', title: "Sort by date", description: "Sort changes date ordering between newest and oldest first.", path: "/admin/transactions" },
+            { selector: '[data-tour="transactions-search"]', title: "Search transactions", description: "Search transaction descriptions, payment accounts and categories.", path: "/admin/transactions" },
+            { selector: '[data-tour="transactions-table"]', title: "Read transaction rows", description: "Review date, description, account, category and amount. Select a description to open its linked invoice or vendor bill.", path: "/admin/transactions" },
+            { selector: '[data-tour="transactions-select"]', title: "Select transactions", description: "Select all or individual rows for review. The bulk action icons currently have no handlers and should not be relied on.", path: "/admin/transactions" },
+            { selector: '[data-tour="transactions-actions"]', title: "Open a row's Actions menu", description: "Choose the first visible row's Actions dropdown to find Edit more details, Upload receipt, or Delete when available. Delete removes a real transaction and is not part of the guide.", path: "/admin/transactions" },
+        ],
+    },
+    {
+        id: "transactions-edit",
+        title: "Review and Edit a Transaction",
+        path: "/admin/transactions",
+        helpTopicId: "transactions",
+        roles: ["admin", "treasurer"],
+        steps: [
+            { selector: '[data-tour="transactions-edit-actions"]', title: "Open an eligible transaction", description: "Click Actions for the first visible non-donation transaction. Donations have a separate record view.", path: "/admin/transactions", advanceOnClick: true },
+            { selector: '[data-tour="transactions-edit-link"]', title: "Open Edit more details", description: "Click Edit more details to open that transaction's existing edit form. The guide follows you to the form.", path: "/admin/transactions", advanceOnClick: true },
+            { selector: '[data-tour="transaction-edit-date"]', title: "Verify the transaction date", description: "Review the date. Imported historical invoice payments without ledger details remain read-only; some bill-history entries require verification.", path: "/admin/transactions/[key]/edit" },
+            { selector: '[data-tour="transaction-edit-description"]', title: "Review the description", description: "Confirm the transaction description matches the original record.", path: "/admin/transactions/[key]/edit" },
+            { selector: '[data-tour="transaction-edit-account"]', title: "Review payment account", description: "Choose the correct account from available accounts if edits are allowed.", path: "/admin/transactions/[key]/edit" },
+            { selector: '[data-tour="transaction-edit-type"]', title: "Review deposit or withdrawal", description: "The type identifies money received or spent. Linked invoice or bill direction changes require a separate reversal.", path: "/admin/transactions/[key]/edit" },
+            { selector: '[data-tour="transaction-edit-amount"]', title: "Confirm the amount", description: "Check the original payment amount. Changes to financial transactions affect reports and must be intentional.", path: "/admin/transactions/[key]/edit" },
+            { selector: '[data-tour="transaction-edit-category"]', title: "Review the category", description: "Confirm the category used for transaction reporting.", path: "/admin/transactions/[key]/edit" },
+            { selector: '[data-tour="transaction-edit-contact"]', title: "Check the linked customer or vendor", description: "This linked contact field is read-only.", path: "/admin/transactions/[key]/edit" },
+            { selector: '[data-tour="transaction-edit-memo"]', title: "Review notes", description: "Add or correct optional notes if editing is permitted.", path: "/admin/transactions/[key]/edit" },
+            { selector: '[data-tour="transaction-edit-receipt"]', title: "Review receipt upload", description: "You can attach a receipt independently. Selecting or dropping a file uploads it immediately; the guide never uploads files.", path: "/admin/transactions/[key]/edit" },
+            { selector: '[data-tour="transaction-edit-save"]', title: "Finish before saving", description: "Save can change real transaction records. Historical bill entries may require date verification, and imported invoice history may be read-only. The guide never submits.", path: "/admin/transactions/[key]/edit" },
+        ],
+    },
+    {
+        id: "transactions-edit-on-page",
+        title: "Review and Edit a Transaction",
+        path: "/admin/transactions/[key]/edit",
+        helpTopicId: "transactions",
+        roles: ["admin", "treasurer"],
+        steps: [
+            { selector: '[data-tour="transaction-edit-date"]', title: "Verify the transaction date", description: "Review the date. Imported historical invoice payments without ledger details remain read-only; some bill-history entries require verification.", path: "/admin/transactions/[key]/edit" },
+            { selector: '[data-tour="transaction-edit-description"]', title: "Review the description", description: "Confirm the transaction description matches the original record.", path: "/admin/transactions/[key]/edit" },
+            { selector: '[data-tour="transaction-edit-account"]', title: "Review payment account", description: "Choose the correct account from available accounts if edits are allowed.", path: "/admin/transactions/[key]/edit" },
+            { selector: '[data-tour="transaction-edit-type"]', title: "Review deposit or withdrawal", description: "The type identifies money received or spent. Linked invoice or bill direction changes require a separate reversal.", path: "/admin/transactions/[key]/edit" },
+            { selector: '[data-tour="transaction-edit-amount"]', title: "Confirm the amount", description: "Check the original payment amount. Changes to financial transactions affect reports and must be intentional.", path: "/admin/transactions/[key]/edit" },
+            { selector: '[data-tour="transaction-edit-category"]', title: "Review the category", description: "Confirm the category used for transaction reporting.", path: "/admin/transactions/[key]/edit" },
+            { selector: '[data-tour="transaction-edit-contact"]', title: "Check the linked customer or vendor", description: "This linked contact field is read-only.", path: "/admin/transactions/[key]/edit" },
+            { selector: '[data-tour="transaction-edit-memo"]', title: "Review notes", description: "Add or correct optional notes if editing is permitted.", path: "/admin/transactions/[key]/edit" },
+            { selector: '[data-tour="transaction-edit-receipt"]', title: "Review receipt upload", description: "You can attach a receipt independently. Selecting or dropping a file uploads it immediately; the guide never uploads files.", path: "/admin/transactions/[key]/edit" },
+            { selector: '[data-tour="transaction-edit-save"]', title: "Finish before saving", description: "Save can change real transaction records. Historical bill entries may require date verification, and imported invoice history may be read-only. The guide never submits.", path: "/admin/transactions/[key]/edit" },
+        ],
+    },
+
     {
         id: "vendor-bills-review",
         title: "Review Vendor Bills and Payment Status",
@@ -736,5 +795,5 @@ export const GUIDED_TOURS: readonly GuidedTour[] = [
 ];
 
 export function permittedTours(role: string, pathname: string): GuidedTour[] {
-    return GUIDED_TOURS.filter((tour) => (tour.path === pathname || (tour.path === "/admin/invoices/[id]/reverse-payment" && stepMatchesPath("/admin/invoices/[id]/reverse-payment", pathname)) || (tour.path === "/admin/vendors/[id]/edit" && stepMatchesPath("/admin/vendors/[id]/edit", pathname)) || (tour.path === "/admin/vendors/[id]/create-bill" && stepMatchesPath("/admin/vendors/[id]/create-bill", pathname))) && tour.roles.some((allowed) => allowed === role));
+    return GUIDED_TOURS.filter((tour) => (tour.path === pathname || (tour.path === "/admin/invoices/[id]/reverse-payment" && stepMatchesPath("/admin/invoices/[id]/reverse-payment", pathname)) || (tour.path === "/admin/vendors/[id]/edit" && stepMatchesPath("/admin/vendors/[id]/edit", pathname)) || (tour.path === "/admin/vendors/[id]/create-bill" && stepMatchesPath("/admin/vendors/[id]/create-bill", pathname)) || (tour.path === "/admin/transactions/[key]/edit" && stepMatchesPath("/admin/transactions/[key]/edit", pathname))) && tour.roles.some((allowed) => allowed === role));
 }
