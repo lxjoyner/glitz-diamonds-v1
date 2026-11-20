@@ -116,7 +116,7 @@ export default function AdminEditMemberProfilePage() {
                 </div>
 
                 {profile && (
-                    <div className="mb-6 grid gap-3 rounded-xl border border-white/10 bg-black/30 p-4 sm:grid-cols-3">
+                    <div data-tour="member-edit-summary" className="mb-6 grid gap-3 rounded-xl border border-white/10 bg-black/30 p-4 sm:grid-cols-3">
                         <div><p className="text-xs uppercase text-slate-400">Username</p><p className="font-medium">{profile.username}</p></div>
                         <div><p className="text-xs uppercase text-slate-400">Role</p><p className="font-medium capitalize">{profile.role || "none"}</p></div>
                         <div><p className="text-xs uppercase text-slate-400">Status</p><p className="font-medium">{profile.isActive ? "Active" : "Inactive"}</p></div>
@@ -124,15 +124,15 @@ export default function AdminEditMemberProfilePage() {
                 )}
 
                 <form onSubmit={save} className="space-y-4">
-                    <label className="block"><span className="mb-1 block text-sm text-slate-300">Full Name</span><input name="fullName" value={form.fullName} onChange={onChange} required className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2" /></label>
+                    <label className="block"><span className="mb-1 block text-sm text-slate-300">Full Name</span><input data-tour="member-edit-identity" name="fullName" value={form.fullName} onChange={onChange} required className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2" /></label>
                     <label className="block"><span className="mb-1 block text-sm text-slate-300">Email</span><input type="email" name="email" value={form.email} onChange={onChange} required className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2" /></label>
-                    <label className="block"><span className="mb-1 block text-sm text-slate-300">Address</span><textarea name="address" value={form.address} onChange={onChange} rows={3} required className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2" /></label>
+                    <label className="block"><span className="mb-1 block text-sm text-slate-300">Address</span><textarea data-tour="member-edit-address" name="address" value={form.address} onChange={onChange} rows={3} required className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2" /></label>
                     <div className="grid gap-4 sm:grid-cols-2">
-                        <label className="block"><span className="mb-1 block text-sm text-slate-300">T-Shirt Size</span><select name="tshirtSize" value={form.tshirtSize} onChange={onChange} required className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2">{T_SHIRT_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</select></label>
+                        <label className="block"><span className="mb-1 block text-sm text-slate-300">T-Shirt Size</span><select data-tour="member-edit-sizes" name="tshirtSize" value={form.tshirtSize} onChange={onChange} required className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2">{T_SHIRT_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</select></label>
                         <label className="block"><span className="mb-1 block text-sm text-slate-300">Jacket Size</span><select name="jacketSize" value={form.jacketSize} onChange={onChange} required className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2"><option value="">Select size</option>{JACKET_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</select></label>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
-                        <label className="block"><span className="mb-1 block text-sm text-slate-300">Favorite Color</span><input name="favoriteColor" value={form.favoriteColor} onChange={onChange} required className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2" /></label>
+                        <label className="block"><span className="mb-1 block text-sm text-slate-300">Favorite Color</span><input data-tour="member-edit-preferences" name="favoriteColor" value={form.favoriteColor} onChange={onChange} required className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2" /></label>
                         <label className="block"><span className="mb-1 block text-sm text-slate-300">Gender</span><select name="gender" value={form.gender} onChange={onChange} required className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2"><option value="">Select gender</option>{GENDERS.map((gender) => <option key={gender} value={gender}>{gender}</option>)}</select></label>
                     </div>
                     <label className="block"><span className="mb-1 block text-sm text-slate-300">Birthday (MM/DD)</span><input name="birthday" value={form.birthday} onChange={onChange} inputMode="numeric" placeholder="MM/DD" maxLength={5} required className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2" /></label>
@@ -140,7 +140,7 @@ export default function AdminEditMemberProfilePage() {
                     {message && <p className="rounded-lg bg-black/30 px-3 py-2 text-sm text-slate-200">{message}</p>}
                     <div className="flex justify-end gap-3 pt-2">
                         <Link href="/admin/membership" className="rounded-lg border border-white/20 px-4 py-2 text-sm hover:bg-white/10">Cancel</Link>
-                        <button type="submit" disabled={saving} className="rounded-lg bg-red-800 px-5 py-2 font-medium hover:bg-red-600 disabled:opacity-60">{saving ? "Saving..." : "Save changes"}</button>
+                        <button data-tour="member-edit-save" type="submit" disabled={saving} className="rounded-lg bg-red-800 px-5 py-2 font-medium hover:bg-red-600 disabled:opacity-60">{saving ? "Saving..." : "Save changes"}</button>
                     </div>
                 </form>
             </div>

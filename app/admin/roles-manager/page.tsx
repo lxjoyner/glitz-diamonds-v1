@@ -153,7 +153,7 @@ export default function RolesManagerPage() {
                     Configure role-based access with Yes/No checkboxes for each section.
                 </p>
 
-                <section className="mt-6 rounded-xl border border-white/10 bg-black/30 p-4">
+                <section data-tour="roles-admin" className="mt-6 rounded-xl border border-white/10 bg-black/30 p-4">
                     <h2 className="text-xl font-semibold">Admin Role</h2>
                     <p className="mt-1 text-sm text-slate-300">Access/View All</p>
                     <label className="mt-3 inline-flex items-center gap-2 text-sm">
@@ -167,7 +167,7 @@ export default function RolesManagerPage() {
                 </section>
 
                 {managedRoles.map((role) => (
-                    <section key={role} className="mt-6 rounded-xl border border-white/10 bg-black/30 p-4">
+                    <section data-tour={role === managedRoles[0] ? "roles-managed" : undefined} key={role} className="mt-6 rounded-xl border border-white/10 bg-black/30 p-4">
                         <h2 className="text-xl font-semibold capitalize">{role} Role</h2>
                         <p className="mt-1 text-sm text-slate-300">Have Access/View To:</p>
 
@@ -203,7 +203,7 @@ export default function RolesManagerPage() {
                     </section>
                 ))}
 
-                <div className="mt-8 flex items-center gap-3">
+                <div data-tour="roles-save" className="mt-8 flex items-center gap-3">
                     <button
                         type="button"
                         onClick={saveSettings}
