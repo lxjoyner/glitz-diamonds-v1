@@ -179,7 +179,7 @@ export default function CalendarPage() {
     return (
         <main className="mx-auto max-w-6xl px-4 py-10 text-slate-100">
             <section className="rounded-2xl border border-white/10 bg-[#2B193D]/70 p-6 shadow-xl">
-                <h1 className="text-3xl font-semibold text-[#f7d7ff]">📅 Calendar</h1>
+                <h1 data-tour="member-calendar-heading" className="text-3xl font-semibold text-[#f7d7ff]">📅 Calendar</h1>
                 <p className="mt-2 text-sm text-slate-200">
                     This calendar shows events scheduled from Ideas & Activities and active member birthdays. Scheduled events can be dragged to another date; birthdays stay fixed to their month and day.
                 </p>
@@ -187,7 +187,7 @@ export default function CalendarPage() {
             </section>
 
             <section className="mt-6 rounded-2xl border border-[#D4AF37]/40 bg-[#261632] p-5">
-                <div className="mb-4 flex items-center justify-between gap-3">
+                <div data-tour="member-calendar-navigation" className="mb-4 flex items-center justify-between gap-3">
                     <button
                         className="rounded-lg border border-white/20 bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10"
                         onClick={() => setVisibleMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
@@ -209,7 +209,7 @@ export default function CalendarPage() {
                     {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => <div key={day}>{day}</div>)}
                 </div>
 
-                <div className="mt-2 grid grid-cols-7 gap-2">
+                <div data-tour="member-calendar-grid" className="mt-2 grid grid-cols-7 gap-2">
                     {monthDays.map((day) => {
                         const dayKey = toIsoDate(day);
                         const items = eventsByDay.get(dayKey) || [];
