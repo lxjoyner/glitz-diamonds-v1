@@ -5,7 +5,7 @@ export type GuidedTourStep = {
     title: string;
     description: string;
     /** Route pattern: dynamic invoice ID is accepted only on the recording page. */
-    path: "/admin/invoices" | "/admin/invoices/new" | "/admin/invoices/recurring" | "/admin/invoices/recurring/new" | "/admin/invoices/[id]/record-payment" | "/admin/invoices/[id]/reverse-payment" | "/admin/vendors/bills" | "/admin/reports/income-by-customer" | "/admin/reports/account-transactions" | "/admin/reports/balance-sheet" | "/admin/vendors" | "/admin/vendors/new" | "/admin/vendors/[id]/edit" | "/admin/vendors/[id]/create-bill" | "/admin/transactions" | "/admin/transactions/[key]/edit" | "/admin/membership" | "/admin/membership/[id]/edit" | "/admin/member-invites" | "/admin/roles-manager";
+    path: "/admin/invoices" | "/admin/invoices/new" | "/admin/invoices/recurring" | "/admin/invoices/recurring/new" | "/admin/invoices/[id]/record-payment" | "/admin/invoices/[id]/reverse-payment" | "/admin/vendors/bills" | "/admin/reports/income-by-customer" | "/admin/reports/account-transactions" | "/admin/reports/balance-sheet" | "/admin/vendors" | "/admin/vendors/new" | "/admin/vendors/[id]/edit" | "/admin/vendors/[id]/create-bill" | "/admin/transactions" | "/admin/transactions/[key]/edit" | "/admin/membership" | "/admin/membership/[id]/edit" | "/admin/member-invites" | "/admin/roles-manager" | "/admin/messages" | "/profile" | "/calendar" | "/admin/ideas-activities";
     /** A real click is required to proceed; no financial action is performed by the tour. */
     advanceOnClick?: boolean;
 };
@@ -20,6 +20,7 @@ export type GuidedTour = {
 };
 
 export function stepMatchesPath(path: GuidedTourStep["path"], pathname: string): boolean {
+    if (path === "/admin/messages" || path === "/profile" || path === "/calendar" || path === "/admin/ideas-activities") return pathname === path;
     if (path === "/admin/membership/[id]/edit") return /^\/admin\/membership\/\d+\/edit$/.test(pathname);
     if (path === "/admin/membership" || path === "/admin/member-invites" || path === "/admin/roles-manager") return pathname === path;
     if (path === "/admin/transactions/[key]/edit") return /^\/admin\/transactions\/[^/]+\/edit$/.test(pathname);
@@ -218,6 +219,28 @@ const RECURRING_CREATE_STEPS: readonly GuidedTourStep[] = [
 ];
 
 export const GUIDED_TOURS: readonly GuidedTour[] = [
+    { id: "member-dashboard-overview", title: "Explore Your Member Dashboard", path: "/admin/messages", helpTopicId: "dashboard", roles: ["member"], steps: [
+        { selector: '[data-tour="member-dashboard-heading"]', title: "Your signed-in dashboard", description: "Confirm the signed-in username and member role. Members do not have the administrative settings, financial reports, or user-management panels shown to authorized staff.", path: "/admin/messages" },
+        { selector: '[data-tour="member-dashboard-user"]', title: "Your account menu", description: "Use the user menu to see your signed-in account and log out. My Profile is also available from the top navigation.", path: "/admin/messages" },
+    ] },
+    { id: "member-profile-guide", title: "Update My Member Profile", path: "/profile", helpTopicId: "profile", roles: ["member"], steps: [
+        { selector: '[data-tour="member-profile-summary"]', title: "Review your account", description: "Confirm your username and whether your account is active. Your assigned role is not editable here.", path: "/profile" },
+        { selector: '[data-tour="member-profile-contact"]', title: "Review contact information", description: "Update your full name, email and mailing address if necessary.", path: "/profile" },
+        { selector: '[data-tour="member-profile-sizes"]', title: "Review clothing sizes", description: "Check the T-shirt and jacket sizes stored on your profile.", path: "/profile" },
+        { selector: '[data-tour="member-profile-preferences"]', title: "Review your personal details", description: "Verify favorite color, gender and birthday (MM/DD). Your role remains read-only.", path: "/profile" },
+        { selector: '[data-tour="member-profile-save"]', title: "Save only when you intend to update", description: "Finish the guide before selecting Save profile. Saving writes real account changes; this guide never saves or cancels edits.", path: "/profile" },
+    ] },
+    { id: "member-ideas-overview", title: "Explore Community Ideas and Voting", path: "/admin/ideas-activities", helpTopicId: "ideas", roles: ["member"], steps: [
+        { selector: '[data-tour="member-idea-form"]', title: "Suggest a community activity", description: "Use Suggest an Activity to prepare a title, details, category, purpose, location, dates and optional attachment. The guide never sends an idea.", path: "/admin/ideas-activities" },
+        { selector: '[data-tour="member-idea-submit"]', title: "Submit or save a draft", description: "Submit and Save As Draft are real actions. Finish the walkthrough before using either action intentionally.", path: "/admin/ideas-activities" },
+        { selector: '[data-tour="member-ideas-list"]', title: "Browse community ideas", description: "Read ideas and activity details. If ideas exist, each card can offer Upvote and Favorite; both immediately update your selection when clicked.", path: "/admin/ideas-activities" },
+        { selector: '[data-tour="member-ideas-calendar"]', title: "See scheduled activities", description: "The Calendar Scheduler section lists activities already scheduled. Adding or removing scheduled events is restricted to administrators.", path: "/admin/ideas-activities" },
+    ] },
+    { id: "member-calendar-overview", title: "Explore the Member Calendar", path: "/calendar", helpTopicId: "calendar", roles: ["member"], steps: [
+        { selector: '[data-tour="member-calendar-heading"]', title: "What appears on the calendar", description: "Review scheduled community activities and eligible member birthdays. Member accounts can view events but cannot drag events to new dates.", path: "/calendar" },
+        { selector: '[data-tour="member-calendar-navigation"]', title: "Browse months", description: "Use Previous or Next to view another month without changing the event schedule.", path: "/calendar" },
+        { selector: '[data-tour="member-calendar-grid"]', title: "Read event dates", description: "Look through the day cells for community activities or birthdays. Some dates may contain no entries.", path: "/calendar" },
+    ] },
     {
         id: "members-directory",
         title: "Explore Registered Members",
