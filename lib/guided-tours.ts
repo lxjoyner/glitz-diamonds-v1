@@ -5,7 +5,7 @@ export type GuidedTourStep = {
     title: string;
     description: string;
     /** Route pattern: dynamic invoice ID is accepted only on the recording page. */
-    path: "/admin/invoices" | "/admin/invoices/new" | "/admin/invoices/recurring" | "/admin/invoices/recurring/new" | "/admin/invoices/[id]/record-payment" | "/admin/invoices/[id]/reverse-payment" | "/admin/vendors/bills" | "/admin/reports/income-by-customer" | "/admin/reports/account-transactions" | "/admin/reports/balance-sheet" | "/admin/vendors" | "/admin/vendors/new" | "/admin/vendors/[id]/edit" | "/admin/vendors/[id]/create-bill" | "/admin/transactions" | "/admin/transactions/[key]/edit";
+    path: "/admin/invoices" | "/admin/invoices/new" | "/admin/invoices/recurring" | "/admin/invoices/recurring/new" | "/admin/invoices/[id]/record-payment" | "/admin/invoices/[id]/reverse-payment" | "/admin/vendors/bills" | "/admin/reports/income-by-customer" | "/admin/reports/account-transactions" | "/admin/reports/balance-sheet" | "/admin/vendors" | "/admin/vendors/new" | "/admin/vendors/[id]/edit" | "/admin/vendors/[id]/create-bill" | "/admin/transactions" | "/admin/transactions/[key]/edit" | "/admin/membership" | "/admin/membership/[id]/edit" | "/admin/member-invites" | "/admin/roles-manager";
     /** A real click is required to proceed; no financial action is performed by the tour. */
     advanceOnClick?: boolean;
 };
@@ -20,6 +20,8 @@ export type GuidedTour = {
 };
 
 export function stepMatchesPath(path: GuidedTourStep["path"], pathname: string): boolean {
+    if (path === "/admin/membership/[id]/edit") return /^\/admin\/membership\/\d+\/edit$/.test(pathname);
+    if (path === "/admin/membership" || path === "/admin/member-invites" || path === "/admin/roles-manager") return pathname === path;
     if (path === "/admin/transactions/[key]/edit") return /^\/admin\/transactions\/[^/]+\/edit$/.test(pathname);
     if (path === "/admin/transactions") return pathname === path;
     if (path === "/admin/vendors/[id]/edit") return /^\/admin\/vendors\/\d+\/edit$/.test(pathname);
@@ -216,6 +218,78 @@ const RECURRING_CREATE_STEPS: readonly GuidedTourStep[] = [
 ];
 
 export const GUIDED_TOURS: readonly GuidedTour[] = [
+    {
+        id: "members-directory",
+        title: "Explore Registered Members",
+        path: "/admin/membership",
+        helpTopicId: "users",
+        roles: ["admin"],
+        steps: [
+            { selector: '[data-tour="members-table"]', title: "Review registered members", description: "Review names, usernames, contact and registration details, membership roles and join dates. The list contains personal information; share it only with authorized personnel.", path: "/admin/membership" },
+            { selector: '[data-tour="members-sort"]', title: "Sort the directory", description: "Click a table header, such as Name, to sort in ascending or descending order. Sorting does not change member records.", path: "/admin/membership" },
+            { selector: '[data-tour="members-edit-link"]', title: "Open an existing profile", description: "Edit profile opens the first listed member. Check whose record you are opening. The guide does not change the profile.", path: "/admin/membership" },
+            { selector: '[data-tour="members-delete"]', title: "Understand Delete member", description: "Delete member permanently removes saved registration data after confirmation. Never test deletion as part of this walkthrough.", path: "/admin/membership" },
+            { selector: '[data-tour="members-pagination"]', title: "Find additional members", description: "If there are more than 25 members, use Previous and Next to review additional records.", path: "/admin/membership" },
+        ],
+    },
+    {
+        id: "members-edit",
+        title: "Review and Edit Member Profile",
+        path: "/admin/membership",
+        helpTopicId: "users",
+        roles: ["admin"],
+        steps: [
+            { selector: '[data-tour="members-edit-link"]', title: "Open the member profile", description: "Click Edit profile on the first listed member to continue to the edit form. Verify the member's identity before proceeding.", path: "/admin/membership", advanceOnClick: true },
+            { selector: '[data-tour="member-edit-summary"]', title: "Confirm the correct member", description: "Verify the member's username, role, and active status before editing. This form does not assign roles.", path: "/admin/membership/[id]/edit" },
+            { selector: '[data-tour="member-edit-identity"]', title: "Review name and email", description: "Check the member's full name and email address. Changes require a separate Save.", path: "/admin/membership/[id]/edit" },
+            { selector: '[data-tour="member-edit-address"]', title: "Review address", description: "Check the required registration address.", path: "/admin/membership/[id]/edit" },
+            { selector: '[data-tour="member-edit-sizes"]', title: "Review clothing sizes", description: "Verify the member's T-shirt and jacket sizes.", path: "/admin/membership/[id]/edit" },
+            { selector: '[data-tour="member-edit-preferences"]', title: "Review preferences", description: "Confirm favorite color, gender, and birthday in MM/DD format.", path: "/admin/membership/[id]/edit" },
+            { selector: '[data-tour="member-edit-save"]', title: "Review before saving", description: "Finish the walkthrough before clicking Save changes. Saving updates a real member profile; the guide never saves.", path: "/admin/membership/[id]/edit" },
+        ],
+    },
+    {
+        id: "members-edit-on-page",
+        title: "Review and Edit Member Profile",
+        path: "/admin/membership/[id]/edit",
+        helpTopicId: "users",
+        roles: ["admin"],
+        steps: [
+            { selector: '[data-tour="member-edit-summary"]', title: "Confirm the correct member", description: "Verify the member's username, role, and active status before editing. This form does not assign roles.", path: "/admin/membership/[id]/edit" },
+            { selector: '[data-tour="member-edit-identity"]', title: "Review name and email", description: "Check the member's full name and email address. Changes require a separate Save.", path: "/admin/membership/[id]/edit" },
+            { selector: '[data-tour="member-edit-address"]', title: "Review address", description: "Check the required registration address.", path: "/admin/membership/[id]/edit" },
+            { selector: '[data-tour="member-edit-sizes"]', title: "Review clothing sizes", description: "Verify the member's T-shirt and jacket sizes.", path: "/admin/membership/[id]/edit" },
+            { selector: '[data-tour="member-edit-preferences"]', title: "Review preferences", description: "Confirm favorite color, gender, and birthday in MM/DD format.", path: "/admin/membership/[id]/edit" },
+            { selector: '[data-tour="member-edit-save"]', title: "Review before saving", description: "Finish the walkthrough before clicking Save changes. Saving updates a real member profile; the guide never saves.", path: "/admin/membership/[id]/edit" },
+        ],
+    },
+    {
+        id: "member-invitations",
+        title: "Create and Track Member Invitations",
+        path: "/admin/member-invites",
+        helpTopicId: "invites",
+        roles: ["admin"],
+        steps: [
+            { selector: '[data-tour="invites-name"]', title: "Enter invitee name", description: "Provide the potential member's first and last name.", path: "/admin/member-invites" },
+            { selector: '[data-tour="invites-contact"]', title: "Enter contact details", description: "Enter a 10-digit phone number and a valid email address. Confirm the recipient before creating a private invitation.", path: "/admin/member-invites" },
+            { selector: '[data-tour="invites-create"]', title: "Create invite link only when ready", description: "Finish this guide before selecting Create Invite Link. This action creates a real private registration link and may send email automatically; the guide never submits.", path: "/admin/member-invites" },
+            { selector: '[data-tour="invites-history"]', title: "Review invitation history", description: "Review Created, Sent, Opened and Registered status indicators and timestamp columns. Email-open tracking is best-effort and does not prove a person opened it.", path: "/admin/member-invites" },
+            { selector: '[data-tour="invites-refresh"]', title: "Refresh invitation status", description: "Refresh reloads invitation history; the guide does not trigger the reload.", path: "/admin/member-invites" },
+        ],
+    },
+    {
+        id: "member-roles-overview",
+        title: "Understand Roles Manager",
+        path: "/admin/roles-manager",
+        helpTopicId: "roles",
+        roles: ["admin"],
+        steps: [
+            { selector: '[data-tour="roles-admin"]', title: "Review administrator access", description: "The Admin Role section controls its Access/View All setting. Treat access changes as security-sensitive.", path: "/admin/roles-manager" },
+            { selector: '[data-tour="roles-managed"]', title: "Review other role permissions", description: "Secretary, treasure, and member settings specify access to dashboard, menu, and Ideas & Activities items. This page edits role permission settings, not individual users' assigned roles.", path: "/admin/roles-manager" },
+            { selector: '[data-tour="roles-save"]', title: "Save role settings only when intended", description: "Finish the guide before choosing Save Role Settings. Saving changes access configuration; the guide never submits it.", path: "/admin/roles-manager" },
+        ],
+    },
+
     {
         id: "transactions-overview",
         title: "Explore Transactions",
@@ -795,5 +869,5 @@ export const GUIDED_TOURS: readonly GuidedTour[] = [
 ];
 
 export function permittedTours(role: string, pathname: string): GuidedTour[] {
-    return GUIDED_TOURS.filter((tour) => (tour.path === pathname || (tour.path === "/admin/invoices/[id]/reverse-payment" && stepMatchesPath("/admin/invoices/[id]/reverse-payment", pathname)) || (tour.path === "/admin/vendors/[id]/edit" && stepMatchesPath("/admin/vendors/[id]/edit", pathname)) || (tour.path === "/admin/vendors/[id]/create-bill" && stepMatchesPath("/admin/vendors/[id]/create-bill", pathname)) || (tour.path === "/admin/transactions/[key]/edit" && stepMatchesPath("/admin/transactions/[key]/edit", pathname))) && tour.roles.some((allowed) => allowed === role));
+    return GUIDED_TOURS.filter((tour) => (tour.path === pathname || (tour.path === "/admin/invoices/[id]/reverse-payment" && stepMatchesPath("/admin/invoices/[id]/reverse-payment", pathname)) || (tour.path === "/admin/vendors/[id]/edit" && stepMatchesPath("/admin/vendors/[id]/edit", pathname)) || (tour.path === "/admin/vendors/[id]/create-bill" && stepMatchesPath("/admin/vendors/[id]/create-bill", pathname)) || (tour.path === "/admin/transactions/[key]/edit" && stepMatchesPath("/admin/transactions/[key]/edit", pathname)) || (tour.path === "/admin/membership/[id]/edit" && stepMatchesPath("/admin/membership/[id]/edit", pathname))) && tour.roles.some((allowed) => allowed === role));
 }
