@@ -302,34 +302,34 @@ export default function IdeasActivitiesPage() {
                 <form data-tour="member-idea-form" className="rounded-2xl border border-[#D4AF37]/30 bg-[#3A234E]/80 p-5" onSubmit={(e) => e.preventDefault()}>
                     <h2 className="text-xl font-semibold text-[#ffebf8]">Suggest an Activity</h2>
                     <div className="mt-4 grid gap-3">
-                        <input className="rounded-lg bg-white/10 px-3 py-2" placeholder="Donation Drive, Women Group Trip" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
-                        <textarea className="min-h-28 rounded-lg bg-white/10 px-3 py-2" placeholder="Description/Details" value={form.details} onChange={(e) => setForm((p) => ({ ...p, details: e.target.value }))} />
+                        <input data-tour="member-suggestion-title" className="rounded-lg bg-white/10 px-3 py-2" placeholder="Donation Drive, Women Group Trip" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
+                        <textarea data-tour="member-suggestion-details" className="min-h-28 rounded-lg bg-white/10 px-3 py-2" placeholder="Description/Details" value={form.details} onChange={(e) => setForm((p) => ({ ...p, details: e.target.value }))} />
                         <div className="grid gap-3 sm:grid-cols-2">
-                            <select className="rounded-lg bg-white/10 px-3 py-2" value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}>{categoryOptions.map((option) => <option className="text-black" key={option}>{option}</option>)}</select>
-                            <select className="rounded-lg bg-white/10 px-3 py-2" value={form.purpose} onChange={(e) => setForm((p) => ({ ...p, purpose: e.target.value }))}>{purposeOptions.map((option) => <option className="text-black" key={option}>{option}</option>)}</select>
-                            <select className="rounded-lg bg-white/10 px-3 py-2" value={form.locationType} onChange={(e) => setForm((p) => ({ ...p, locationType: e.target.value }))}>{locationTypeOptions.map((option) => <option className="text-black" key={option}>{option}</option>)}</select>
-                            <input className="rounded-lg bg-white/10 px-3 py-2" placeholder="Location" value={form.location} onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))} />
-                            <select className="rounded-lg bg-white/10 px-3 py-2" value={form.budgetRange} onChange={(e) => setForm((p) => ({ ...p, budgetRange: e.target.value }))}>{budgetOptions.map((option) => <option className="text-black" key={option}>{option}</option>)}</select>
-                            <select className="rounded-lg bg-white/10 px-3 py-2" value={form.timeCommitment} onChange={(e) => setForm((p) => ({ ...p, timeCommitment: e.target.value }))}>{timeCommitmentOptions.map((option) => <option className="text-black" key={option}>{option}</option>)}</select>
-                            <input className="rounded-lg bg-white/10 px-3 py-2" type="number" min={1} max={500} placeholder="Number of participants" value={form.groupSize} onChange={(e) => setForm((p) => ({ ...p, groupSize: e.target.value }))} />
+                            <select data-tour="member-suggestion-category" className="rounded-lg bg-white/10 px-3 py-2" value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}>{categoryOptions.map((option) => <option className="text-black" key={option}>{option}</option>)}</select>
+                            <select data-tour="member-suggestion-purpose" className="rounded-lg bg-white/10 px-3 py-2" value={form.purpose} onChange={(e) => setForm((p) => ({ ...p, purpose: e.target.value }))}>{purposeOptions.map((option) => <option className="text-black" key={option}>{option}</option>)}</select>
+                            <select data-tour="member-suggestion-location-type" className="rounded-lg bg-white/10 px-3 py-2" value={form.locationType} onChange={(e) => setForm((p) => ({ ...p, locationType: e.target.value }))}>{locationTypeOptions.map((option) => <option className="text-black" key={option}>{option}</option>)}</select>
+                            <input data-tour="member-suggestion-location" className="rounded-lg bg-white/10 px-3 py-2" placeholder="Location" value={form.location} onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))} />
+                            <select data-tour="member-suggestion-budget" className="rounded-lg bg-white/10 px-3 py-2" value={form.budgetRange} onChange={(e) => setForm((p) => ({ ...p, budgetRange: e.target.value }))}>{budgetOptions.map((option) => <option className="text-black" key={option}>{option}</option>)}</select>
+                            <select data-tour="member-suggestion-time" className="rounded-lg bg-white/10 px-3 py-2" value={form.timeCommitment} onChange={(e) => setForm((p) => ({ ...p, timeCommitment: e.target.value }))}>{timeCommitmentOptions.map((option) => <option className="text-black" key={option}>{option}</option>)}</select>
+                            <input data-tour="member-suggestion-group" className="rounded-lg bg-white/10 px-3 py-2" type="number" min={1} max={500} placeholder="Number of participants" value={form.groupSize} onChange={(e) => setForm((p) => ({ ...p, groupSize: e.target.value }))} />
                         </div>
                         <div className="grid gap-3 sm:grid-cols-2">
-                            <label className="text-xs">Preferred Date From<input className="mt-1 block w-full rounded-lg bg-white/10 px-3 py-2" type="date" value={form.preferredStartDate} onChange={(e) => setForm((p) => ({ ...p, preferredStartDate: e.target.value }))} /></label>
-                            <label className="text-xs">Preferred Date To<input className="mt-1 block w-full rounded-lg bg-white/10 px-3 py-2" type="date" value={form.preferredEndDate} onChange={(e) => setForm((p) => ({ ...p, preferredEndDate: e.target.value }))} /></label>
+                            <label className="text-xs">Preferred Date From<input data-tour="member-suggestion-date-from" className="mt-1 block w-full rounded-lg bg-white/10 px-3 py-2" type="date" value={form.preferredStartDate} onChange={(e) => setForm((p) => ({ ...p, preferredStartDate: e.target.value }))} /></label>
+                            <label className="text-xs">Preferred Date To<input data-tour="member-suggestion-date-to" className="mt-1 block w-full rounded-lg bg-white/10 px-3 py-2" type="date" value={form.preferredEndDate} onChange={(e) => setForm((p) => ({ ...p, preferredEndDate: e.target.value }))} /></label>
                         </div>
                         <label className="text-xs">Image / File (images or PDF only)
-                            <input className="mt-1 block w-full rounded-lg bg-white/10 px-3 py-2" type="file" accept="image/*,application/pdf" onChange={(e) => setDraftFile(e.target.files?.[0] || null)} />
+                            <input data-tour="member-suggestion-file" className="mt-1 block w-full rounded-lg bg-white/10 px-3 py-2" type="file" accept="image/*,application/pdf" onChange={(e) => setDraftFile(e.target.files?.[0] || null)} />
                         </label>
                     </div>
                     <div data-tour="member-idea-submit" className="mt-4 flex gap-3">
-                        <button className="rounded-lg bg-[#D4AF37] px-4 py-2 font-semibold text-black" onClick={() => submitIdea("submitted")}>Submit</button>
-                        <button className="rounded-lg border border-white/30 px-4 py-2" onClick={() => submitIdea("draft")}>Save As Draft</button>
+                        <button data-tour="member-suggestion-submit" className="rounded-lg bg-[#D4AF37] px-4 py-2 font-semibold text-black" onClick={() => submitIdea("submitted")}>Submit</button>
+                        <button data-tour="member-suggestion-draft" className="rounded-lg border border-white/30 px-4 py-2" onClick={() => submitIdea("draft")}>Save As Draft</button>
                     </div>
                 </form>
 
                 <aside className="space-y-4">
                     <div className="rounded-2xl border border-white/10 bg-[#4A2C5E]/80 p-5">
-                        <h3 className="font-semibold text-[#FFDDEE]">Live Preview Card</h3>
+                        <h3 data-tour="member-suggestion-preview" className="font-semibold text-[#FFDDEE]">Live Preview Card</h3>
                         <div className="mt-3 rounded-xl border border-[#D4AF37]/40 bg-black/30 p-4">
                             <p className="text-lg font-semibold">{previewTitle}</p>
                             <p className="mt-1 text-sm text-slate-200">{form.details || "Add details to preview your activity card."}</p>
